@@ -11,8 +11,10 @@ ns.Commands = Commands
 
 Commands.ERRORS_SHOWN = 3
 
-function Commands.Register(name, description, fn)
-    local command = { name = name, description = description, fn = fn }
+-- visible(): optional; when it returns false the command is left out of the help and treated as
+-- unknown (used for the developer commands).
+function Commands.Register(name, description, fn, visible)
+    local command = { name = name, description = description, fn = fn, visible = visible }
     Commands.list[#Commands.list + 1] = command
     Commands.byName[name] = command
 end
@@ -22,6 +24,9 @@ function Commands.Dispatch(message)
     local name, rest = match(message or "", "^%s*(%S*)%s*(.-)%s*$")
     name = lower(name)
     local command = Commands.byName[name]
+    if command and command.visible and not command.visible() then
+        command = nil
+    end
     if not command then
         if name ~= "" then
             ns.Print(format(L.UNKNOWN_COMMAND, name))
@@ -48,7 +53,9 @@ end
 Commands.Register("help", L.CMD_HELP, function()
     ns.Print(format(L.HELP_HEADER, ns.VERSION))
     for _, command in ipairs(Commands.list) do
-        ns.Print(format(L.HELP_LINE, command.name, command.description))
+        if not command.visible or command.visible() then
+            ns.Print(format(L.HELP_LINE, command.name, command.description))
+        end
     end
     ns.Print(format(L.CHARACTERS, ns.Character.Count(ns.db)))
     printErrors()

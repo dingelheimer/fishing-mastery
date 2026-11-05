@@ -27,10 +27,14 @@ Totals.lua
 Export.lua
 Import.lua
 Backup.lua
+Synthetic.lua
+Stress.lua
+Capture.lua
 CastLog.lua
 Frames.lua
 TextWindow.lua
 Confirm.lua
 Commands.lua
 DataCommands.lua
+Dev.lua
 Core.lua

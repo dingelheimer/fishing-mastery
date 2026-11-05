@@ -1,9 +1,10 @@
 -- Saves every finished attempt as a cast record with its context and loot, keeps sessions and
--- totals, detects skill-ups, packs the open day into chunks, and runs the load check. Connects
+-- totals, detects skill-ups, packs the open day into chunks, and runs the load check in steps
+-- after login. Connects
 -- Tracker (attempts), Context, Loot, Items, Records, Session, History, and Totals.
 local _, ns = ...
 
-local type, setmetatable, ipairs = type, setmetatable, ipairs
+local type, setmetatable, ipairs, HUGE = type, setmetatable, ipairs, math.huge
 local isSecret = issecretvalue or function()
     return false
 end
@@ -27,9 +28,39 @@ function CastLog.Prepare(char)
     return char
 end
 
+-- Runs the load check of char in steps of History.CHECK_CHUNKS, one step per after(0, fn) call
+-- (all at once without after). onDone(check) runs at the end; with clock() (GetTimePreciseSec)
+-- the check also sums the step times (seconds) and keeps the longest step (longest).
+-- Returns the check state.
+function CastLog.RunCheck(char, now, after, clock, onDone)
+    local check = History.NewCheck(char, now)
+    check.seconds, check.longest, check.steps = 0, 0, 0
+    local function step()
+        local started = clock and clock()
+        local done = History.CheckStep(char, check, not after and HUGE or nil)
+        check.steps = check.steps + 1
+        if started then
+            local spent = clock() - started
+            check.seconds = check.seconds + spent
+            check.longest = spent > check.longest and spent or check.longest
+        end
+        if not done then
+            after(0, step)
+            return
+        end
+        check.done = true
+        if onDone then
+            onDone(check)
+        end
+    end
+    step()
+    return check
+end
+
 -- deps: { env, bus, char (nil when the character is unknown), serverTime(), report(entries),
--- settings (db.settings), remind() }. report gets the quarantine entries found by the load check
--- that were not reported before; remind runs when a session reaches another 2 hours.
+-- settings (db.settings), remind(), after(seconds, fn) }. report gets the quarantine entries
+-- the load check found that were not reported before; remind runs when a session reaches
+-- another 2 hours. With after, the load check runs in steps after login.
 function CastLog.Start(deps)
     local env, char = deps.env, deps.char
     local self = setmetatable({
@@ -45,11 +76,13 @@ function CastLog.Start(deps)
         if type(rank) == "number" then
             self.char.fishingRank = rank
         end
-        self.check = History.Check(self.char, self.serverTime())
-        local unreported = History.TakeUnreported(self.char)
-        if #unreported > 0 and deps.report then
-            deps.report(unreported)
-        end
+        local owner = self.char
+        self.check = CastLog.RunCheck(owner, self.serverTime(), deps.after, nil, function()
+            local unreported = History.TakeUnreported(owner)
+            if #unreported > 0 and deps.report then
+                deps.report(unreported)
+            end
+        end)
     end
 
     local bus = deps.bus

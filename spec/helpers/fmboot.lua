@@ -39,6 +39,7 @@ M.STUBS = {
     "GetLootSlotInfo",
     "GetLootSourceInfo",
     "C_Item",
+    "C_UnitAuras",
 }
 
 local function stubGame(w)
@@ -83,11 +84,18 @@ local function stubGame(w)
             return "Raw Slitherskin Mackerel", "link", 1
         end,
     }
+    _G.C_UnitAuras = {
+        GetAuraDataByIndex = function(_, index)
+            local id = game.auras and game.auras[index]
+            return id and { spellId = id, name = "Buff", sourceUnit = "party1" } or nil
+        end,
+    }
 end
 
 -- Returns a world: w.boot(saved, charSaved, guid) simulates a login or /reload (saved variables
 -- come back as stored; guid false makes UnitGUID return nil). w.game holds the cast context and
--- survives boots; w.printed collects chat output.
+-- survives boots; w.printed collects chat output. w.bootClock, when set, is the fake
+-- GetTimePreciseSec value at the next boot (default 5000).
 function M.new()
     local w = {
         game = { rank = 11, modifier = 0, map = 1411, subzone = "Darkspear Strand" },
@@ -107,7 +115,8 @@ function M.new()
     function w.boot(saved, charSaved, guid)
         w.env = fakeui.new()
         w.printed = {}
-        w.clock, w.timers = 5000, {}
+        w.clock, w.timers = w.bootClock or 5000, {}
+        w.bootClock = nil
         w.serverTime = w.serverTime + 60
         _G.CreateFrame = w.env.CreateFrame
         _G.UIParent = w.env.UIParent

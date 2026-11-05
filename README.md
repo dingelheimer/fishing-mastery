@@ -43,12 +43,16 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
 | `Import.lua`    | Import: full validation, then merge of missing days (pure) |
 | `Backup.lua`    | Rolling snapshots of totals and settings; reload reminder rule (pure) |
+| `Synthetic.lua` | Deterministic synthetic casts for the stress test and the storage specs (pure) |
+| `Stress.lua`    | Developer storage test: test entry filled in steps, line test chunks, load measurements (pure) |
+| `Capture.lua`   | Raw capture ring buffer; aura spell IDs and loot source readers |
 | `CastLog.lua`   | Saves each attempt as a cast record, counts sessions and totals, detects skill-ups, packs at logout and day change, runs the load check |
 | `Frames.lua`    | Frame helpers: template fallback, saved position, movable, guarded buttons |
 | `TextWindow.lua` | Export (read-only pages, Select all) and import (paste box, Import button) window |
 | `Confirm.lua`   | Confirmation dialog (backup restore) |
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
+| `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
 
 ### Saved Data
@@ -84,9 +88,10 @@ copied and adapted, and the probe folder is never loaded or referenced.
 
   `-` stores "none" in a repeating field. Decoding parses the text field by field and never
   runs `loadstring`. 200,000 synthetic casts take 10.8 bytes per cast.
-- **Load check:** on login every chunk is decoded once; a broken chunk moves to `quarantine`
-  (reported once in chat) and the rest loads. Statistics read the history through
-  `History.Iterate`, which decodes one chunk at a time.
+- **Load check:** after login every chunk is decoded once, 10 chunks per frame (decoding all at
+  login took 1.4 s for 200,000 casts on live); a broken chunk moves to `quarantine` (reported once
+  in chat when the check ends) and the rest loads. Tracking works while the check runs.
+  Statistics read the history through `History.Iterate`, which decodes one chunk at a time.
 - **Totals:** `outcomes[out]`, `days[day] = { casts, catches }`, `maps[map or 0] = { casts,
   catches, items[itemID] = quantity }`, updated with every cast; `/fm rebuild` counts them again.
 - `FishingMasteryCharDB` (per character): `schemaVersion` and `ui` (UI layout only).
@@ -159,6 +164,31 @@ Only channels of the fishing spell (7620, or a spell with the same name) start a
   escape character (and double it on paste); the import accepts both.
 - **New PC or reinstall:** copy the whole `WTF` folder (it also holds your game settings), or
   import your export pages.
+
+### Developer Tools
+
+Only active while the dev flag is set: `/run FishingMasteryDB.settings.dev = true` (and `= nil`
+to turn it off). Without the flag `/fm dev` is an unknown command and nothing below runs. All test
+data lives in `FishingMasteryDB.dev`, never in a character entry, so exports, backups, and totals
+do not see it.
+
+| Command                      | Effect                                                       |
+|------------------------------|--------------------------------------------------------------|
+| `/fm dev stress [n]`         | Writes n synthetic casts (default 200,000, at most 500,000) into `dev.stress` in steps of 5,000 per frame, packed into day chunks like live casts |
+| `/fm dev lines`              | Writes one chunk of about 4,000 and one of about 60,000 characters into `dev.lines` |
+| `/fm dev load`               | Lists the last 10 load measurements                          |
+| `/fm dev clear`              | Removes `dev.stress` and `dev.lines`                         |
+| `/fm dev capture [on\|off\|clear]` | Raw capture switch; without an argument, a summary of the captured aura IDs and loot sources |
+
+- **Load measurement:** `PLAYER_LOGOUT` (also on `/reload`) saves `GetTimePreciseSec()` in
+  `dev.logoutAt`; after the reload the addon prints the time from it to its `ADDON_LOADED`, the
+  tracker start, and the stepped load check of `dev.stress` (total time, steps, longest step,
+  size), and stores them in `dev.loads`. The line test chunks are decoded and compared after each
+  reload.
+- **Raw capture** (`dev.capture`, ring buffer of 2,000 entries): at a fishing cast start
+  `{ k = "cast", t, mod, auras = { spell IDs } }`, at fishing loot `{ k = "loot", t, src =
+  { "GameObject:35591", ... } }`. Only spell IDs, GUID types, and object IDs are kept: no names,
+  no aura casters, no player GUIDs.
 
 ## FishingMasteryProbe
 

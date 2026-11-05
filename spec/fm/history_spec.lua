@@ -79,6 +79,47 @@ describe("FishingMastery history", function()
             assert.are.equal(0, #ns.History.TakeUnreported(char))
             assert.are.equal(300, #all())
         end)
+
+        it("checks in steps with the same result as checking at once", function()
+            char.casts = synthetic.casts(5000, 1793836800, 5)
+            ns.History.Pack(char)
+            table.insert(char.days, 9, "20763|oops")
+            table.insert(char.days, 10, "20763|5,9")
+            local total = #char.days
+            local check = ns.History.NewCheck(char, 7)
+            local steps = 1
+            while not ns.History.CheckStep(char, check, 4) do
+                steps = steps + 1
+            end
+            -- Every step handles 4 chunks, broken ones included.
+            assert.are.equal(math.ceil(total / 4), steps)
+            assert.are.same({ chunks = total - 2, casts = 5000, quarantined = 2 }, check.result)
+            assert.are.equal(total - 2, #char.days)
+            assert.are.equal(2, #char.quarantine)
+            assert.are.equal(7, char.quarantine[2].found)
+            assert.is_true(ns.History.CheckStep(char, check, 4))
+        end)
+
+        it("restarts a running check when the days list is replaced", function()
+            char.casts = synthetic.casts(2000, 1793836800, 6)
+            ns.History.Pack(char)
+            local check = ns.History.NewCheck(char, 0)
+            ns.History.CheckStep(char, check, 3)
+            local replaced = {}
+            for i, chunk in ipairs(char.days) do
+                replaced[i] = chunk
+            end
+            replaced[#replaced + 1] = "1|bad"
+            char.days = replaced
+            local guard = 0
+            while not ns.History.CheckStep(char, check, 3) do
+                guard = guard + 1
+                assert.is_true(guard < 1000)
+            end
+            assert.are.equal(2000, check.result.casts)
+            assert.are.equal(1, check.result.quarantined)
+            assert.are.equal("1|bad", char.quarantine[1].chunk)
+        end)
     end)
 
     describe("iterator", function()

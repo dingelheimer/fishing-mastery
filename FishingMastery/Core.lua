@@ -34,6 +34,7 @@ bus:On("ADDON_LOADED", function(_, loadedName)
     if loadedName ~= addonName then
         return
     end
+    ns.loadedAt = GetTimePreciseSec() -- load time measurement (/fm dev)
     bus:Off("ADDON_LOADED")
     local db, info = ns.Db.Init(FishingMasteryDB, { now = GetServerTime() })
     FishingMasteryDB = db
@@ -46,14 +47,19 @@ bus:On("ADDON_LOADED", function(_, loadedName)
     end
 end)
 
--- Attempt tracking and the cast log run on the same bus; the timer goes through the guard.
-local function startTracker()
-    local after = function() end
-    if C_Timer and C_Timer.After then
-        after = function(seconds, fn)
-            C_Timer.After(seconds, ns.Guard.Wrap("timer:attempt", fn))
-        end
+-- C_Timer.After with the callback run through the guard, or nil without C_Timer.
+local function timer(where)
+    if not (C_Timer and C_Timer.After) then
+        return nil
     end
+    return function(seconds, fn)
+        C_Timer.After(seconds, ns.Guard.Wrap(where, fn))
+    end
+end
+
+-- Attempt tracking and the cast log run on the same bus; timers go through the guard.
+local function startTracker()
+    local after = timer("timer:attempt") or function() end
     local castLog = ns.CastLog.Start({
         env = _G,
         bus = bus,
@@ -66,6 +72,7 @@ local function startTracker()
         remind = function()
             ns.Print(L.REMINDER)
         end,
+        after = timer("timer:check"),
     })
     ns.castLog = castLog
     ns.tracker = ns.Tracker.Start({
@@ -95,9 +102,23 @@ bus:On("PLAYER_LOGIN", function()
         ns.Print(L.NO_CHARACTER)
     end
     ns.Db.ConfirmLogin(ns.db, ns.loadInfo, ns.Guard.errors)
+    local started = GetTimePreciseSec()
     ns.Guard.Call("tracker:start", startTracker)
+    local trackerSec = GetTimePreciseSec() - started
     local now = GetServerTime()
     ns.Backup.Take(ns.db, ns.Codec.Day(now), now)
+    ns.Guard.Call("dev:start", ns.Dev.Start, {
+        db = ns.db,
+        bus = bus,
+        env = _G,
+        now = GetTimePreciseSec,
+        serverTime = GetServerTime,
+        after = timer("timer:dev"),
+        print = ns.Print,
+        loadedAt = ns.loadedAt,
+        trackerSec = trackerSec,
+        isFishingSpell = ns.Tracker.FishingSpellCheck(_G),
+    })
 end)
 
 SLASH_FM1 = "/fm"

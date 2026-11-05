@@ -3,7 +3,7 @@
 -- a day change. Broken chunks found by the load check move to char.quarantine.
 local _, ns = ...
 
-local type, ipairs, tremove = type, ipairs, table.remove
+local type, ipairs, tremove, HUGE = type, ipairs, table.remove, math.huge
 
 local Codec = ns.Codec
 
@@ -48,26 +48,53 @@ function History.PackIfNewDay(char, t)
     return 0
 end
 
--- Decodes every chunk once. Broken chunks move to char.quarantine as
--- { chunk, error, found }; the rest stays. Returns { chunks, casts, quarantined }.
-function History.Check(char, now)
-    local result = { chunks = 0, casts = 0, quarantined = 0 }
-    local days = char.days
-    local i = 1
-    while i <= #days do
+History.CHECK_CHUNKS = 10 -- chunks per load check step (about 17 ms in the client)
+
+-- A load check in steps: { days, index, now, result = { chunks, casts, quarantined } }.
+-- Decoding every chunk at login took 1.4 s for 200,000 casts on live (Story 2.6), so the addon
+-- checks a few chunks per frame after login instead.
+function History.NewCheck(char, now)
+    return {
+        days = char.days,
+        index = 1,
+        now = now,
+        result = { chunks = 0, casts = 0, quarantined = 0 },
+    }
+end
+
+-- Decodes up to maxChunks more chunks. Broken chunks move to char.quarantine as
+-- { chunk, error, found }; the rest stays. A replaced days list (import) restarts the check.
+-- Returns true when every chunk has been checked.
+function History.CheckStep(char, check, maxChunks)
+    if char.days ~= check.days then
+        check.days, check.index = char.days, 1
+        check.result = { chunks = 0, casts = 0, quarantined = check.result.quarantined }
+    end
+    local days, result = check.days, check.result
+    local budget = maxChunks or History.CHECK_CHUNKS
+    while check.index <= #days and budget > 0 do
+        budget = budget - 1
+        local i = check.index
         local day, casts = Codec.Decode(days[i])
         if day then
             result.chunks = result.chunks + 1
             result.casts = result.casts + #casts
-            i = i + 1
+            check.index = i + 1
         else
             local quarantine = char.quarantine
-            quarantine[#quarantine + 1] = { chunk = days[i], error = casts, found = now }
+            quarantine[#quarantine + 1] = { chunk = days[i], error = casts, found = check.now }
             tremove(days, i)
             result.quarantined = result.quarantined + 1
         end
     end
-    return result
+    return check.index > #days
+end
+
+-- Decodes every chunk at once. Returns { chunks, casts, quarantined }.
+function History.Check(char, now)
+    local check = History.NewCheck(char, now)
+    History.CheckStep(char, check, HUGE)
+    return check.result
 end
 
 -- Quarantine entries not reported yet; marks them reported.

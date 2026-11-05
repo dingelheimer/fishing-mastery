@@ -124,4 +124,31 @@ describe("FishingMastery cast history boot", function()
         assert.is_nil(w.output():find("damaged", 1, true))
         assert.are.equal(0, w.ns.Guard.errors)
     end)
+
+    it("checks a large history in steps after login and reports damage at the end", function()
+        local char = { casts = require("spec.helpers.synthetic").casts(20000), days = {} }
+        w.boot({ schemaVersion = 1, chars = { [GUID] = char } }, nil)
+        w.fire("PLAYER_LOGOUT")
+        char = _G.FishingMasteryDB.chars[GUID]
+        local good = #char.days
+        assert.is_true(good > 50)
+        char.days[good] = "20762|oops"
+
+        w.boot(_G.FishingMasteryDB, nil)
+        -- Only the first step runs at login; casts are tracked while the check goes on.
+        assert.is_nil(w.output():find("damaged", 1, true))
+        assert.are.same({}, char.quarantine)
+        w.catch(5000, 8)
+        local frames = 0
+        while not w.output():find("damaged", 1, true) do
+            w.runTimers(w.clock)
+            frames = frames + 1
+            assert.is_true(frames < 100)
+        end
+        assert.are.equal(math.ceil(good / 10) - 1, frames)
+        assert.are.equal("20762|oops", char.quarantine[1].chunk)
+        assert.are.equal(good - 1, #char.days)
+        assert.are.equal(1, #char.casts)
+        assert.are.equal(0, w.ns.Guard.errors)
+    end)
 end)
