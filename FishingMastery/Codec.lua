@@ -6,7 +6,8 @@
 -- Field rules (an empty field costs one comma; trailing empty fields are dropped):
 --   dt     seconds since the previous cast in the chunk (the first: seconds into the day)
 --   out    outcome code (Codec.OUTCOMES)
---   bite   bite time in tenths (catches); empty = none
+--   time   catches: bite time in tenths after the channel start; early clicks and getaways:
+--          click time in tenths (Story 3.4; older chunks have none); empty = none
 --   item, qty, q, srcType, srcId, auto: first loot slot, loot source, auto loot (catches);
 --          empty = same as the previous catch in the chunk, "-" = none
 --   map, sub, rank, mod, lure: cast context; empty = same as the previous cast, "-" = none
@@ -26,7 +27,7 @@ Codec.DAY = 86400
 Codec.FIELDS = {
     "dt",
     "out",
-    "bite",
+    "time",
     "item",
     "qty",
     "q",
@@ -68,6 +69,8 @@ end
 
 local CONTEXT = { "map", "sub", "rank", "mod", "lure" }
 local CATCH = { "item", "qty", "q", "srcType", "srcId", "auto" }
+-- Outcomes whose time field holds the click time.
+local CLICKED = { [Codec.OUTCOMES.getaway] = true, [Codec.OUTCOMES.early_click] = true }
 
 function Codec.Day(t)
     return floor(t / Codec.DAY)
@@ -91,6 +94,9 @@ local function flatten(cast)
         mod = int(cast.mod),
         lure = int(cast.lure),
     }
+    if CLICKED[flat.out] then
+        flat.click = int(cast.click)
+    end
     if flat.out == Codec.OUTCOMES.catch then
         local loot = type(cast.loot) == "table" and cast.loot or {}
         local first = loot[1] or {}
@@ -127,7 +133,7 @@ local function encodeCast(flat, state)
     local fields = {
         dt = tostring(flat.t - state.t),
         out = tostring(flat.out),
-        bite = flat.bite and tostring(flat.bite) or "",
+        time = tostring(flat.bite or flat.click or ""),
         extra = flat.extra or "",
     }
     for _, name in ipairs(CONTEXT) do
@@ -260,8 +266,11 @@ local function decodeChunk(chunk)
             ctx[name] = decodeRepeat(f[POSITION[name]], ctx[name])
             cast[name] = ctx[name]
         end
+        if CLICKED[code] then
+            cast.click = decodeRepeat(f[POSITION.time], nil)
+        end
         if out == "catch" then
-            cast.bite = decodeRepeat(f[POSITION.bite], nil)
+            cast.bite = decodeRepeat(f[POSITION.time], nil)
             for _, name in ipairs(CATCH) do
                 catch[name] = decodeRepeat(f[POSITION[name]], catch[name])
             end

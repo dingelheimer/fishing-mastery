@@ -39,7 +39,8 @@ end
 
 -- record: finished attempt from Attempt.lua (with ctx and loot). fallbackTime: server time
 -- used when the context has none. Returns the saved cast:
--- { t, map, sub, rank, mod, lure, out, bite, auto, loot = { { id, qty, q } }, srcType, srcId }.
+-- { t, map, sub, rank, mod, lure, out, bite, click, auto, loot = { { id, qty, q } }, srcType,
+-- srcId }. click: early click or getaway time in tenths after the channel start.
 function Records.Build(char, record, fallbackTime)
     local ctx = record.ctx or {}
     local cast = {
@@ -51,6 +52,7 @@ function Records.Build(char, record, fallbackTime)
         lure = ctx.lure,
         out = record.outcome,
         bite = record.biteTenths,
+        click = record.clickTenths,
         auto = record.autoLoot,
     }
     local loot = record.loot

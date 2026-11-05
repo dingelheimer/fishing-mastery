@@ -240,6 +240,7 @@ describe("FishingMastery cast records", function()
         it("builds a failure without lure or loot", function()
             local cast = ns.Records.Build(char, {
                 outcome = "getaway",
+                clickTenths = 128,
                 ctx = ctx({ subzone = "Sen'jin Village" }),
                 loot = { items = { { id = 1 } } },
             }, 999)
@@ -247,6 +248,7 @@ describe("FishingMastery cast records", function()
             assert.is_nil(cast.lure)
             assert.is_nil(cast.loot)
             assert.is_nil(cast.bite)
+            assert.are.equal(128, cast.click)
         end)
 
         it("uses the fallback time without a context", function()

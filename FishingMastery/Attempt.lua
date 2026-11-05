@@ -36,6 +36,8 @@ Attempt.INVALID_TARGET = {
 
 -- Signal outcomes, strongest first. Timeout and cancel come from timing.
 local PRIORITY = { "catch", "getaway", "early_click" }
+-- Outcomes whose message marks the moment of the player's click.
+local CLICKED = { getaway = true, early_click = true }
 
 -- isFishingSpell(spellID): true for the fishing spell; default compares with 7620.
 function Attempt.NewClassifier(isFishingSpell)
@@ -96,6 +98,13 @@ local function classify(attempt)
     return "cancel"
 end
 
+-- Message time of an early click or getaway in tenths after the channel start. The message
+-- follows the click within a frame, so this is the click time (Story 3.4).
+local function clickTenths(attempt, outcome)
+    local t = CLICKED[outcome] and attempt.signalT[outcome]
+    return t and tenths(t - attempt.start) or nil
+end
+
 local function finalize(attempt, reason)
     attempt.reason = attempt.reason or reason
     local outcome, note = classify(attempt)
@@ -107,6 +116,7 @@ local function finalize(attempt, reason)
         duration = attempt.duration,
         biteTenths = outcome == "catch" and attempt.lootT and tenths(attempt.lootT - attempt.start)
             or nil,
+        clickTenths = clickTenths(attempt, outcome),
         autoLoot = attempt.autoLoot,
         ctx = attempt.ctx,
         loot = outcome == "catch" and attempt.loot or nil,
@@ -151,6 +161,7 @@ handlers.UNIT_SPELLCAST_CHANNEL_START = function(self, event, finished)
         start = event.t,
         duration = event.duration,
         signals = {},
+        signalT = {},
         ctx = event.ctx,
     }
 end
@@ -193,6 +204,7 @@ local function onMessage(self, event, finished)
     local signal = Attempt.SIGNALS[name]
     if signal and current then
         current.signals[signal] = true
+        current.signalT[signal] = current.signalT[signal] or event.t
     end
 end
 handlers.UI_INFO_MESSAGE = onMessage

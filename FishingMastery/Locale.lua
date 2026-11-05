@@ -29,6 +29,7 @@ L.STATUS_COUNTS = "  Getaways %d, early clicks %d, timeouts %d, cancels %d, inva
 L.STATUS_SKILL = "  Fishing skill %s -> %s (%+d)"
 L.STATUS_LAST = "  Last: %s"
 L.STATUS_LAST_BITE = "  Last: %s, bite time %.1f s"
+L.STATUS_LAST_CLICK = "  Last: %s, clicked at %.1f s"
 L.STATUS_NOT_READY = "Tracking starts after login."
 L.STATUS_COUNTING = "Counting your history for the statistics; this takes a few seconds after "
     .. "login. New casts are tracked meanwhile."

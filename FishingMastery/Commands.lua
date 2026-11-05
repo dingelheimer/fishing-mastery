@@ -98,6 +98,8 @@ Commands.Register("status", L.CMD_STATUS, function()
         local outcome = L["OUTCOME_" .. last.outcome]
         if last.biteTenths then
             ns.Print(format(L.STATUS_LAST_BITE, outcome, last.biteTenths / 10))
+        elseif last.clickTenths then
+            ns.Print(format(L.STATUS_LAST_CLICK, outcome, last.clickTenths / 10))
         else
             ns.Print(format(L.STATUS_LAST, outcome))
         end

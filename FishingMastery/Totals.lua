@@ -6,7 +6,7 @@
 --   maps     = { [map] = { casts, catches, items = { [itemID] = quantity } } },
 --   zones    = { [map] = { [lure] = group } }, lure "on" or "off",
 --              group = { casts, outcomes = { [outcome] = n }, items = { [itemID] = quantity },
---                        bites = { [tenths] = catches } },
+--                        bites = { [tenths] = catches }, clicks = { [tenths] = early clicks } },
 --   hours    = { [UTC hour 0-23] = { casts, outcomes = { [outcome] = n } } },
 --   skills   = { [map] = { [band] = { hooked, getaways } } }, band = lower bound of a
 --              SKILL_BAND-point band of effective skill (rank + modifier),
@@ -25,7 +25,7 @@ local Codec, History = ns.Codec, ns.History
 local Totals = {}
 ns.Totals = Totals
 
-Totals.VERSION = 2
+Totals.VERSION = 3 -- 3: early-click times (Story 3.4)
 Totals.ACTIVE_CAP = 60 -- seconds; T in Statistics Methods
 Totals.SKILL_BAND = 5
 Totals.TABLES = { "outcomes", "days", "maps", "zones", "hours", "skills", "items", "active" }
@@ -76,7 +76,7 @@ local function newOutcomes()
     return { casts = 0, outcomes = {} }
 end
 local function newGroup()
-    return { casts = 0, outcomes = {}, items = {}, bites = {} }
+    return { casts = 0, outcomes = {}, items = {}, bites = {}, clicks = {} }
 end
 local function newBand()
     return { hooked = 0, getaways = 0 }
@@ -162,6 +162,9 @@ function Totals.Add(totals, cast)
         if type(cast.bite) == "number" then
             bump(group.bites, cast.bite)
         end
+    end
+    if out == "early_click" and type(cast.click) == "number" then
+        bump(group.clicks, cast.click)
     end
     addSkill(totals, cast, map, out)
     addActive(totals, cast.t, map)

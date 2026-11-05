@@ -80,6 +80,10 @@ function Synthetic.New(start, seed)
                 cast.loot[2] = { id = items[roll(#items) + 1], qty = 1 + roll(3), q = 2 }
             end
             cast.srcType, cast.srcId = "GameObject", 35591
+        elseif cast.out == "early_click" then
+            cast.click = 5 + roll(250)
+        elseif cast.out == "getaway" then
+            cast.click = 35 + roll(240)
         end
         return cast
     end

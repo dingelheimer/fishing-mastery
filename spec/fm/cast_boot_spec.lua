@@ -51,6 +51,7 @@ describe("FishingMastery cast history boot", function()
         assert.are.equal("getaway", char.casts[2].out)
         assert.is_nil(char.casts[2].lure)
         assert.is_nil(char.casts[2].loot)
+        assert.are.equal(100, char.casts[2].click) -- message 10.0 s after the channel start
 
         w.printed = {}
         _G.SlashCmdList.FM("status")
@@ -58,7 +59,7 @@ describe("FishingMastery cast history boot", function()
         assert.truthy(text:find("Session: 0 min, 2 casts, 1 catches", 1, true))
         assert.truthy(text:find("Getaways 1, early clicks 0", 1, true))
         assert.truthy(text:find("Fishing skill 11 -> 11 (+0)", 1, true))
-        assert.truthy(text:find("Last: fish got away", 1, true))
+        assert.truthy(text:find("Last: fish got away, clicked at 10.0 s", 1, true))
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 

@@ -70,7 +70,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
   (subzone texts; records store the index), `sessions`, and `fishingRank` (last known rank).
 - Cast record: `t` (server time at the cast), `map` (`uiMapID`), `sub` (subzone index), `rank`,
   `mod` (`skillModifier`), `lure` (enchant ID), `out` (outcome), `bite` (tenths of a second,
-  catches), `auto` (auto loot), `loot` (`{ id, qty, q }` per item slot), `srcType` and `srcId`
+  catches), `click` (tenths of a second after the channel start, early clicks and getaways),
+  `auto` (auto loot), `loot` (`{ id, qty, q }` per item slot), `srcType` and `srcId`
   (loot source, e.g. `GameObject` 35591 = the bobber). Empty fields are left out.
 - Session: `start`, `last` (last cast), `ended` and `endReason` (`idle` or `logout`), `casts`,
   `catches`, `counts` per outcome, `zones` (map IDs), `skillStart` and `skill` (rank at the first
@@ -78,32 +79,33 @@ copied and adapted, and the probe folder is never loaded or referenced.
   `/reload` within 15 minutes continues it.
 - **Day chunk:** `<day>|<cast>;<cast>;…`, day = `floor(serverTime / 86400)`, at most 4,000
   characters (a busy day gets several chunks). A cast is comma-separated integers in a fixed
-  order; new fields are only appended, and trailing empty fields are dropped:
+  order; new fields are only appended (or use a field that was always empty for that outcome),
+  and trailing empty fields are dropped:
 
   | # | Field   | Meaning                                               | Empty means |
   |---|---------|-------------------------------------------------------|-------------|
   | 1 | dt      | Seconds since the previous cast in the chunk (first: seconds into the day) | — |
   | 2 | out     | 0 unknown, 1 catch, 2 getaway, 3 early click, 4 timeout, 5 cancel, 6 invalid target | — |
-  | 3 | bite    | Bite time in tenths (catches)                         | none |
+  | 3 | time    | Catches: bite time in tenths; early clicks and getaways: click time in tenths (saved since Story 3.4) | none |
   | 4-6 | item, qty, q | First loot slot (catches)                     | same as the previous catch |
   | 7-11 | map, sub, rank, mod, lure | Cast context                    | same as the previous cast |
   | 12-14 | srcType, srcId, auto | Loot source (1 GameObject, 2 Creature, 3 Item, 9 other), auto loot 1/0 (catches) | same as the previous catch |
   | 15 | extra  | Further loot slots `id:qty:q/id:qty:q` (catches)       | none |
 
   `-` stores "none" in a repeating field. Decoding parses the text field by field and never
-  runs `loadstring`. 200,000 synthetic casts take 11.6 bytes per cast (real casts ~15).
+  runs `loadstring`. 200,000 synthetic casts take 12.1 bytes per cast (real casts ~15).
 - **Load check:** after login every chunk is decoded once, 10 chunks per frame (decoding all at
   login took 1.4 s for 200,000 casts on live); a broken chunk moves to `quarantine` (reported once
   in chat when the check ends) and the rest loads. Tracking works while the check runs.
   Statistics read the history through `History.Iterate`, which decodes one chunk at a time.
-- **Totals** (`version = 2`), updated with every cast; `map` is the `uiMapID` or 0:
+- **Totals** (`version = 3`), updated with every cast; `map` is the `uiMapID` or 0:
 
   | Table      | Shape |
   |------------|-------|
   | `outcomes` | `[outcome] = count` |
   | `days`     | `[day] = { casts, catches }` |
   | `maps`     | `[map] = { casts, catches, items = { [itemID] = quantity } }` |
-  | `zones`    | `[map].on / .off` (lure or not) `= { casts, outcomes, items = { [itemID] = quantity }, bites = { [tenths] = catches } }` |
+  | `zones`    | `[map].on / .off` (lure or not) `= { casts, outcomes, items = { [itemID] = quantity }, bites = { [tenths] = catches }, clicks = { [tenths] = early clicks } }` |
   | `hours`    | `[UTC hour 0-23] = { casts, outcomes }` (shifted to the realm or local hour when shown) |
   | `skills`   | `[map][band] = { hooked, getaways }`, band = lower bound of 5 points of rank + modifier |
   | `items`    | `[itemID] = { n (catches with it), qty, first, last (server time), best (map with the most) }` |
@@ -111,8 +113,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
   | `last`     | `{ t, map }` of the latest cast (for the active time) |
 
   Hooked = catch + getaway. `/fm rebuild` counts everything again and says whether the result
-  equals the live totals. Totals of another version (after the schema 2 update or a restored old
-  snapshot) are counted again after login, in the same steps as the load check (one decode for
+  equals the live totals. Totals of another version (after the schema 2 update, a new totals
+  version such as 3 for the early-click times, or a restored old snapshot) are counted again after login, in the same steps as the load check (one decode for
   both); `/fm status` says "Counting your history" until it is done, and casts during the count
   are counted once. 200,000 synthetic casts give about 86 KB of totals in the saved file (8 maps, 12 items);
   on live the load check with the rebuild took 2.3 s in 80 steps (longest 48 ms).
@@ -139,7 +141,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm import`               | Paste one export page and press Import; days you already have are skipped |
 | `/fm reminder on\|off`     | Reload reminder after every 2 hours of fishing in one session (on by default) |
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
-| `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch) |
+| `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch, click time for an early click or getaway) |
 
 ### Attempt Detection
 
@@ -160,6 +162,9 @@ Only channels of the fishing spell (7620, or a spell with the same name) start a
 - An attempt ends 1.5 s after the stop, at `LOOT_CLOSED` after the stop, or when a new cast
   starts. A failed recast or `UNIT_SPELLCAST_FAILED_QUIET` inside a running channel is ignored.
 - Bite time = first fishing loot event − channel start, in tenths of a second.
+- Click time (early click, getaway) = first `ERR_FISH_NOT_HOOKED` or `ERR_FISH_ESCAPED` message −
+  channel start, in tenths of a second. A click right after the splash also gives "No fish are
+  hooked"; the times let a later story tell such late clicks from clicks before the bite.
 - Each finished attempt is saved as a cast record (see Saved Data); the context is read at the
   cast start (or at the failure message), the loot at the first fishing loot event.
 - Fixtures: `luajit tools/extract_live_attempts.lua probe-results/<log>.lua

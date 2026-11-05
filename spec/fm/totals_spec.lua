@@ -29,7 +29,7 @@ describe("FishingMastery Totals", function()
                 bite = 120,
                 loot = { { id = 6303, qty = 1 }, { id = 6358, qty = 2 } },
             },
-            { t = t1 + 20, map = 1411, rank = 50, mod = 0, out = "getaway" },
+            { t = t1 + 20, map = 1411, rank = 50, mod = 0, out = "getaway", click = 95 },
             {
                 t = t1 + 50,
                 map = 1411,
@@ -69,7 +69,7 @@ describe("FishingMastery Totals", function()
                 assert.are.equal(1411, totals.items[6303].best)
             end
         end
-        assert.are.equal(2, totals.version)
+        assert.are.equal(3, totals.version)
         assert.are.same({
             [1411] = {
                 on = {
@@ -77,12 +77,14 @@ describe("FishingMastery Totals", function()
                     outcomes = { catch = 1 },
                     items = { [6303] = 1, [6358] = 2 },
                     bites = { [120] = 1 },
+                    clicks = {},
                 },
                 off = {
                     casts = 2,
                     outcomes = { catch = 1, getaway = 1 },
                     items = { [6303] = 1 },
                     bites = { [80] = 1 },
+                    clicks = {}, -- getaway click times are kept in the history only
                 },
             },
             [1412] = {
@@ -91,10 +93,17 @@ describe("FishingMastery Totals", function()
                     outcomes = { catch = 3 },
                     items = { [6303] = 3 },
                     bites = { [100] = 3 },
+                    clicks = {},
                 },
             },
             [0] = {
-                off = { casts = 1, outcomes = { invalid_target = 1 }, items = {}, bites = {} },
+                off = {
+                    casts = 1,
+                    outcomes = { invalid_target = 1 },
+                    items = {},
+                    bites = {},
+                    clicks = {},
+                },
             },
         }, totals.zones)
         assert.are.same({
@@ -119,6 +128,19 @@ describe("FishingMastery Totals", function()
             { casts = 3, catches = 2, items = { [6303] = 2, [6358] = 2 } },
             totals.maps[1411]
         )
+    end)
+
+    it("counts early-click times per zone and lure state", function()
+        local totals = Totals.New()
+        Totals.Add(totals, { t = DAY, map = 1411, out = "early_click", click = 42 })
+        Totals.Add(totals, { t = DAY + 30, map = 1411, out = "early_click", click = 42 })
+        Totals.Add(totals, { t = DAY + 60, map = 1411, lure = 263, out = "early_click", click = 7 })
+        -- Saved before Story 3.4: counted as an early click, but without a time.
+        Totals.Add(totals, { t = DAY + 90, map = 1411, out = "early_click" })
+        Totals.Add(totals, { t = DAY + 120, map = 1411, out = "getaway", click = 95 })
+        assert.are.same({ [42] = 2 }, totals.zones[1411].off.clicks)
+        assert.are.same({ [7] = 1 }, totals.zones[1411].on.clicks)
+        assert.are.equal(3, totals.zones[1411].off.outcomes.early_click)
     end)
 
     it("compares totals deeply", function()

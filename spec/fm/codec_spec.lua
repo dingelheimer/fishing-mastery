@@ -54,6 +54,8 @@ describe("FishingMastery Codec", function()
             catch(T0 + 100),
             { t = T0 + 130, out = "getaway", map = 1411, sub = 2, rank = 11, mod = 25, lure = 263 },
             { t = T0 + 150, out = "early_click", map = 1411, sub = 2, rank = 11, mod = 0 },
+            { t = T0 + 160, out = "early_click", click = 42 },
+            { t = T0 + 170, out = "getaway", click = 128 },
             { t = T0 + 190, out = "timeout", map = 1454, rank = 12, mod = 0 },
             { t = T0 + 200, out = "cancel", map = 1454, rank = 12, mod = 0 },
             { t = T0 + 210, out = "invalid_target", map = 1454, rank = 12, mod = 0 },
@@ -105,6 +107,36 @@ describe("FishingMastery Codec", function()
         )
     end)
 
+    it("keeps the click time of early clicks and getaways in the time field", function()
+        local function failure(t, out, fields)
+            local cast = { t = t, out = out, map = 1411, sub = 2, rank = 11, mod = 25, lure = 263 }
+            for key, value in pairs(fields) do
+                cast[key] = value
+            end
+            return cast
+        end
+        local chunks = Codec.Encode(DAY, {
+            failure(T0 + 100, "early_click", { click = 42 }),
+            catch(T0 + 130),
+            failure(T0 + 150, "getaway", { click = 128 }),
+            -- Click times on other outcomes and bite times on clicks are not saved.
+            failure(T0 + 160, "timeout", { click = 99 }),
+            failure(T0 + 170, "early_click", { bite = 99 }),
+        })
+        local expected = "|100,3,42,,,,1411,2,11,25,263;30,1,157,6303,1,1,,,,,,1,35591,1"
+            .. ";20,2,128;10,4;10,3"
+        assert.are.equal(DAY .. expected, chunks[1])
+        local _, casts = Codec.Decode(chunks[1])
+        assert.are.equal(42, casts[1].click)
+        assert.is_nil(casts[1].bite)
+        assert.are.equal(157, casts[2].bite)
+        assert.is_nil(casts[2].click)
+        assert.are.equal(128, casts[3].click)
+        assert.is_nil(casts[4].click)
+        assert.is_nil(casts[5].click)
+        assert.is_nil(casts[5].bite)
+    end)
+
     it("keeps negative time steps", function()
         local casts = {
             { t = T0 + 500, out = "cancel" },
@@ -114,7 +146,8 @@ describe("FishingMastery Codec", function()
     end)
 
     it("decodes old chunks without the newer fields", function()
-        -- Written before srcType, srcId, auto, and extra existed: they decode as empty.
+        -- Written before srcType, srcId, auto, extra, and click times existed: they decode as
+        -- empty (the getaway has no click time).
         local day, casts = Codec.Decode(DAY .. "|100,1,157,6303,1,1,1411,2,11,25,263;30,2")
         assert.are.equal(DAY, day)
         assert.are.same({

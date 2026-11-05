@@ -70,7 +70,8 @@ describe("FishingMastery Stress", function()
 
         it("reports a cut or damaged chunk", function()
             local lines = Stress.Lines()
-            lines[1].chunk = lines[1].chunk:sub(1, 2000)
+            -- Cut at a cast boundary: the rest still decodes, so only the length check sees it.
+            lines[1].chunk = lines[1].chunk:sub(1, 2000):match("^(.*);")
             lines[2].chunk = lines[2].chunk .. ";x"
             local results = Stress.CheckLines(lines)
             assert.is_nil(results[1].ok)
