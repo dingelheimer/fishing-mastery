@@ -25,6 +25,7 @@ Session.lua
 Codec.lua
 History.lua
 Totals.lua
+Stats.lua
 Export.lua
 Import.lua
 Backup.lua

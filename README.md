@@ -40,6 +40,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Codec.lua`     | Day chunk format: packs casts into `<day>\|<cast>;<cast>;…` strings and parses them back (pure) |
 | `History.lua`   | Packing the open day, load check with quarantine, on-demand history iterator (pure) |
 | `Totals.lua`    | Aggregates per outcome, day, map, map × lure, UTC hour, skill band, item, bite time, and active time; rebuild from the history (pure) |
+| `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
 | `Import.lua`    | Import: full validation, then merge of missing days (pure) |
 | `Backup.lua`    | Rolling snapshots of totals and settings; reload reminder rule (pure) |
