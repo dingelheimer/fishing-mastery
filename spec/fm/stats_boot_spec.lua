@@ -2,77 +2,8 @@
 -- without Lua errors, the Overview matches /fm rebuild, Fish sorts and filters, the scope switch
 -- merges characters, the position is saved, and the window waits for the count after login.
 local fmboot = require("spec.helpers.fmboot")
-
--- Globals the stubs set; removed after each test.
-local STUBS = {
-    "PanelTemplates_SetNumTabs",
-    "PanelTemplates_SetTab",
-    "CreateScrollBoxListLinearView",
-    "ScrollUtil",
-    "CreateDataProvider",
-    "GetGameTime",
-    "date",
-}
-
--- Tab and ScrollBox stubs: a list draws every row of its data provider at once.
-local function stubUi(w)
-    local tabs = {}
-    _G.PanelTemplates_SetNumTabs = function(frame, n)
-        frame.numTabs = n
-    end
-    _G.PanelTemplates_SetTab = function(frame, id)
-        tabs.selected = id
-        frame.selectedTab = id
-    end
-    _G.CreateScrollBoxListLinearView = function()
-        return {
-            SetElementExtent = function() end,
-            SetElementInitializer = function(view, _, init)
-                view.init = init
-            end,
-        }
-    end
-    _G.ScrollUtil = {
-        InitScrollBoxListWithScrollBar = function(box, _, view)
-            box.SetDataProvider = function(_, provider)
-                box.drawn = {}
-                for i, data in ipairs(provider.rows) do
-                    box.pool = box.pool or {}
-                    local row = box.pool[i] or w.env.CreateFrame("Frame", nil, box)
-                    box.pool[i] = row
-                    view.init(row, data)
-                    box.drawn[i] = row
-                end
-            end
-        end,
-    }
-    _G.CreateDataProvider = function(rows)
-        return { rows = rows }
-    end
-    _G.GetGameTime = function()
-        return (math.floor((w.serverTime % 86400) / 3600) + 2) % 24, 0
-    end
-    _G.date = os.date
-    _G.C_Map.GetMapInfo = function(map)
-        return ({ [1411] = { name = "Durotar" }, [1412] = { name = "Mulgore" } })[map]
-    end
-    _G.C_Item.GetItemQualityColor = function()
-        return 1, 1, 1, "ffffffff"
-    end
-    return tabs
-end
-
--- Texts of the cells of every drawn row of a list.
-local function texts(list)
-    local rows = {}
-    for i, row in ipairs(list.box.drawn) do
-        rows[i] = {}
-        for j, cell in ipairs(row.cells) do
-            rows[i][j] = cell:GetText()
-        end
-    end
-    return rows
-end
+local statsui = require("spec.helpers.statsui")
+local texts = statsui.texts
 
 describe("FishingMastery stats window boot", function()
     local w, tabs
@@ -81,14 +12,12 @@ describe("FishingMastery stats window boot", function()
         w = fmboot.new()
         w.boot(nil, nil)
         w.fire("PLAYER_ENTERING_WORLD", true, false)
-        tabs = stubUi(w)
+        tabs = statsui.stub(w)
     end)
 
     after_each(function()
         w.cleanup()
-        for _, name in ipairs(STUBS) do
-            _G[name] = nil
-        end
+        statsui.cleanup()
     end)
 
     local function stats()
@@ -120,8 +49,6 @@ describe("FishingMastery stats window boot", function()
                 assert.are.equal(i == j, panel:IsShown())
             end
         end
-        local soon = window.panels[7].fontStrings[1]:GetText()
-        assert.are.equal("Coming soon in a later version.", soon)
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 

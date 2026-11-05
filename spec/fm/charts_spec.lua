@@ -10,6 +10,7 @@ describe("FishingMastery charts and failure tables", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleStats.lua",
             "Codec.lua",
             "History.lua",
             "Session.lua",

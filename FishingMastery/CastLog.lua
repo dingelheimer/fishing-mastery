@@ -102,10 +102,11 @@ function CastLog.Start(deps)
         idleLast = nil, -- its last cast when the timer was set
     }, CastLog)
     if self.char then
-        local rank = Context.Fishing(env)
+        local rank, _, cap = Context.Fishing(env)
         if type(rank) == "number" then
             self.char.fishingRank = rank
         end
+        self.char.fishingMax = cap or self.char.fishingMax
         local owner = self.char
         self.counting = not Totals.Current(owner.totals)
         self.check = CastLog.RunCheck(owner, self.serverTime(), deps.after, nil, function()
@@ -210,10 +211,11 @@ function CastLog:OnSkillLines()
     if not self.char then
         return
     end
-    local rank = Context.Fishing(self.env)
+    local rank, _, cap = Context.Fishing(self.env)
     if type(rank) == "number" then
         Session.SkillChanged(self.char, rank, self.serverTime())
     end
+    self.char.fishingMax = cap or self.char.fishingMax
 end
 
 -- Replaces the totals with a count from the history. Returns the totals and whether they equal

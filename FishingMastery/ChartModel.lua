@@ -1,7 +1,7 @@
 -- Pure logic: bar chart math for the stats window. Nice axis scales (steps of 1, 2, 2.5, 5 × 10^k),
 -- histogram bins from tenth-second keys, bar positions in a plot width, and the label step that
 -- keeps the x labels apart. A chart is { bars = { { label, value, low, high, text, grey, tip } },
--- axis = Scale, percent }. No frame or API calls.
+-- axis = Scale, percent }; a line chart (Line) holds points with an x range. No frame or API calls.
 local _, ns = ...
 
 local floor, ceil, max, log10, format, ipairs, pairs, type =
@@ -101,4 +101,37 @@ function ChartModel.Build(bars, percent)
         top = 1
     end
     return { bars = bars, axis = ChartModel.Scale(top, not percent), percent = percent }
+end
+
+ChartModel.LINE_LABELS = 4 -- x labels of a line chart
+
+-- A line chart of points { x, y, tip } (x ascending): a y axis from 0 (counts), the x range of
+-- the points, and up to labels evenly spaced x values for labels: { points, axis, xmin, xmax,
+-- xticks }. A single point gets a range of 1 around it.
+function ChartModel.Line(points, labels)
+    local top = 0
+    for _, point in ipairs(points) do
+        top = max(top, point.y or 0)
+    end
+    local xmin, xmax = points[1].x, points[#points].x
+    if xmax <= xmin then
+        xmin, xmax = xmin - 0.5, xmin + 0.5
+    end
+    local n = labels or ChartModel.LINE_LABELS
+    local xticks = {}
+    for i = 0, n - 1 do
+        xticks[#xticks + 1] = xmin + (xmax - xmin) * i / max(n - 1, 1)
+    end
+    return {
+        points = points,
+        axis = ChartModel.Scale(top, true),
+        xmin = xmin,
+        xmax = xmax,
+        xticks = xticks,
+    }
+end
+
+-- Position of (x, y) in a plot of width × height (from its bottom left corner).
+function ChartModel.Place(chart, x, y, width, height)
+    return (x - chart.xmin) / (chart.xmax - chart.xmin) * width, y / chart.axis.max * height
 end

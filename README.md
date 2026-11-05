@@ -26,6 +26,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | File            | Responsibility                                                         |
 |-----------------|------------------------------------------------------------------------|
 | `Locale.lua`    | User-facing strings (`ns.L`), English fallback                         |
+| `LocaleStats.lua` | User-facing strings of the stats window                              |
 | `Guard.lua`     | Runs every handler and slash command through `xpcall`; counts errors   |
 | `Events.lua`    | Event bus: one frame, dispatch table, player-only unit events; events the client cannot register are skipped and listed |
 | `Db.lua`        | Schema version, migration walk, repair of missing fields, migration snapshot (pure) |
@@ -42,15 +43,20 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
 | `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
 | `HudModel.lua`  | HUD numbers and texts from the session, rank, lure, and item; count/grey rules and tooltip ranges (pure) |
-| `StatsView.lua` | Stats window data: one character's totals or all characters merged (subzones by text, lure groups, skill bands) (pure) |
+| `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Overview model: per-character and account numbers, favorite zone, session records (pure) |
 | `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
 | `ZoneTable.lua` | Zones table: zones with their subzones, casts, catches per hour, species, top items with shares (pure) |
 | `OverviewTable.lua` | Overview lines (account totals, rates with ranges, favorite zone, records) and the character rows (pure) |
-| `ChartModel.lua` | Bar chart math: nice axis scales, histogram bins, bar layout, x label step (pure) |
+| `ChartModel.lua` | Chart math: nice axis scales, histogram bins, bar layout, x label step, line chart range and placement (pure) |
 | `FailureTable.lua` | Failures tab: outcome rows with rates of fair and hooked casts, getaway rate by skill band, early clicks by click time (pure) |
 | `BiteTable.lua` | Bite times tab: groups per zone and lure state with median and quartiles, histogram chart (pure) |
 | `SessionTable.lua` | Sessions tab: sortable session rows with rates in the tooltip (pure) |
+| `SkillScan.lua` | Skill tab history scan in steps: first cast and catches per fishing rank; open casts added per result (pure) |
+| `SkillModel.lua` | Skill numbers: rank over time, catches per skill point with range, forecast to the next rank cap and to 300 (pure) |
+| `SkillTable.lua` | Skill tab texts, rank line chart, catches-per-point bars by rank band (pure) |
+| `CompareTable.lua` | Compare tab: groups (lure, day/night, zone, character), rates with the Newcombe difference, median bite time (pure) |
+| `CalendarModel.lua` | Calendar heatmap: 53 weeks of days, rows Monday to Sunday, color levels by catches (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
 | `Import.lua`    | Import: full validation, then merge of missing days (pure) |
@@ -70,10 +76,13 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
 | `StatsList.lua` | Table widget of the stats window: sort buttons or header labels over a ScrollBox list, grey cells, row tooltips |
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
+| `LineChart.lua` | Line chart widget: pooled `CreateLine` segments (squares without it), grid and axis labels, hover tooltip per point |
+| `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |
 | `StatsWindow.lua` | Stats window `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
 | `StatsFrame.lua` | Stats window layout: movable frame, status line, scope button, one panel per tab, 8 tab buttons |
 | `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs |
 | `FailureTabs.lua` | Build and draw of the Failures, Bite times, and Sessions tabs |
+| `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; prints a test line until the stats window exists |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
@@ -86,7 +95,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 - Per character entry, history: `days` (packed day chunks, oldest first, append-only), `casts`
   (the open day's records, packed at logout and when a cast of a later day arrives),
   `quarantine` (chunks that failed the load check, kept unchanged), `totals`, `subzones`
-  (subzone texts; records store the index), `sessions`, and `fishingRank` (last known rank).
+  (subzone texts; records store the index), `sessions`, `fishingRank` (last known rank), and
+  `fishingMax` (last known rank cap).
 - Cast record: `t` (server time at the cast), `map` (`uiMapID`), `sub` (subzone index), `rank`,
   `mod` (`skillModifier`), `lure` (enchant ID), `out` (outcome), `bite` (tenths of a second,
   catches), `click` (tenths of a second after the channel start, early clicks and getaways),
@@ -181,13 +191,15 @@ copied and adapted, and the probe folder is never loaded or referenced.
 ### Stats Window
 
 `/fm stats` opens a movable window (position saved per character) with 8 tabs. It reads the
-totals and the session records only, never the history, and draws only the shown tab. Ranges are
-in the row tooltips; values from small samples are grey (counts only below 10).
+totals and the session records; only the Skill tab reads the history, in steps. It draws only the
+shown tab. Ranges are in the row tooltips; values from small samples are grey (counts only below
+10).
 
 - **Overview:** all characters' casts, catches, fishing days, success rate and catches per hour
   with ranges, active time, species, favorite zone (most catches); records (most catches in a
   session, most catches per hour in a session with at least 30 fair casts, longest session);
-  one row per character of this account.
+  one row per character of this account; a calendar heatmap of the last 53 weeks (UTC days of
+  the server time, brighter = more catches; date, casts, and catches in each day's tooltip).
 - **Fish:** every item with catches, share of catches, best zone, best hour (realm time), first
   and last catch; for uncommon and better items the dry streak (fair casts since the last one)
   and the expected casts per item. Click a header to sort, again to flip the order; the quality
@@ -204,9 +216,21 @@ in the row tooltips; values from small samples are grey (counts only below 10).
   catches, and skill change; click a header to sort. Rates with ranges in the tooltip.
 - Charts: bar values above the bars when they fit, the numbers of every bar in its tooltip, grey
   bars for small samples.
-- Skill and Compare: "coming soon".
-- The scope button switches Fish, Zones, Failures, Bite times, and Sessions between this character and all characters (dry
-  streaks only for one character). The status line counts the characters whose totals are from
+- **Skill** (this character): reads the history 10 chunks per frame with "Reading your history"
+  and a percentage in the status line, then later only the new chunks. Line chart of the rank
+  over time (the first cast at each rank); catches per skill point over the last 10 points with
+  the 95 % range (skill-ups per catch, Wilson, inverted); catches since the last skill-up; the
+  forecast to the next rank cap (the saved cap, else the next step of 75) and to 300 in catches
+  and active time at that pace; bars of catches per point by 25 ranks. Left out of the pace: the
+  first tracked rank, the current one, and ranks 75, 150, and 225 (catches there may have been
+  made at the cap).
+- **Compare:** two groups side by side: lure on vs off, day (06:00-17:59 realm time) vs night,
+  zone A vs B, or character A vs B (the buttons pick A and B). Casts; success, getaway,
+  early-click, and timeout rates; the difference A - B in percentage points with its Newcombe
+  range in the tooltip, "clear difference" only when the range excludes 0 (no p-values); the
+  median bite time without a range.
+- The scope button switches Fish, Zones, Failures, Bite times, Sessions, and Compare (except
+  characters) between this character and all characters (dry streaks only for one character). The status line counts the characters whose totals are from
   an older version until they log in once.
 
 ### Attempt Detection

@@ -8,6 +8,7 @@ describe("FishingMastery session summary model", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleStats.lua",
             "Session.lua",
             "Totals.lua",
             "Stats.lua",

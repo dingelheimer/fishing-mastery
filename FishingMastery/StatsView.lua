@@ -96,8 +96,15 @@ local function mergeChar(view, char)
     end
     addCounts(view.outcomes, totals.outcomes)
     addCounts(view.activeByMap, totals.active)
-    for day in pairs(tbl(totals.days)) do
-        view.days[day] = true
+    for day, entry in pairs(tbl(totals.days)) do
+        local into = child(view.days, day)
+        add(into, "casts", entry.casts)
+        add(into, "catches", entry.catches)
+    end
+    for hour, entry in pairs(tbl(totals.hours)) do
+        local into = child(view.hours, hour)
+        add(into, "casts", entry.casts)
+        addCounts(child(into, "outcomes"), entry.outcomes)
     end
     for map, entry in pairs(tbl(totals.maps)) do
         local into = child(view.maps, map)
@@ -131,8 +138,9 @@ local function bestMap(maps, id)
     return best
 end
 
--- View of the characters in list (char entries): { outcomes, active, activeByMap, days, dayCount,
--- maps, items, subs, zones ([map][lure] with bites and clicks), skills ([band] = { hooked,
+-- View of the characters in list (char entries): { outcomes, active, activeByMap, days ([day] =
+-- { casts, catches }), dayCount, hours ([UTC hour] = { casts, outcomes }), maps, items, subs,
+-- zones ([map][lure] with bites and clicks), skills ([band] = { hooked,
 -- getaways }, all maps together), stale (characters counted by an older Totals version), fair
 -- (fair casts now; single character only, for dry streaks) }.
 function StatsView.Build(list)
@@ -140,6 +148,7 @@ function StatsView.Build(list)
         outcomes = {},
         activeByMap = {},
         days = {},
+        hours = {},
         maps = {},
         items = {},
         subs = {},

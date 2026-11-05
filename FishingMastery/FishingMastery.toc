@@ -11,6 +11,7 @@
 ## X-License: GPL-3.0
 
 Locale.lua
+LocaleStats.lua
 Guard.lua
 Events.lua
 Db.lua
@@ -37,6 +38,11 @@ ChartModel.lua
 FailureTable.lua
 BiteTable.lua
 SessionTable.lua
+SkillScan.lua
+SkillModel.lua
+SkillTable.lua
+CompareTable.lua
+CalendarModel.lua
 Export.lua
 Import.lua
 Backup.lua
@@ -55,10 +61,13 @@ Hud.lua
 Summary.lua
 StatsList.lua
 BarChart.lua
+LineChart.lua
+Heatmap.lua
 StatsWindow.lua
 StatsFrame.lua
 StatsTabs.lua
 FailureTabs.lua
+SkillTabs.lua
 Dev.lua
 Compartment.lua
 Core.lua

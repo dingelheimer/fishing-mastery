@@ -12,6 +12,7 @@ ns.Context = Context
 
 Context.FISHING_INDEX = 4 -- position of Fishing in the GetProfessions returns
 Context.RANK = 3 -- GetProfessionInfo: skillLevel
+Context.MAX = 4 -- GetProfessionInfo: maxSkillLevel (the trainer rank cap)
 Context.MODIFIER = 8 -- GetProfessionInfo: skillModifier (lure +25 on live)
 Context.ENCHANT_ID = 4 -- GetWeaponEnchantInfo: mainHandEnchantID
 
@@ -43,14 +44,14 @@ local function number(value)
     return type(value) == "number" and value or nil
 end
 
--- Fishing rank and skill modifier, or nil when Fishing is not learned.
+-- Fishing rank, skill modifier, and rank cap, or nil when Fishing is not learned.
 function Context.Fishing(env)
     local index = number(select(Context.FISHING_INDEX, Context.Call(env, "GetProfessions")))
     if not index then
-        return nil, nil
+        return nil, nil, nil
     end
     local info = { Context.Call(env, "GetProfessionInfo", index) }
-    return number(info[Context.RANK]), number(info[Context.MODIFIER])
+    return number(info[Context.RANK]), number(info[Context.MODIFIER]), number(info[Context.MAX])
 end
 
 -- Lure enchant ID on the main hand, or nil without a lure.

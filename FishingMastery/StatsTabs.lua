@@ -1,7 +1,7 @@
 -- Filled tabs of the stats window, one entry per tab name: build(window, panel) creates its frames
 -- once, draw(window, input, keepScroll) fills them from the aggregates and returns the view it
 -- used (for the status line); scoped tabs show the scope button. This file: Overview, Fish, and
--- Zones; FailureTabs.lua adds Failures, Bite times, and Sessions.
+-- Zones; FailureTabs.lua adds Failures, Bite times, and Sessions; SkillTabs.lua Skill and Compare.
 local _, ns = ...
 
 local concat, format = table.concat, string.format
@@ -12,7 +12,7 @@ local StatsModel, StatsView, StatsTables, ZoneTable, OverviewTable =
 local StatsTabs = {}
 ns.StatsTabs = StatsTabs
 
-StatsTabs.OVERVIEW_TEXT = 190 -- height of the Overview text block
+StatsTabs.OVERVIEW_TEXT = 150 -- height of the Overview text block
 
 StatsTabs.overview = {
     build = function(self, panel)
@@ -20,8 +20,17 @@ StatsTabs.overview = {
         self.overviewText:SetPoint("TOPLEFT", panel, "TOPLEFT", 2, 0)
         self.overviewText:SetWidth(StatsFrame.PANEL_WIDTH - 4)
         self.overviewText:SetJustifyH("LEFT")
-        local area = StatsFrame.Area(self, panel, 0, StatsTabs.OVERVIEW_TEXT)
+        local heatTop = StatsFrame.HEIGHT - 72 - ns.Heatmap.HEIGHT
+        local area = StatsFrame.Area(
+            self,
+            panel,
+            0,
+            StatsTabs.OVERVIEW_TEXT,
+            heatTop - 8 - StatsTabs.OVERVIEW_TEXT
+        )
         self.characters = ns.StatsList.Create(self.env, area, OverviewTable.COLUMNS)
+        self.heatmap = ns.Heatmap.Create(self.env, panel, StatsFrame.PANEL_WIDTH)
+        self.heatmap.frame:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -heatTop)
     end,
     draw = function(self, input, keepScroll)
         local model = StatsModel.Overview({
@@ -32,6 +41,8 @@ StatsTabs.overview = {
         })
         self.overviewText:SetText(concat(OverviewTable.Lines(model, input), "\n"))
         self.characters:SetRows(OverviewTable.Rows(model, input), keepScroll)
+        local today = ns.Codec.Day(self.serverTime())
+        self.heatmap:Draw(ns.CalendarModel.Build(model.days, today), input)
         return nil
     end,
 }

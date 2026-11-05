@@ -1,6 +1,6 @@
--- The stats window (/fm stats): a movable window (position saved per character) with 8 tabs.
--- Each filled tab (StatsTabs.lua, FailureTabs.lua) reads the live aggregates and session records
--- only; Skill and Compare follow in a later story. Built on first open (StatsFrame.lua); only the
+-- The stats window (/fm stats): a movable window (position saved per character) with 8 tabs
+-- (StatsTabs.lua, FailureTabs.lua, SkillTabs.lua). The tabs read the live aggregates and session
+-- records; only Skill reads the history, in steps. Built on first open (StatsFrame.lua); only the
 -- shown tab is drawn. Item names that load later redraw the tab once per frame. Unnamed, insecure
 -- frames only.
 local _, ns = ...
@@ -42,6 +42,7 @@ function StatsWindow.Start(deps)
             sessions = { key = "start", descending = true },
         },
         biteGroup = 1, -- index into the Bite times groups (1 = all zones)
+        compare = { kind = 1, a = 1, b = 2 }, -- CompareTable.KINDS index, groups A and B
         waiting = {}, -- item IDs with a load callback
     }, StatsWindow)
 end
@@ -89,6 +90,10 @@ local function inputs(self)
             local date = env.date
             return type(date) == "function" and date("%Y-%m-%d", t) or tostring(t)
         end,
+        formatDay = function(day)
+            local date = env.date
+            return type(date) == "function" and date("!%Y-%m-%d", day * 86400) or tostring(day)
+        end,
         formatTime = function(t)
             local date = env.date
             return type(date) == "function" and date("%Y-%m-%d %H:%M", t) or tostring(t)
@@ -118,6 +123,11 @@ local function statusText(self, name, view)
     if self.castLog:Counting() then
         return L.STATS_COUNTING
     end
+    local tab = ns.StatsTabs[name]
+    local custom = tab and tab.status and tab.status(self)
+    if custom then
+        return custom
+    end
     if name ~= "overview" and view and view.stale > 0 then
         return format(L.STATS_STALE, view.stale)
     end
@@ -136,7 +146,11 @@ local function draw(self, keepScroll)
     local view = tab and tab.draw(self, inputs(self), keepScroll)
     self.status:SetText(statusText(self, name, view))
     self.scopeButton:SetText(L["STATS_SCOPE_" .. self.scope])
-    self.scopeButton:SetShown(tab ~= nil and tab.scoped == true)
+    local scoped = tab and tab.scoped
+    if type(scoped) == "function" then
+        scoped = scoped(self)
+    end
+    self.scopeButton:SetShown(scoped == true)
 end
 
 local function recheck(self)

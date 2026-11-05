@@ -80,6 +80,23 @@ function Texture:SetSize(width, height)
     self.width, self.height = width, height
 end
 
+-- Line (Frame:CreateLine): records its end points, thickness, and color.
+local Line = setmetatable({}, { __index = Region })
+Line.__index = Line
+
+function Line:SetStartPoint(point, relativeTo, x, y)
+    self.start = { point, relativeTo, x, y }
+end
+function Line:SetEndPoint(point, relativeTo, x, y)
+    self.finish = { point, relativeTo, x, y }
+end
+function Line:SetThickness(thickness)
+    self.thickness = thickness
+end
+function Line:SetColorTexture(r, g, b, a)
+    self.color = { r, g, b, a }
+end
+
 local Frame = setmetatable({}, { __index = Region })
 Frame.__index = Frame
 
@@ -98,6 +115,12 @@ end
 
 function Frame:SetSize(width, height)
     self.width, self.height = width, height
+end
+function Frame:CreateLine(_, layer)
+    local line = setmetatable({ points = {}, shown = true, layer = layer }, Line)
+    self.lines = self.lines or {}
+    self.lines[#self.lines + 1] = line
+    return line
 end
 function Frame:SetScript(name, fn)
     self.scripts[name] = fn
