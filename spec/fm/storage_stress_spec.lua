@@ -10,11 +10,14 @@ describe("FishingMastery storage stress", function()
     local ns, char, casts
 
     setup(function()
-        ns = addon.load(
-            { "Codec.lua", "History.lua", "Totals.lua", "Synthetic.lua", "Stress.lua" },
-            nil,
-            "FishingMastery"
-        )
+        ns = addon.load({
+            "Codec.lua",
+            "History.lua",
+            "Options.lua",
+            "Totals.lua",
+            "Synthetic.lua",
+            "Stress.lua",
+        }, nil, "FishingMastery")
         casts = synthetic.casts(CASTS, 1793836800, 42)
         char = { casts = casts, days = {}, quarantine = {} }
         ns.History.Pack(char)

@@ -13,6 +13,7 @@ describe("FishingMastery skill tab", function()
             "Codec.lua",
             "History.lua",
             "Session.lua",
+            "Options.lua",
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",

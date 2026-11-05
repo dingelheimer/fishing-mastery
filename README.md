@@ -26,6 +26,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | File            | Responsibility                                                         |
 |-----------------|------------------------------------------------------------------------|
 | `Locale.lua`    | User-facing strings (`ns.L`), English fallback                         |
+| `Options.lua`   | Every setting's default in one table; settings panel controls with ranges; the proxy the panel writes through (pure) |
 | `LocaleStats.lua` | User-facing strings of the stats window                              |
 | `Guard.lua`     | Runs every handler and slash command through `xpcall`; counts errors   |
 | `Events.lua`    | Event bus: one frame, dispatch table, player-only unit events; events the client cannot register are skipped and listed |
@@ -56,6 +57,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `SkillModel.lua` | Skill numbers: rank over time, catches per skill point with range, forecast to the next rank cap and to 300 (pure) |
 | `SkillTable.lua` | Skill tab texts, rank line chart, catches-per-point bars by rank band (pure) |
 | `CompareTable.lua` | Compare tab: groups (lure, day/night, zone, character), rates with the Newcombe difference, median bite time (pure) |
+| `MinimapModel.lua` | Minimap button position for an angle (round minimap or `GetMinimapShape` shapes), drag angle, saved angle (pure) |
 | `CalendarModel.lua` | Calendar heatmap: 53 weeks of days, rows Monday to Sunday, color levels by catches (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
@@ -84,7 +86,9 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `FailureTabs.lua` | Build and draw of the Failures, Bite times, and Sessions tabs |
 | `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
-| `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; prints a test line until the stats window exists |
+| `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click stats window, right click settings, session tooltip, hide setting |
+| `SettingsPanel.lua` | Settings panel (Settings API): one checkbox or slider per setting, `/fm settings`, `/fm minimap` |
+| `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; opens or closes the stats window |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
 
 ### Saved Data
@@ -153,10 +157,16 @@ copied and adapted, and the probe folder is never loaded or referenced.
   characters);
   on live the load check with the rebuild took 2.3 s in 80 steps (longest 48 ms).
 - `FishingMasteryCharDB` (per character): `schemaVersion` and `ui` (UI layout only: window and
-  HUD positions; `ui.stats` is the stats window).
-- `FishingMasteryDB.settings.hud` (account): `enabled` (default on), `locked`, `scale` (0.5-2,
-  default 1), `style` (`full` or `text`). `FishingMasteryDB.settings.summary.style`: `window`
-  (default) or `chat`.
+  HUD positions; `ui.stats` is the stats window, `ui.minimap.angle` the minimap button, degrees,
+  default 220).
+- `FishingMasteryDB.settings` (account; every default in `Options.DEFAULTS`): `hud` = `enabled`
+  (default on), `locked`, `scale` (0.5-2, default 1), `style` (`full` or `text`);
+  `summary.style` = `window` (default) or `chat`; `minimap.shown` (default on);
+  `reloadReminder` (default on); `thresholds` = `countBelow` (5-30, default 10), `greyBelow`
+  (10-100, default 30), `activeCap` (the idle cap T, 30-120 s, default 60).
+- **Idle cap T:** totals keep the T they were counted with (`totals.cap`, left out for 60 s). A
+  new T applies at the next login: totals of another T are counted again in steps (as after an
+  update); past sessions keep the active time they were counted with.
 - **Migrations:** on `ADDON_LOADED`, `Db.MIGRATIONS[v]` upgrades schema `v` to `v + 1`. Before
   the first step, the tables a step names are copied into `migrationSnapshot`; a failing step
   restores them and keeps the old version. The snapshot is removed at the first later login
@@ -184,7 +194,9 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm hud style full\|text` | Five lines, or one line of text                              |
 | `/fm summary`              | Summary of the open session, or of the last one (also shown when a session ends after 15 minutes without a cast) |
 | `/fm summary window\|chat` | Where summaries appear: a small window (default) or your chat frame |
-| `/fm stats`                | Statistics window, see below |
+| `/fm stats`                | Statistics window, see below (also the minimap button's left click and the addon compartment entry) |
+| `/fm settings`             | Settings panel (also the minimap button's right click); lists any control the client could not show |
+| `/fm minimap show\|hide`   | Shows or hides the minimap button |
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
 | `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch, click time for an early click or getaway) |
 
@@ -232,6 +244,19 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
 - The scope button switches Fish, Zones, Failures, Bite times, Sessions, and Compare (except
   characters) between this character and all characters (dry streaks only for one character). The status line counts the characters whose totals are from
   an older version until they log in once.
+
+### Settings and Minimap Button
+
+- **Settings panel** (game menu Options > AddOns > Fishing Mastery, `/fm settings`, or a right
+  click on the minimap button): HUD on/off, lock, one text line, scale; summary in the chat;
+  minimap button; reload reminder; the count-only and grey sample sizes; the idle cap T. Changes
+  apply at once (T at the next login). Checkboxes use the Settings API confirmed on live; sliders
+  appear only when the client has `Settings.CreateSlider`, else `/fm settings` names them.
+- **Minimap button** (own, no libraries): drag it around the minimap edge (square minimaps
+  follow their corners); the angle is saved per character. Left click opens or closes the stats
+  window, right click opens the settings; the tooltip shows the open session's rates. Hide it in
+  the settings or with `/fm minimap hide`.
+- **Addon compartment:** the Fishing Mastery entry opens or closes the stats window.
 
 ### Attempt Detection
 

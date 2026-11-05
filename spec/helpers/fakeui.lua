@@ -116,6 +116,12 @@ end
 function Frame:SetSize(width, height)
     self.width, self.height = width, height
 end
+function Frame:SetFrameLevel(level)
+    self.level = level
+end
+function Frame:SetHighlightTexture(texture)
+    self.highlight = texture
+end
 function Frame:CreateLine(_, layer)
     local line = setmetatable({ points = {}, shown = true, layer = layer }, Line)
     self.lines = self.lines or {}

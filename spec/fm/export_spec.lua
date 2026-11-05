@@ -6,6 +6,7 @@ local FILES = {
     "Records.lua",
     "Codec.lua",
     "History.lua",
+    "Options.lua",
     "Totals.lua",
     "Export.lua",
     "Import.lua",

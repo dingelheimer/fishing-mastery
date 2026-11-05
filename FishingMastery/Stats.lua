@@ -9,11 +9,13 @@ local type, sqrt, floor, ceil, huge, min, max, pairs, ipairs, sort =
 local Stats = {}
 ns.Stats = Stats
 
--- Every threshold in one table; settings may override single keys (Story 3.10).
+-- Every threshold in one table; the settings panel may override countBelow, greyBelow, and T
+-- (defaults in Options.DEFAULTS.thresholds).
+local SETTINGS = ns.Options.DEFAULTS.thresholds
 Stats.DEFAULTS = {
     z = 1.96, -- 95% ranges
-    countBelow = 10, -- n below this: count only, no percentage
-    greyBelow = 30, -- n below this: percentage greyed ("few casts")
+    countBelow = SETTINGS.countBelow, -- n below this: count only, no percentage
+    greyBelow = SETTINGS.greyBelow, -- n below this: percentage greyed ("few casts")
     narrowWidth = 0.10, -- a range narrower than this is never greyed
     blendWeight = 20, -- m pseudo-catches of the reference share (module 3)
     activeCap = ns.Totals.ACTIVE_CAP, -- seconds, T
@@ -22,13 +24,15 @@ Stats.DEFAULTS = {
 -- Outcomes that are not fair casts (the player's choice or no channel at all).
 Stats.UNFAIR = ns.Totals.UNFAIR
 
--- DEFAULTS with the keys of overrides (e.g. db.settings.thresholds) that are numbers.
+-- DEFAULTS with the keys of overrides (e.g. db.settings.thresholds) that are numbers; activeCap
+-- is always this login's T (Totals.cap), so open sessions and the totals use the same T.
 function Stats.Thresholds(overrides)
     local result = {}
     for key, value in pairs(Stats.DEFAULTS) do
         local custom = type(overrides) == "table" and overrides[key]
         result[key] = type(custom) == "number" and custom or value
     end
+    result.activeCap = ns.Totals.cap
     return result
 end
 

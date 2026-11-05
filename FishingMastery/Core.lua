@@ -57,8 +57,52 @@ local function timer(where)
     end
 end
 
--- Attempt tracking and the cast log run on the same bus; timers go through the guard.
+-- A setting changed in the panel: apply it at once (T only at the next login).
+local function applySetting(key)
+    local settings = ns.db.settings
+    if key == "countBelow" or key == "greyBelow" then
+        local thresholds = ns.Stats.Thresholds(settings.thresholds)
+        ns.hud.thresholds, ns.summary.thresholds = thresholds, thresholds
+        ns.stats:SetThresholds(thresholds)
+    elseif key == "minimapShown" then
+        ns.minimap:Update()
+    elseif key == "activeCap" then
+        ns.Print(format(L.OPT_CAP_NEXT_LOGIN, ns.Options.Get(settings, "activeCap")))
+    end
+    ns.hud:Refresh()
+end
+
+-- Settings panel and minimap button (after the stats window, which they open).
+local function startSettings()
+    ns.settingsPanel = ns.SettingsPanel.Start({
+        env = _G,
+        settings = ns.db.settings,
+        onChange = function(key)
+            ns.Guard.Call("settings:apply", applySetting, key)
+        end,
+    })
+    ns.minimap = ns.MinimapButton.Start({
+        env = _G,
+        settings = ns.db.settings,
+        store = ns.charDb.ui,
+        hud = ns.hud,
+        openStats = function()
+            if ns.castLog.char then
+                ns.stats:Toggle()
+            end
+        end,
+        openSettings = function()
+            if not ns.settingsPanel:Open() then
+                ns.Print(L.OPT_UNAVAILABLE)
+            end
+        end,
+    })
+end
+
+-- Attempt tracking and the cast log run on the same bus; timers go through the guard. T for
+-- this login is set first, so totals counted with another T are counted again.
 local function startTracker()
+    ns.Totals.SetCap(ns.Options.Get(ns.db.settings, "activeCap"))
     local after = timer("timer:attempt") or function() end
     local castLog = ns.CastLog.Start({
         env = _G,
@@ -117,6 +161,7 @@ local function startTracker()
         serverTime = GetServerTime,
         after = timer("timer:stats"),
     })
+    startSettings()
 end
 
 bus:On("PLAYER_LOGIN", function()

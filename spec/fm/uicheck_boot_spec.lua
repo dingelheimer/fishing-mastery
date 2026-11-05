@@ -297,15 +297,19 @@ describe("FishingMastery UI check boot", function()
 
     it("runs the compartment handler through the guard", function()
         assert.are.equal("function", type(_G.FishingMastery_OnAddonCompartmentClick))
-        _G.FishingMastery_OnAddonCompartmentClick("FishingMastery", "LeftButton")
-        assert.truthy(w.output():find("Addon compartment works", 1, true))
-
+        local toggled = 0
+        w.ns.stats = {
+            Toggle = function()
+                toggled = toggled + 1
+            end,
+        }
         _G.SlashCmdList.FM("dev ui")
         _G.FishingMastery_OnAddonCompartmentClick("FishingMastery", "LeftButton")
         assert.are.equal(1, _G.FishingMasteryDB.dev.ui.compartmentClicks)
+        assert.are.equal(1, toggled)
 
-        w.ns.Print = function()
-            error("chat broken")
+        w.ns.stats.Toggle = function()
+            error("window broken")
         end
         _G.FishingMastery_OnAddonCompartmentClick("FishingMastery", "LeftButton")
         assert.are.equal(1, w.ns.Guard.errors)

@@ -1,6 +1,6 @@
--- Addon compartment entry (TOC AddonCompartmentFunc). The handler is the addon's only global
--- besides the SavedVariables and the slash command; it runs through the guard. Until the stats
--- window exists (Story 3.7) a click prints a test line.
+-- Addon compartment entry (TOC AddonCompartmentFunc): opens or closes the stats window. The
+-- handler is the addon's only global besides the SavedVariables and the slash command; it runs
+-- through the guard. Clicks are counted for the UI check while it runs (dev flag).
 local _, ns = ...
 
 local L = ns.L
@@ -13,7 +13,11 @@ function Compartment.Click()
     if result then
         result.compartmentClicks = (result.compartmentClicks or 0) + 1
     end
-    ns.Print(L.COMPARTMENT_TEST)
+    if ns.stats and ns.castLog and ns.castLog.char then
+        ns.stats:Toggle()
+    else
+        ns.Print(L.STATUS_NOT_READY)
+    end
 end
 
 function FishingMastery_OnAddonCompartmentClick(...)

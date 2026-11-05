@@ -9,6 +9,7 @@ describe("FishingMastery HUD model", function()
             "Locale.lua",
             "LocaleStats.lua",
             "Session.lua",
+            "Options.lua",
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",
@@ -126,9 +127,12 @@ describe("FishingMastery HUD model", function()
         )
     end)
 
-    it("uses the active cap from the thresholds", function()
+    it("uses this login's active cap T, not a changed setting", function()
         local s = session({ catch = 1 }, { active = 100 })
-        local t = ns.Stats.Thresholds({ activeCap = 30 })
+        ns.Totals.SetCap(30)
+        local t = ns.Stats.Thresholds({ activeCap = 90 })
+        ns.Totals.SetCap(60)
+        assert.are.equal(30, t.activeCap)
         assert.are.equal(130, build(s, { now = s.last + 500, thresholds = t }).active)
         assert.are.equal(160, build(s, { now = s.last + 500 }).active)
     end)

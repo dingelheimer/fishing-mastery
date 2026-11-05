@@ -13,7 +13,7 @@ Hud.__index = Hud
 ns.Hud = Hud
 
 -- Account-wide HUD settings (FishingMasteryDB.settings.hud); the position is per character.
-Hud.DEFAULTS = { enabled = true, locked = false, scale = 1, style = "full" }
+Hud.DEFAULTS = ns.Options.DEFAULTS.hud
 Hud.STYLES = { full = true, text = true }
 Hud.MIN_SCALE, Hud.MAX_SCALE = 0.5, 2
 Hud.POSITION_KEY = "hud"

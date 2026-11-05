@@ -165,7 +165,7 @@ function CastLog:OnAttempt(record)
     end
     History.PackIfNewDay(char, cast.t)
     char.casts[#char.casts + 1] = cast
-    local session = Session.Add(char, cast, Totals.ACTIVE_CAP)
+    local session = Session.Add(char, cast, Totals.cap)
     Totals.Add(char.totals, cast)
     if self.remind and ns.Backup.ShouldRemind(self.settings, session) then
         self.remind()

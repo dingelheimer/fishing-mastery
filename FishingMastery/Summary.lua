@@ -13,7 +13,7 @@ Summary.__index = Summary
 ns.Summary = Summary
 
 -- Account-wide summary settings (FishingMasteryDB.settings.summary).
-Summary.DEFAULTS = { style = "window" }
+Summary.DEFAULTS = ns.Options.DEFAULTS.summary
 Summary.STYLES = { window = true, chat = true }
 Summary.POSITION_KEY = "summary"
 Summary.WIDTH, Summary.LINE = 380, 15

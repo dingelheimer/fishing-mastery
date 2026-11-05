@@ -1,7 +1,7 @@
 local addon = require("spec.helpers.addon")
 local synthetic = require("spec.helpers.synthetic")
 
-local FILES = { "Codec.lua", "History.lua", "Totals.lua" }
+local FILES = { "Codec.lua", "History.lua", "Options.lua", "Totals.lua" }
 
 describe("FishingMastery history", function()
     local ns, char

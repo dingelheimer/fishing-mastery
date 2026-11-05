@@ -15,7 +15,8 @@ describe("FishingMastery Stats", function()
     local Stats
 
     before_each(function()
-        Stats = addon.load({ "Totals.lua", "Stats.lua" }, nil, "FishingMastery").Stats
+        Stats =
+            addon.load({ "Options.lua", "Totals.lua", "Stats.lua" }, nil, "FishingMastery").Stats
     end)
 
     describe("ranges", function()
@@ -188,7 +189,8 @@ describe("FishingMastery Stats", function()
         local env = { math = math, table = table, string = string, type = type, pairs = pairs }
         env.ipairs, env.tostring, env.tonumber = ipairs, tostring, tonumber
         local ns = {}
-        for _, file in ipairs({ "Totals.lua", "Stats.lua" }) do -- Stats takes UNFAIR from Totals
+        -- Stats takes its defaults from Options and UNFAIR from Totals.
+        for _, file in ipairs({ "Options.lua", "Totals.lua", "Stats.lua" }) do
             local chunk = assert(loadfile("FishingMastery/" .. file))
             setfenv(chunk, env)
             chunk("FishingMastery", ns)

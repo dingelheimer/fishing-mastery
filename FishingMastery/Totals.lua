@@ -18,6 +18,7 @@
 --   subs     = { [map] = { [sub] = { casts, outcomes, items = { [itemID] = catches with it },
 --                active } } }, sub = index into char.subzones or 0 (no subzone text),
 --   last     = { t, map, sub } of the latest cast (for the active time),
+--   cap      = the idle cap T (seconds) the active times were counted with; nil = ACTIVE_CAP,
 -- }
 -- map is the uiMapID or 0. Every key is an ID or a number; no names.
 local _, ns = ...
@@ -30,15 +31,32 @@ local Totals = {}
 ns.Totals = Totals
 
 Totals.VERSION = 4 -- 3: early-click times (Story 3.4); 4: subzones, item hours (Story 3.7)
-Totals.ACTIVE_CAP = 60 -- seconds; T in Statistics Methods
+Totals.ACTIVE_CAP = ns.Options.DEFAULTS.thresholds.activeCap -- seconds; default T
+-- T of this login (settings.thresholds.activeCap, set by Core before the cast log starts). Totals
+-- counted with another T are not current, so the next login counts them again.
+Totals.cap = Totals.ACTIVE_CAP
+Totals.MIN_CAP, Totals.MAX_CAP = 30, 120
+
+-- Sets T for this login; values outside MIN_CAP-MAX_CAP give ACTIVE_CAP. Returns T.
+function Totals.SetCap(cap)
+    if type(cap) ~= "number" or cap < Totals.MIN_CAP or cap > Totals.MAX_CAP then
+        cap = Totals.ACTIVE_CAP
+    end
+    Totals.cap = cap
+    return cap
+end
 Totals.SKILL_BAND = 5
 Totals.TABLES =
     { "outcomes", "days", "maps", "zones", "hours", "skills", "items", "active", "subs" }
 -- Outcomes that are not fair casts (the player's choice or no channel at all); Stats uses them.
 Totals.UNFAIR = { cancel = true, unknown = true, invalid_target = true }
 
+-- Empty totals for this login's T (the default T is not stored, so older totals stay current).
 function Totals.New()
     local totals = { version = Totals.VERSION }
+    if Totals.cap ~= Totals.ACTIVE_CAP then
+        totals.cap = Totals.cap
+    end
     for _, name in ipairs(Totals.TABLES) do
         totals[name] = {}
     end
@@ -58,9 +76,11 @@ function Totals.Repair(totals)
     return totals
 end
 
--- True when the totals were counted by this version's rules.
+-- True when the totals were counted by this version's rules and this login's T.
 function Totals.Current(totals)
-    return type(totals) == "table" and totals.version == Totals.VERSION
+    return type(totals) == "table"
+        and totals.version == Totals.VERSION
+        and (totals.cap or Totals.ACTIVE_CAP) == Totals.cap
 end
 
 -- list[key], created by make() when missing.
@@ -143,7 +163,7 @@ local function addActive(totals, t, map, sub)
     if type(t) ~= "number" then
         return
     end
-    local last, cap = totals.last, Totals.ACTIVE_CAP
+    local last, cap = totals.last, totals.cap or Totals.ACTIVE_CAP
     if type(last) == "table" and type(last.t) == "number" then
         local gap = t - last.t
         if gap >= 0 and gap < cap then

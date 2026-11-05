@@ -219,6 +219,23 @@ function StatsWindow:Open()
     self:Render()
 end
 
+-- Minimap button and addon compartment: opens the window, or closes it when it is shown.
+function StatsWindow:Toggle()
+    if self.frame and self.frame:IsShown() then
+        self.frame:Hide()
+    else
+        self:Open()
+    end
+end
+
+-- New thresholds from the settings panel; redraws the shown tab.
+function StatsWindow:SetThresholds(thresholds)
+    self.thresholds = thresholds
+    if self.frame and self.frame:IsShown() then
+        self:Render(true)
+    end
+end
+
 ns.Commands.Register("stats", L.CMD_STATS, function()
     if not (ns.stats and ns.castLog and ns.castLog.char) then
         ns.Print(L.STATUS_NOT_READY)

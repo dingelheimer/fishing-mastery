@@ -12,6 +12,7 @@
 
 Locale.lua
 LocaleStats.lua
+Options.lua
 Guard.lua
 Events.lua
 Db.lua
@@ -43,6 +44,7 @@ SkillModel.lua
 SkillTable.lua
 CompareTable.lua
 CalendarModel.lua
+MinimapModel.lua
 Export.lua
 Import.lua
 Backup.lua
@@ -68,6 +70,8 @@ StatsFrame.lua
 StatsTabs.lua
 FailureTabs.lua
 SkillTabs.lua
+MinimapButton.lua
+SettingsPanel.lua
 Dev.lua
 Compartment.lua
 Core.lua

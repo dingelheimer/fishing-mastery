@@ -13,7 +13,7 @@ local Session = {}
 ns.Session = Session
 
 Session.IDLE = 900 -- seconds without a cast that end a session
-Session.ACTIVE_CAP = 60 -- default cap; CastLog passes Totals.ACTIVE_CAP
+Session.ACTIVE_CAP = 60 -- default cap; CastLog passes Totals.cap
 
 -- The open session (the last one, when it has no end), or nil.
 function Session.Current(char)

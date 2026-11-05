@@ -10,6 +10,7 @@ describe("FishingMastery session summary model", function()
             "Locale.lua",
             "LocaleStats.lua",
             "Session.lua",
+            "Options.lua",
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",
