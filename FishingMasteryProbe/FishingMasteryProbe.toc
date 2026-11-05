@@ -1,0 +1,45 @@
+## Interface: 16001
+## Title: Fishing Mastery Probe
+## Notes: Unpublished test addon that records Forever API facts for Fishing Mastery
+## Author: dingel
+## Version: 0.1.0
+## Category: Development Tools
+## IconTexture: Interface\Icons\Trade_Fishing
+## SavedVariables: FishingMasteryProbeDB
+## X-License: GPL-3.0
+
+Locale.lua
+Serializer.lua
+Logger.lua
+Guard.lua
+Db.lua
+Scan.lua
+Calls.lua
+Redact.lua
+ApiList.lua
+Snapshot.lua
+Attempt.lua
+Context.lua
+Loot.lua
+Events.lua
+Tracer.lua
+Recorders.lua
+SecureKey.lua
+AddonMessage.lua
+Helpers.lua
+Steps.lua
+Progress.lua
+View.lua
+Window.lua
+Checklist.lua
+ReportRules.lua
+RulesLogin.lua
+RulesCasts.lua
+RulesPassive.lua
+Report.lua
+Export.lua
+TextWindow.lua
+Confirm.lua
+Commands.lua
+Handover.lua
+Core.lua

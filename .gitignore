@@ -1,0 +1,7 @@
+# Raw probe logs from the game client; they never enter the repository.
+probe-results/
+
+# Local tool output
+.luarocks/
+luacov.*.out
+*.zip

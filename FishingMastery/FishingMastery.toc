@@ -1,0 +1,29 @@
+## Interface: 16001
+## Title: Fishing Mastery
+## Notes: Tracks every fishing cast and outcome for fishing statistics and expectations
+## Author: dingel
+## Version: 0.1.0
+## Category: Professions
+## IconTexture: Interface\Icons\Trade_Fishing
+## SavedVariables: FishingMasteryDB
+## SavedVariablesPerCharacter: FishingMasteryCharDB
+## X-License: GPL-3.0
+
+Locale.lua
+Guard.lua
+Events.lua
+Db.lua
+Character.lua
+Attempt.lua
+Context.lua
+Loot.lua
+Items.lua
+Tracker.lua
+Records.lua
+Session.lua
+Codec.lua
+History.lua
+Totals.lua
+CastLog.lua
+Commands.lua
+Core.lua
