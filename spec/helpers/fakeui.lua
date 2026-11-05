@@ -64,8 +64,37 @@ function FontString:SetTextColor(r, g, b)
     self.color = { r, g, b }
 end
 
+local Texture = setmetatable({}, { __index = Region })
+Texture.__index = Texture
+
+function Texture:SetAllPoints(relativeTo)
+    self.allPoints = relativeTo
+end
+function Texture:SetColorTexture(r, g, b, a)
+    self.color = { r, g, b, a }
+end
+function Texture:SetTexture(texture)
+    self.texture = texture
+end
+function Texture:SetSize(width, height)
+    self.width, self.height = width, height
+end
+
 local Frame = setmetatable({}, { __index = Region })
 Frame.__index = Frame
+
+function Frame:SetScale(scale)
+    self.scale = scale
+end
+function Frame:GetScale()
+    return self.scale or 1
+end
+function Frame:CreateTexture(_, layer)
+    local texture = setmetatable({ points = {}, shown = true, layer = layer }, Texture)
+    self.textures = self.textures or {}
+    self.textures[#self.textures + 1] = texture
+    return texture
+end
 
 function Frame:SetSize(width, height)
     self.width, self.height = width, height
@@ -256,6 +285,25 @@ function M.new(opts)
         end
         return frame
     end
+    -- GameTooltip: records the lines of the last tooltip.
+    env.GameTooltip = {
+        lines = {},
+        SetOwner = function(tip, owner, anchor)
+            tip.owner, tip.anchor, tip.lines = owner, anchor, {}
+        end,
+        SetText = function(tip, text)
+            tip.lines = { text }
+        end,
+        AddLine = function(tip, text)
+            tip.lines[#tip.lines + 1] = text
+        end,
+        Show = function(tip)
+            tip.shown = true
+        end,
+        Hide = function(tip)
+            tip.shown = false
+        end,
+    }
     return env
 end
 

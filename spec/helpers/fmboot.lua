@@ -41,6 +41,7 @@ M.STUBS = {
     "C_Item",
     "C_UnitAuras",
     "FishingMastery_OnAddonCompartmentClick",
+    "GameTooltip",
 }
 
 local function stubGame(w)
@@ -121,6 +122,7 @@ function M.new()
         w.serverTime = w.serverTime + 60
         _G.CreateFrame = w.env.CreateFrame
         _G.UIParent = w.env.UIParent
+        _G.GameTooltip = w.env.GameTooltip
         _G.GetServerTime = function()
             return w.serverTime
         end

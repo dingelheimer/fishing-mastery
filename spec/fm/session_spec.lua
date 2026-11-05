@@ -32,6 +32,30 @@ describe("FishingMastery sessions", function()
         assert.are.equal(1, #char.sessions)
     end)
 
+    it("counts active time with capped gaps and keeps the last catch", function()
+        Session.Add(
+            char,
+            cast(100, "catch", { bite = 123, loot = { { id = 6303 }, { id = 6358 } } })
+        )
+        Session.Add(char, cast(130, "getaway"))
+        Session.Add(char, cast(400, "timeout")) -- a 270 s break counts as 60 s
+        Session.Add(char, cast(420, "catch", { bite = 88, loot = { { id = 6291 } } }), 10)
+        local s = Session.Current(char)
+        assert.are.equal(30 + 60 + 10, s.active)
+        assert.are.equal(6291, s.lastItem)
+        assert.are.equal(88, s.lastBite)
+        -- The time since the last cast counts up to the cap.
+        assert.are.equal(100 + 25, Session.Active(s, 445))
+        assert.are.equal(100 + 60, Session.Active(s, 800))
+        assert.are.equal(100 + 5, Session.Active(s, 800, 5))
+        assert.are.equal(100, Session.Active(s, 300)) -- a clock behind the last cast
+        -- A session from before the active time starts counting at its next cast.
+        s.active = nil
+        Session.Add(char, cast(450, "cancel"))
+        assert.are.equal(30, s.active)
+        assert.are.equal(6291, s.lastItem)
+    end)
+
     it("ends after 15 minutes without a cast and starts a new one", function()
         Session.Add(char, cast(100))
         assert.is_table(Session.Expire(char, 100 + Session.IDLE - 1))

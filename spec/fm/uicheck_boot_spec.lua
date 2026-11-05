@@ -136,8 +136,14 @@ end
 
 describe("FishingMastery UI check boot", function()
     local w
+    local saved = {}
 
     before_each(function()
+        -- The plain fake UI has textures (the HUD uses them); the check starts without them.
+        for _, method in ipairs(FRAME_METHODS) do
+            saved[method] = fakeui.Frame[method]
+            fakeui.Frame[method] = nil
+        end
         w = fmboot.new()
         w.boot({ schemaVersion = 1, chars = {}, settings = { dev = true } }, nil)
     end)
@@ -147,7 +153,7 @@ describe("FishingMastery UI check boot", function()
             _G[name] = nil
         end
         for _, method in ipairs(FRAME_METHODS) do
-            fakeui.Frame[method] = nil
+            fakeui.Frame[method] = saved[method]
         end
         w.cleanup()
     end)

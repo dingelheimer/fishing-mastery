@@ -88,7 +88,17 @@ local function startTracker()
         end,
         onAttempt = function(record)
             castLog:OnAttempt(record)
+            ns.hud:Refresh()
         end,
+    })
+    ns.hud = ns.Hud.Start({
+        env = _G,
+        bus = bus,
+        castLog = castLog,
+        settings = ns.db.settings,
+        store = ns.charDb.ui,
+        serverTime = GetServerTime,
+        after = timer("timer:hud"),
     })
 end
 

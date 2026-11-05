@@ -62,6 +62,16 @@ function Context.Lure(env)
     return number(info[Context.ENCHANT_ID])
 end
 
+-- Lure enchant ID and seconds left on the main hand, or nil without a lure.
+function Context.LureTime(env)
+    local info = { Context.Call(env, "GetWeaponEnchantInfo") }
+    if plain(info[1]) ~= true then
+        return nil
+    end
+    local ms = number(info[2])
+    return number(info[Context.ENCHANT_ID]), ms and ms / 1000 or nil
+end
+
 -- Context for one cast; every field is a number or plain string, or nil when unavailable.
 function Context.Read(env)
     local rank, modifier = Context.Fishing(env)

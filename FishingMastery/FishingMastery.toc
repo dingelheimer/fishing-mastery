@@ -26,6 +26,7 @@ Codec.lua
 History.lua
 Totals.lua
 Stats.lua
+HudModel.lua
 Export.lua
 Import.lua
 Backup.lua
@@ -40,6 +41,7 @@ UiTest.lua
 UiCheck.lua
 Commands.lua
 DataCommands.lua
+Hud.lua
 Dev.lua
 Compartment.lua
 Core.lua

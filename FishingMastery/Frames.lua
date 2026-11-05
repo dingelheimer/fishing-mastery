@@ -19,12 +19,15 @@ function Frames.Create(env, frameType, parent, template)
     return env.CreateFrame(frameType, nil, parent)
 end
 
--- Places the frame at store[key] (FishingMasteryCharDB.ui) or in the screen center.
-function Frames.RestorePosition(frame, env, store, key)
+-- Places the frame at store[key] (FishingMasteryCharDB.ui), else at fallback
+-- ({ point, x, y } on UIParent) or in the screen center.
+function Frames.RestorePosition(frame, env, store, key, fallback)
     frame:ClearAllPoints()
     local pos = store[key]
     if type(pos) == "table" and type(pos.point) == "string" and type(pos.x) == "number" then
         frame:SetPoint(pos.point, env.UIParent, pos.relativePoint or pos.point, pos.x, pos.y or 0)
+    elseif fallback then
+        frame:SetPoint(fallback.point, env.UIParent, fallback.point, fallback.x, fallback.y)
     else
         frame:SetPoint("CENTER", env.UIParent, "CENTER", 0, 0)
     end
