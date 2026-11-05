@@ -1,0 +1,135 @@
+-- Pure logic: the Failures tab from a StatsView view: one row per outcome with its count and
+-- rates (of fair casts; getaways and catches also of hooked casts), the getaway rate by band of
+-- effective skill with Wilson ranges (all zones together until module 3 brings the zone
+-- requirements), and early clicks by time band (click times saved since Story 3.4). Cancels,
+-- invalid targets, and unknown attempts are counts only. No frame or API calls.
+local _, ns = ...
+
+local format, ipairs, pairs, sort, floor = string.format, ipairs, pairs, table.sort, math.floor
+local L, Stats, HudModel, ChartModel = ns.L, ns.Stats, ns.HudModel, ns.ChartModel
+
+local FailureTable = {}
+ns.FailureTable = FailureTable
+
+FailureTable.OUTCOMES =
+    { "catch", "getaway", "early_click", "timeout", "cancel", "invalid_target", "unknown" }
+FailureTable.CLICK_BIN = 10 -- tenths: 1-second bands
+FailureTable.CLICK_LIMIT = 300 -- tenths: a fishing channel lasts at most ~30 s
+
+FailureTable.COLUMNS = {
+    { key = "outcome", label = L.STATS_COL_OUTCOME, width = 260 },
+    { key = "count", label = L.STATS_COL_COUNT, width = 80, right = true },
+    { key = "fair", label = L.STATS_COL_OF_FAIR, width = 120, right = true },
+    { key = "hooked", label = L.STATS_COL_OF_HOOKED, width = 120, right = true },
+}
+
+local function pct(x)
+    return floor(x * 100 + 0.5)
+end
+
+-- Tooltip line of a rate with its range: "<label>: 12 % (95 % range 8-17 %), 5 of 40".
+function FailureTable.RateLine(label, rate)
+    if rate.display == "count" or not rate.low then
+        return format(L.STATS_TIP_RATE_FEW, label, rate.k, rate.n)
+    end
+    return format(
+        L.STATS_TIP_RATE,
+        label,
+        HudModel.Percent(rate),
+        pct(rate.low),
+        pct(rate.high),
+        rate.k,
+        rate.n
+    )
+end
+
+-- Rows of the outcome table.
+function FailureTable.Rows(view, t)
+    local outcomes, rows = view.outcomes, {}
+    local fair, hooked = Stats.Fair(outcomes), Stats.Hooked(outcomes)
+    for i, outcome in ipairs(FailureTable.OUTCOMES) do
+        local count = Stats.Count(outcomes, outcome)
+        local row = { key = outcome, order = i, grey = {} }
+        local cells = { L["OUTCOME_" .. outcome], format("%d", count), "-", "-" }
+        local tip = { L["OUTCOME_" .. outcome] }
+        if not Stats.UNFAIR[outcome] then
+            local rate = Stats.Proportion(count, fair, t)
+            cells[3], row.grey[3] = HudModel.Percent(rate), rate.display ~= "full"
+            tip[#tip + 1] = FailureTable.RateLine(L.STATS_OF_FAIR, rate)
+        else
+            tip[#tip + 1] = L.STATS_TIP_COUNT_ONLY
+        end
+        if outcome == "catch" or outcome == "getaway" then
+            local rate = Stats.Proportion(count, hooked, t)
+            cells[4], row.grey[4] = HudModel.Percent(rate), rate.display ~= "full"
+            tip[#tip + 1] = FailureTable.RateLine(L.STATS_OF_HOOKED, rate)
+        end
+        row.cells, row.tooltip = cells, tip
+        rows[#rows + 1] = row
+    end
+    return rows
+end
+
+-- Getaway rate per band of effective skill (rank + modifier), or nil without hooked casts.
+function FailureTable.SkillChart(view, t)
+    local bands = {}
+    for band, entry in pairs(view.skills) do
+        if (entry.hooked or 0) > 0 then
+            bands[#bands + 1] = band
+        end
+    end
+    if #bands == 0 then
+        return nil
+    end
+    sort(bands)
+    local size = ns.Totals.SKILL_BAND
+    local bars = {}
+    for i, band in ipairs(bands) do
+        local entry = view.skills[band]
+        local rate = Stats.Proportion(entry.getaways or 0, entry.hooked, t)
+        local label = format("%d-%d", band, band + size - 1)
+        bars[i] = {
+            label = format("%d", band),
+            value = rate.p,
+            low = rate.low,
+            high = rate.high,
+            text = HudModel.Percent(rate),
+            grey = rate.display ~= "full",
+            tip = {
+                format(L.STATS_TIP_BAND, label),
+                FailureTable.RateLine(L.STATS_GETAWAYS, rate),
+            },
+        }
+    end
+    return ChartModel.Build(bars, true)
+end
+
+-- Early clicks per 1-second band of the click time, or nil when no early click has a time.
+function FailureTable.ClickChart(view)
+    local clicks, total = {}, 0
+    for _, lures in pairs(view.zones) do
+        for _, group in pairs(lures) do
+            for tenths, n in pairs(group.clicks or {}) do
+                clicks[tenths] = (clicks[tenths] or 0) + n
+                total = total + n
+            end
+        end
+    end
+    if total == 0 then
+        return nil
+    end
+    local bins = ChartModel.Bins(clicks, FailureTable.CLICK_BIN, FailureTable.CLICK_LIMIT)
+    local bars = {}
+    for i, n in ipairs(bins) do
+        local from = (i - 1) * FailureTable.CLICK_BIN / 10
+        bars[i] = {
+            label = format("%d", from),
+            value = n,
+            text = format("%d", n),
+            tip = { format(L.STATS_TIP_CLICKS, from, from + 1, n, total) },
+        }
+    end
+    local chart = ChartModel.Build(bars, false)
+    chart.total = total
+    return chart
+end

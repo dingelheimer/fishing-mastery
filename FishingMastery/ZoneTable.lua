@@ -112,7 +112,7 @@ function ZoneTable.Rows(view, input)
         )
         zone.subs = {}
         for name, group in pairs(subs) do
-            local unnamed = name == ns.StatsModel.NO_SUBZONE
+            local unnamed = name == ns.StatsView.NO_SUBZONE
             local sub = zoneRow(
                 zone.key .. "/" .. name,
                 unnamed and L.STATS_NO_SUBZONE or name,

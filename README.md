@@ -42,10 +42,15 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
 | `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
 | `HudModel.lua`  | HUD numbers and texts from the session, rank, lure, and item; count/grey rules and tooltip ranges (pure) |
-| `StatsModel.lua` | Stats window data: one character's totals or all characters merged (subzones by text), favorite zone, Overview with per-character numbers and session records (pure) |
+| `StatsView.lua` | Stats window data: one character's totals or all characters merged (subzones by text, lure groups, skill bands) (pure) |
+| `StatsModel.lua` | Overview model: per-character and account numbers, favorite zone, session records (pure) |
 | `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
 | `ZoneTable.lua` | Zones table: zones with their subzones, casts, catches per hour, species, top items with shares (pure) |
 | `OverviewTable.lua` | Overview lines (account totals, rates with ranges, favorite zone, records) and the character rows (pure) |
+| `ChartModel.lua` | Bar chart math: nice axis scales, histogram bins, bar layout, x label step (pure) |
+| `FailureTable.lua` | Failures tab: outcome rows with rates of fair and hooked casts, getaway rate by skill band, early clicks by click time (pure) |
+| `BiteTable.lua` | Bite times tab: groups per zone and lure state with median and quartiles, histogram chart (pure) |
+| `SessionTable.lua` | Sessions tab: sortable session rows with rates in the tooltip (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
 | `Import.lua`    | Import: full validation, then merge of missing days (pure) |
@@ -64,8 +69,11 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Hud.lua`       | HUD frame: shown from the first cast to the session end, lure tick, tooltip, `/fm hud` |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
 | `StatsList.lua` | Table widget of the stats window: sort buttons or header labels over a ScrollBox list, grey cells, row tooltips |
-| `StatsWindow.lua` | Stats window `/fm stats`: tab, scope, sort, and filter state; draws only the shown tab from the aggregates; redraws when item names load and while the history is counted |
-| `StatsFrame.lua` | Stats window layout: movable frame, status line, scope and quality buttons, one panel per tab, 8 tab buttons |
+| `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
+| `StatsWindow.lua` | Stats window `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
+| `StatsFrame.lua` | Stats window layout: movable frame, status line, scope button, one panel per tab, 8 tab buttons |
+| `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs |
+| `FailureTabs.lua` | Build and draw of the Failures, Bite times, and Sessions tabs |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; prints a test line until the stats window exists |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
@@ -186,8 +194,18 @@ in the row tooltips; values from small samples are grey (counts only below 10).
   button filters.
 - **Zones:** every zone (most casts first) and its subzones: casts, catches per hour, species,
   the top 3 items with their shares; all items with ranges in the tooltip.
-- Failures, Bite times, Sessions, Skill, and Compare: "coming soon".
-- The scope button switches Fish and Zones between this character and all characters (dry
+- **Failures:** every outcome with its count and rates (of fair casts; catches and getaways also
+  of hooked casts; cancels, invalid targets, and unknown attempts are counts only); bar charts of
+  the getaway rate by 5-point band of effective skill (rank + modifier, all zones together) with
+  95 % range marks, and of early clicks by click time (1-second bands).
+- **Bite times:** histogram (1-second bins up to 30 s) of all zones or of one zone and lure state
+  (the button steps through them), median and quartiles; a table of every group.
+- **Sessions:** every session (newest first) with date, character, zone, active time, casts,
+  catches, and skill change; click a header to sort. Rates with ranges in the tooltip.
+- Charts: bar values above the bars when they fit, the numbers of every bar in its tooltip, grey
+  bars for small samples.
+- Skill and Compare: "coming soon".
+- The scope button switches Fish, Zones, Failures, Bite times, and Sessions between this character and all characters (dry
   streaks only for one character). The status line counts the characters whose totals are from
   an older version until they log in once.
 

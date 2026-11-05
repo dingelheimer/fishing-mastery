@@ -19,6 +19,7 @@ describe("FishingMastery stats tables", function()
             "Stats.lua",
             "HudModel.lua",
             "SummaryModel.lua",
+            "StatsView.lua",
             "StatsModel.lua",
             "StatsTables.lua",
             "ZoneTable.lua",
@@ -61,7 +62,7 @@ describe("FishingMastery stats tables", function()
         for _, cast in ipairs(casts) do
             Totals.Add(totals, cast)
         end
-        return StatsModel.View({ { totals = totals, subzones = subzones or {} } })
+        return ns.StatsView.Build({ { totals = totals, subzones = subzones or {} } })
     end
 
     -- 40 fair casts 20 s apart at UTC hour 5 in Durotar: Oily Blackmouth on casts 5 and 20,

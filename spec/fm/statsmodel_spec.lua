@@ -15,6 +15,7 @@ describe("FishingMastery StatsModel", function()
             "Session.lua",
             "Totals.lua",
             "Stats.lua",
+            "StatsView.lua",
             "StatsModel.lua",
         }, nil, "FishingMastery")
         StatsModel, Totals = ns.StatsModel, ns.Totals
@@ -54,7 +55,7 @@ describe("FishingMastery StatsModel", function()
     end
 
     it("builds a one-character view with subzones by name and the dry-streak counter", function()
-        local view = StatsModel.View({ alice() })
+        local view = ns.StatsView.Build({ alice() })
         assert.are.same({ catch = 3, getaway = 1, cancel = 1 }, view.outcomes)
         -- Gaps 20 + 20 + 20 + 40 and 60 for the last cast.
         assert.are.equal(160, view.active)
@@ -76,7 +77,7 @@ describe("FishingMastery StatsModel", function()
 
     it("merges characters: subzones by text, items by first, last, and best zone", function()
         local a, b = alice(), bob()
-        local view = StatsModel.View({ a, b })
+        local view = ns.StatsView.Build({ a, b })
         assert.are.equal(6, view.outcomes.catch)
         assert.are.equal(2, view.dayCount)
         local mackerel = view.items[6303]
@@ -98,13 +99,13 @@ describe("FishingMastery StatsModel", function()
         local old = char("Old", { catch(DAY, 1411, nil, 6303) })
         old.totals.version = 3
         old.totals.subs = nil
-        local view = StatsModel.View({ alice(), old })
+        local view = ns.StatsView.Build({ alice(), old })
         assert.are.equal(1, view.stale)
         assert.are.equal(4, view.outcomes.catch) -- the old totals still count where they can
     end)
 
     it("picks the favorite zone by catches, then casts, then a known map", function()
-        assert.are.equal(1411, StatsModel.Favorite(StatsModel.View({ alice() })))
+        assert.are.equal(1411, StatsModel.Favorite(ns.StatsView.Build({ alice() })))
         local view = {
             maps = {
                 [0] = { casts = 50, catches = 40 },

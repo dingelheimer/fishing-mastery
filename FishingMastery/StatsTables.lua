@@ -76,6 +76,7 @@ local function fishRow(id, item, view, input)
     local row = {
         key = id,
         id = id,
+        order = id,
         name = info.name,
         quality = info.quality,
         n = item.n,
@@ -168,18 +169,15 @@ local SORT_VALUE = {
     end,
 }
 
--- Sorts Fish rows by a column key; ties by item ID.
-function StatsTables.SortFish(rows, key, descending)
-    local value = SORT_VALUE[key] or function(row)
-        return row[key]
-    end
+-- Sorts rows by value(row) (nil last in both orders); ties keep row.order (a number).
+function StatsTables.Sort(rows, value, descending)
     sort(rows, function(a, b)
         local va, vb = value(a), value(b)
         if va == nil or vb == nil or va == vb then
             if (va == nil) ~= (vb == nil) then
                 return vb == nil
             end
-            return a.id < b.id
+            return a.order < b.order
         end
         if descending then
             return va > vb
@@ -187,6 +185,14 @@ function StatsTables.SortFish(rows, key, descending)
         return va < vb
     end)
     return rows
+end
+
+-- Sorts Fish rows by a column key; ties by item ID.
+function StatsTables.SortFish(rows, key, descending)
+    local value = SORT_VALUE[key] or function(row)
+        return row[key]
+    end
+    return StatsTables.Sort(rows, value, descending)
 end
 
 -- input: { info(id) -> { name, icon, quality, hex }, mapName(map), formatDate(t), hourOffset

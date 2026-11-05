@@ -1,15 +1,14 @@
 -- The stats window (/fm stats): a movable window (position saved per character) with 8 tabs.
--- Overview, Fish, and Zones read the live aggregates only (StatsModel views, table builders);
--- the other tabs follow in later stories. Built on first open (StatsFrame.lua); only the shown
--- tab is drawn.
--- Item names that load later redraw the tab once per frame. Unnamed, insecure frames only.
+-- Each filled tab (StatsTabs.lua, FailureTabs.lua) reads the live aggregates and session records
+-- only; Skill and Compare follow in a later story. Built on first open (StatsFrame.lua); only the
+-- shown tab is drawn. Item names that load later redraw the tab once per frame. Unnamed, insecure
+-- frames only.
 local _, ns = ...
 
-local setmetatable, type, ipairs, pairs, floor, concat, select, format, tostring =
-    setmetatable, type, ipairs, pairs, math.floor, table.concat, select, string.format, tostring
+local setmetatable, type, ipairs, pairs, floor, select, format, tostring =
+    setmetatable, type, ipairs, pairs, math.floor, select, string.format, tostring
 local L, Context = ns.L, ns.Context
-local StatsModel, StatsTables, ZoneTable, OverviewTable =
-    ns.StatsModel, ns.StatsTables, ns.ZoneTable, ns.OverviewTable
+local StatsTables = ns.StatsTables
 
 local StatsWindow = {}
 StatsWindow.__index = StatsWindow
@@ -17,7 +16,9 @@ ns.StatsWindow = StatsWindow
 
 StatsWindow.TABS =
     { "overview", "fish", "zones", "failures", "bites", "sessions", "skill", "compare" }
-StatsWindow.FILLED = { overview = true, fish = true, zones = true }
+-- Columns sorted A-Z on their first click, per sortable list; others start with the largest.
+StatsWindow.TEXT_KEYS =
+    { fish = { name = true, best = true }, sessions = { name = true, zone = true } }
 StatsWindow.RECHECK = 1 -- seconds between checks while the history is counted
 StatsWindow.QUALITY_HEX = 4 -- C_Item.GetItemQualityColor: hex color
 
@@ -36,7 +37,11 @@ function StatsWindow.Start(deps)
         tab = 1,
         scope = "char",
         quality = 0, -- index into StatsTables.QUALITIES; 0 = all
-        sort = { key = "n", descending = true },
+        sorts = {
+            fish = { key = "n", descending = true },
+            sessions = { key = "start", descending = true },
+        },
+        biteGroup = 1, -- index into the Bite times groups (1 = all zones)
         waiting = {}, -- item IDs with a load callback
     }, StatsWindow)
 end
@@ -84,10 +89,13 @@ local function inputs(self)
             local date = env.date
             return type(date) == "function" and date("%Y-%m-%d", t) or tostring(t)
         end,
+        formatTime = function(t)
+            local date = env.date
+            return type(date) == "function" and date("%Y-%m-%d %H:%M", t) or tostring(t)
+        end,
         hourOffset = offset,
         thresholds = self.thresholds,
         quality = StatsTables.QUALITIES[self.quality],
-        sort = self.sort,
     }
 end
 
@@ -116,37 +124,19 @@ local function statusText(self, name, view)
     if view and ns.Stats.Count(view.outcomes, "catch") == 0 then
         return L.STATS_EMPTY
     end
+    if name == "sessions" and self.sessionCount == 0 then
+        return L.STATS_NO_SESSIONS
+    end
     return ""
 end
 
 local function draw(self, keepScroll)
     local name = StatsWindow.TABS[self.tab]
-    local input = inputs(self)
-    local view = nil
-    if name == "overview" then
-        local model = StatsModel.Overview({
-            chars = self.db.chars,
-            current = self.charKey,
-            now = self.serverTime(),
-            thresholds = self.thresholds,
-        })
-        self.overviewText:SetText(concat(OverviewTable.Lines(model, input), "\n"))
-        self.characters:SetRows(OverviewTable.Rows(model, input), keepScroll)
-    elseif name == "fish" or name == "zones" then
-        view = StatsModel.View(self:Chars())
-        if name == "fish" then
-            self.fish:SetRows(StatsTables.Fish(view, input), keepScroll)
-        else
-            self.zones:SetRows(ZoneTable.Rows(view, input), keepScroll)
-        end
-    end
+    local tab = ns.StatsTabs[name]
+    local view = tab and tab.draw(self, inputs(self), keepScroll)
     self.status:SetText(statusText(self, name, view))
     self.scopeButton:SetText(L["STATS_SCOPE_" .. self.scope])
-    self.scopeButton:SetShown(name == "fish" or name == "zones")
-    local quality = input.quality
-    self.qualityButton:SetText(
-        quality and format(L.STATS_QUALITY, L["STATS_QUALITY_" .. quality]) or L.STATS_QUALITY_ALL
-    )
+    self.scopeButton:SetShown(tab ~= nil and tab.scoped == true)
 end
 
 local function recheck(self)
@@ -195,14 +185,14 @@ function StatsWindow:Select(index)
     self:Render()
 end
 
--- Fish header click: the same column flips the order; a new one starts with the largest values
--- first (names and zones A-Z).
-function StatsWindow:SortBy(key)
-    local sort = self.sort
+-- Header click on a sortable list ("fish", "sessions"): the same column flips the order; a new
+-- one starts with the largest values first (text columns A-Z).
+function StatsWindow:SortBy(list, key)
+    local sort = self.sorts[list]
     if sort.key == key then
         sort.descending = not sort.descending
     else
-        sort.key, sort.descending = key, key ~= "name" and key ~= "best"
+        sort.key, sort.descending = key, not StatsWindow.TEXT_KEYS[list][key]
     end
     self:Render()
 end
