@@ -45,6 +45,7 @@ SkillTable.lua
 CompareTable.lua
 CalendarModel.lua
 MinimapModel.lua
+TooltipModel.lua
 Export.lua
 Import.lua
 Backup.lua
@@ -72,6 +73,7 @@ FailureTabs.lua
 SkillTabs.lua
 MinimapButton.lua
 SettingsPanel.lua
+ItemTooltip.lua
 Dev.lua
 Compartment.lua
 Core.lua

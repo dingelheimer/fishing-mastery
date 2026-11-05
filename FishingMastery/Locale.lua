@@ -217,3 +217,9 @@ L.OPT_TIP_greyBelow = "Below this sample size percentages are grey: the range is
 L.OPT_activeCap = "Idle cap T"
 L.OPT_TIP_activeCap = "Longest gap between two casts that counts as fishing time (per-hour rates). "
     .. "A change counts your totals again at the next login; past sessions keep their time."
+
+-- Item tooltip line (Story 3.11)
+L.TOOLTIP_CAUGHT = "Fishing Mastery: caught %dx"
+L.TOOLTIP_CAUGHT_BEST = "Fishing Mastery: caught %dx (best: %s)"
+L.OPT_tooltipLine = "Item tooltip line"
+L.OPT_TIP_tooltipLine = "Show how often this character caught an item on its tooltip."

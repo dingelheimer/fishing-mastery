@@ -14,6 +14,7 @@ Options.DEFAULTS = {
     hud = { enabled = true, locked = false, scale = 1, style = "full" },
     summary = { style = "window" },
     minimap = { shown = true },
+    tooltip = { shown = true }, -- item tooltip line
     reloadReminder = true,
     thresholds = { countBelow = 10, greyBelow = 30, activeCap = 60 },
     ui = { minimapAngle = 220 }, -- per character (FishingMasteryCharDB.ui.minimap)
@@ -103,6 +104,16 @@ Options.CONTROLS = {
         end,
         set = function(s, v)
             section(s, "minimap").shown = v
+        end,
+    },
+    {
+        key = "tooltipLine",
+        kind = "checkbox",
+        get = function(s)
+            return section(s, "tooltip").shown ~= false
+        end,
+        set = function(s, v)
+            section(s, "tooltip").shown = v
         end,
     },
     {

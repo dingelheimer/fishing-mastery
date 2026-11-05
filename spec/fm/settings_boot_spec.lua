@@ -108,6 +108,7 @@ describe("FishingMastery settings and minimap boot", function()
             "hudText",
             "summaryChat",
             "minimapShown",
+            "tooltipLine",
             "reloadReminder",
         }, log.checkboxes)
         assert.are.same({ "hudScale", "countBelow", "greyBelow", "activeCap" }, log.sliders)
@@ -141,7 +142,7 @@ describe("FishingMastery settings and minimap boot", function()
         log = stubSettings({ noSliders = true })
         stubMinimap(w)
         boot(nil, nil)
-        assert.are.equal(6, #log.checkboxes)
+        assert.are.equal(7, #log.checkboxes)
         assert.is_nil(log.settings.hudScale)
         w.printed = {}
         _G.SlashCmdList.FM("settings")

@@ -58,6 +58,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `SkillTable.lua` | Skill tab texts, rank line chart, catches-per-point bars by rank band (pure) |
 | `CompareTable.lua` | Compare tab: groups (lure, day/night, zone, character), rates with the Newcombe difference, median bite time (pure) |
 | `MinimapModel.lua` | Minimap button position for an angle (round minimap or `GetMinimapShape` shapes), drag angle, saved angle (pure) |
+| `TooltipModel.lua` | Item tooltip line "caught Nx (best: zone)" from one item total (pure) |
 | `CalendarModel.lua` | Calendar heatmap: 53 weeks of days, rows Monday to Sunday, color levels by catches (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
@@ -88,6 +89,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click stats window, right click settings, session tooltip, hide setting |
 | `SettingsPanel.lua` | Settings panel (Settings API): one checkbox or slider per setting, `/fm settings`, `/fm minimap` |
+| `ItemTooltip.lua` | Item tooltip post-call: adds the line for items this character caught, one lookup per tooltip, tooltip setting |
 | `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; opens or closes the stats window |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
 
@@ -162,6 +164,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 - `FishingMasteryDB.settings` (account; every default in `Options.DEFAULTS`): `hud` = `enabled`
   (default on), `locked`, `scale` (0.5-2, default 1), `style` (`full` or `text`);
   `summary.style` = `window` (default) or `chat`; `minimap.shown` (default on);
+  `tooltip.shown` (item tooltip line, default on);
   `reloadReminder` (default on); `thresholds` = `countBelow` (5-30, default 10), `greyBelow`
   (10-100, default 30), `activeCap` (the idle cap T, 30-120 s, default 60).
 - **Idle cap T:** totals keep the T they were counted with (`totals.cap`, left out for 60 s). A
@@ -249,7 +252,7 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
 
 - **Settings panel** (game menu Options > AddOns > Fishing Mastery, `/fm settings`, or a right
   click on the minimap button): HUD on/off, lock, one text line, scale; summary in the chat;
-  minimap button; reload reminder; the count-only and grey sample sizes; the idle cap T. Changes
+  minimap button; item tooltip line; reload reminder; the count-only and grey sample sizes; the idle cap T. Changes
   apply at once (T at the next login). Checkboxes use the Settings API confirmed on live; sliders
   appear only when the client has `Settings.CreateSlider`, else `/fm settings` names them.
 - **Minimap button** (own, no libraries): drag it around the minimap edge (square minimaps
@@ -257,6 +260,9 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   window, right click opens the settings; the tooltip shows the open session's rates. Hide it in
   the settings or with `/fm minimap hide`.
 - **Addon compartment:** the Fishing Mastery entry opens or closes the stats window.
+- **Item tooltip line:** items this character caught show "Fishing Mastery: caught 37x (best:
+  Darkspear Strand)" on every item tooltip (bags, vendor, links); one lookup in the item totals,
+  never a history scan. Other lines are never changed. Off with the setting "Item tooltip line".
 
 ### Attempt Detection
 

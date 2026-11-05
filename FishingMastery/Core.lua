@@ -162,6 +162,9 @@ local function startTracker()
         after = timer("timer:stats"),
     })
     startSettings()
+    if ns.char then
+        ns.ItemTooltip.Start({ env = _G, settings = ns.db.settings, char = ns.char })
+    end
 end
 
 bus:On("PLAYER_LOGIN", function()
