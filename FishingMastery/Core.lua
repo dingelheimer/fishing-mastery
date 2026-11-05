@@ -62,6 +62,10 @@ local function startTracker()
         report = function(entries)
             ns.Print(format(L.QUARANTINE, #entries))
         end,
+        settings = ns.db.settings,
+        remind = function()
+            ns.Print(L.REMINDER)
+        end,
     })
     ns.castLog = castLog
     ns.tracker = ns.Tracker.Start({
@@ -92,6 +96,8 @@ bus:On("PLAYER_LOGIN", function()
     end
     ns.Db.ConfirmLogin(ns.db, ns.loadInfo, ns.Guard.errors)
     ns.Guard.Call("tracker:start", startTracker)
+    local now = GetServerTime()
+    ns.Backup.Take(ns.db, ns.Codec.Day(now), now)
 end)
 
 SLASH_FM1 = "/fm"

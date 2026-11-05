@@ -24,6 +24,13 @@ Session.lua
 Codec.lua
 History.lua
 Totals.lua
+Export.lua
+Import.lua
+Backup.lua
 CastLog.lua
+Frames.lua
+TextWindow.lua
+Confirm.lua
 Commands.lua
+DataCommands.lua
 Core.lua

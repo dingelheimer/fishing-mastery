@@ -27,8 +27,9 @@ function CastLog.Prepare(char)
     return char
 end
 
--- deps: { env, bus, char (nil when the character is unknown), serverTime(), report(entries) }.
--- report gets the quarantine entries found by the load check that were not reported before.
+-- deps: { env, bus, char (nil when the character is unknown), serverTime(), report(entries),
+-- settings (db.settings), remind() }. report gets the quarantine entries found by the load check
+-- that were not reported before; remind runs when a session reaches another 2 hours.
 function CastLog.Start(deps)
     local env, char = deps.env, deps.char
     local self = setmetatable({
@@ -36,6 +37,8 @@ function CastLog.Start(deps)
         char = char and CastLog.Prepare(char) or nil,
         serverTime = deps.serverTime,
         items = ns.Items.New(env),
+        settings = deps.settings or {},
+        remind = deps.remind,
     }, CastLog)
     if self.char then
         local rank = Context.Fishing(env)
@@ -95,8 +98,11 @@ function CastLog:OnAttempt(record)
     end
     History.PackIfNewDay(char, cast.t)
     char.casts[#char.casts + 1] = cast
-    Session.Add(char, cast)
+    local session = Session.Add(char, cast)
     Totals.Add(char.totals, cast)
+    if self.remind and ns.Backup.ShouldRemind(self.settings, session) then
+        self.remind()
+    end
     return cast
 end
 
