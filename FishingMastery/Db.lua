@@ -8,13 +8,27 @@ local type, pairs, ipairs, pcall, tonumber, tostring =
 local Db = {}
 ns.Db = Db
 
-Db.SCHEMA_VERSION = 1
+Db.SCHEMA_VERSION = 2
 Db.CHAR_SCHEMA_VERSION = 1
 
 -- MIGRATIONS[v] upgrades the database from schema v to v + 1:
 -- { tables = { "chars", ... }, run = function(db) end }. `tables` names the top-level tables
 -- the step changes; they are copied into the migration snapshot before the first step runs.
-Db.MIGRATIONS = {}
+Db.MIGRATIONS = {
+    -- Schema 2 (Story 3.2): the totals gain zone, hour, skill, item, bite, and active time
+    -- aggregates. The step only marks every character's totals as stale; CastLog counts them
+    -- again in steps after login (with the load check), so loading stays fast.
+    [1] = {
+        tables = { "chars" },
+        run = function(db)
+            for _, char in pairs(type(db.chars) == "table" and db.chars or {}) do
+                if type(char) == "table" and type(char.totals) == "table" then
+                    char.totals.version = nil
+                end
+            end
+        end,
+    },
+}
 
 local function deepCopy(value, seen)
     if type(value) ~= "table" then

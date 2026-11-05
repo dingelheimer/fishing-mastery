@@ -28,13 +28,35 @@ function CastLog.Prepare(char)
     return char
 end
 
+-- Counts the totals from the chunks the check decodes; at the end the open casts are added and
+-- the new totals replace char.totals. Live casts during the check land in the open casts (or in
+-- a chunk packed later and still checked), so none is lost or counted twice.
+local function addRebuild(char, check)
+    local totals = Totals.New()
+    check.onCasts = function(casts)
+        for _, cast in ipairs(casts) do
+            Totals.Add(totals, cast)
+        end
+    end
+    check.onRestart = function()
+        totals = Totals.New()
+    end
+    return function()
+        for _, cast in ipairs(char.casts) do
+            Totals.Add(totals, cast)
+        end
+        char.totals = totals
+    end
+end
+
 -- Runs the load check of char in steps of History.CHECK_CHUNKS, one step per after(0, fn) call
--- (all at once without after). onDone(check) runs at the end; with clock() (GetTimePreciseSec)
--- the check also sums the step times (seconds) and keeps the longest step (longest).
--- Returns the check state.
-function CastLog.RunCheck(char, now, after, clock, onDone)
+-- (all at once without after). With rebuild, the same steps count the totals again (one decode
+-- for both). onDone(check) runs at the end; with clock() (GetTimePreciseSec) the check also
+-- sums the step times (seconds) and keeps the longest step (longest). Returns the check state.
+function CastLog.RunCheck(char, now, after, clock, onDone, rebuild)
     local check = History.NewCheck(char, now)
     check.seconds, check.longest, check.steps = 0, 0, 0
+    local finishRebuild = rebuild and addRebuild(char, check)
     local function step()
         local started = clock and clock()
         local done = History.CheckStep(char, check, not after and HUGE or nil)
@@ -49,6 +71,9 @@ function CastLog.RunCheck(char, now, after, clock, onDone)
             return
         end
         check.done = true
+        if finishRebuild then
+            finishRebuild()
+        end
         if onDone then
             onDone(check)
         end
@@ -77,12 +102,14 @@ function CastLog.Start(deps)
             self.char.fishingRank = rank
         end
         local owner = self.char
+        self.counting = not Totals.Current(owner.totals)
         self.check = CastLog.RunCheck(owner, self.serverTime(), deps.after, nil, function()
+            self.counting = false
             local unreported = History.TakeUnreported(owner)
             if #unreported > 0 and deps.report then
                 deps.report(unreported)
             end
-        end)
+        end, self.counting)
     end
 
     local bus = deps.bus
@@ -149,13 +176,22 @@ function CastLog:OnSkillLines()
     end
 end
 
--- Replaces the totals with a count from the history. Returns the totals, or nil.
+-- Replaces the totals with a count from the history. Returns the totals and whether they equal
+-- the live totals they replace (always false while the count after login is still running), or
+-- nil.
 function CastLog:Rebuild()
     if not self.char then
         return nil
     end
-    self.char.totals = Totals.Rebuild(self.char)
-    return self.char.totals
+    local live = self.char.totals
+    local totals = Totals.Rebuild(self.char)
+    self.char.totals = totals
+    return totals, Totals.Equal(live, totals)
+end
+
+-- True while the totals are being counted from the history after login (schema 2 update).
+function CastLog:Counting()
+    return self.counting == true
 end
 
 -- The open session (after the idle check), or nil.

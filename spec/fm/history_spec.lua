@@ -195,7 +195,12 @@ describe("FishingMastery history", function()
 
         it("repairs broken totals", function()
             assert.are.same(ns.Totals.New(), ns.Totals.Repair(nil))
-            assert.are.same(ns.Totals.New(), ns.Totals.Repair({ outcomes = 5 }))
+            -- Repaired totals keep their (missing) version, so they are counted again.
+            local stale = ns.Totals.New()
+            stale.version = nil
+            assert.are.same(stale, ns.Totals.Repair({ outcomes = 5 }))
+            assert.is_false(ns.Totals.Current(stale))
+            assert.is_true(ns.Totals.Current(ns.Totals.New()))
         end)
     end)
 end)

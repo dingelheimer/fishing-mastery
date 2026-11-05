@@ -4,7 +4,7 @@
 -- for a given seed. Never written into a real character entry.
 local _, ns = ...
 
-local ipairs = ipairs
+local ipairs, floor = ipairs, math.floor
 
 local Synthetic = {}
 ns.Synthetic = Synthetic
@@ -21,12 +21,14 @@ Synthetic.OUTCOMES = {
     { "invalid_target", 2 },
 }
 
--- Small linear congruential generator so results do not depend on math.random.
+-- Small linear congruential generator so results do not depend on math.random. The result
+-- uses the high bits: the low bits of a power-of-two LCG repeat in short cycles (state % 8
+-- gave every session the same map).
 local function generator(seed)
     local state = seed or 1
     return function(n)
         state = (state * 1103515245 + 12345) % 2147483648
-        return state % n
+        return floor(state / 65536) % n
     end
 end
 

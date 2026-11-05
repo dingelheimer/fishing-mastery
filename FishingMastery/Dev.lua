@@ -51,11 +51,25 @@ local function measure(self)
         return
     end
     load.chunks, load.bytes = Stress.Size(dev.stress.days)
-    ns.CastLog.RunCheck(dev.stress, load.at, deps.after, deps.now, function(check)
+    local entry = dev.stress
+    ns.CastLog.RunCheck(entry, load.at, deps.after, deps.now, function(check)
         load.check, load.longest, load.steps = check.seconds, check.longest, check.steps
         load.casts, load.quarantined = check.result.casts, check.result.quarantined
+        local size = Stress.TotalsSize(entry.totals)
+        load.totalsBytes = size.bytes
         report()
-    end)
+        show(
+            format(
+                L.DEV_TOTALS,
+                size.bytes,
+                size.items,
+                size.maps,
+                size.hours,
+                size.bands,
+                size.bites
+            )
+        )
+    end, true)
 end
 
 function Dev.FormatLoad(load)

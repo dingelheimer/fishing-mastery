@@ -10,7 +10,11 @@ describe("FishingMastery storage stress", function()
     local ns, char, casts
 
     setup(function()
-        ns = addon.load({ "Codec.lua", "History.lua", "Totals.lua" }, nil, "FishingMastery")
+        ns = addon.load(
+            { "Codec.lua", "History.lua", "Totals.lua", "Synthetic.lua", "Stress.lua" },
+            nil,
+            "FishingMastery"
+        )
         casts = synthetic.casts(CASTS, 1793836800, 42)
         char = { casts = casts, days = {}, quarantine = {} }
         ns.History.Pack(char)
@@ -53,6 +57,36 @@ describe("FishingMastery storage stress", function()
         local result = ns.History.Check(loaded, 0)
         assert.are.equal(CASTS, result.casts)
         assert.are.equal(0, result.quarantined)
+    end)
+
+    it("rebuilds the schema 2 totals of 200,000 casts within the size budget", function()
+        local started = os.clock()
+        local totals = ns.Totals.Rebuild(char)
+        local seconds = os.clock() - started
+        local size = ns.Stress.TotalsSize(totals)
+        local text = synthetic.write("T", totals)
+        print(
+            string.format(
+                "  totals: rebuild %.2f s (decode included), %d characters saved (estimate %d), "
+                    .. "%d items, %d maps, %d hours, %d skill bands, %d bite keys",
+                seconds,
+                #text,
+                size.bytes,
+                size.items,
+                size.maps,
+                size.hours,
+                size.bands,
+                size.bites
+            )
+        )
+        local counted = 0
+        for _, day in pairs(totals.days) do
+            counted = counted + day.casts
+        end
+        assert.are.equal(CASTS, counted)
+        -- Bounded by IDs, not casts: far below the history itself.
+        assert.is_true(#text < 200000)
+        assert.are.equal(#text - #"T = " - 2, size.bytes) -- name and the final CRLF
     end)
 
     it("decodes the whole history back to the same casts", function()

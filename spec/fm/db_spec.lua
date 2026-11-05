@@ -8,10 +8,10 @@ describe("FishingMastery Db", function()
     end)
 
     describe("schema", function()
-        it("creates a fresh database at schema 1", function()
+        it("creates a fresh database at schema 2", function()
             local db, info = Db.Init(nil, { now = 100 })
-            assert.are.equal(1, Db.SCHEMA_VERSION)
-            assert.are.equal(1, db.schemaVersion)
+            assert.are.equal(2, Db.SCHEMA_VERSION)
+            assert.are.equal(2, db.schemaVersion)
             assert.are.same({}, db.chars)
             assert.are.same({}, db.settings)
             assert.is_true(info.fresh)
@@ -21,7 +21,7 @@ describe("FishingMastery Db", function()
 
         it("keeps saved data", function()
             local saved = {
-                schemaVersion = 1,
+                schemaVersion = 2,
                 chars = { ["Player-1-0A"] = { name = "A" } },
                 settings = { x = 1 },
             }
@@ -34,7 +34,7 @@ describe("FishingMastery Db", function()
 
         it("repairs missing and invalid fields", function()
             local db, info = Db.Init({
-                schemaVersion = 1,
+                schemaVersion = 2,
                 chars = { ["Player-1-0A"] = "broken", [5] = {}, ["Player-1-0B"] = {} },
                 settings = 7,
                 migrationSnapshot = "bad",
@@ -160,5 +160,26 @@ describe("FishingMastery Db", function()
         assert.are.equal(copy.a, copy.b)
         assert.are_not.equal(shared, copy.a)
         assert.are.equal("x", copy.c.d)
+    end)
+
+    describe("schema 2 migration", function()
+        it("marks every character's totals stale and keeps a snapshot of the characters", function()
+            local totals = { version = 1, outcomes = { catch = 3 }, days = {}, maps = {} }
+            local db, info = Db.Init({
+                schemaVersion = 1,
+                chars = {
+                    ["Player-1-0A"] = { totals = totals, days = { "20763|5,1" } },
+                    ["Player-1-0B"] = {},
+                },
+                settings = {},
+            }, { now = 70 })
+            assert.are.equal(1, info.migratedFrom)
+            assert.are.equal(2, db.schemaVersion)
+            assert.is_nil(db.chars["Player-1-0A"].totals.version)
+            assert.are.same({ catch = 3 }, db.chars["Player-1-0A"].totals.outcomes)
+            assert.are.same({ "20763|5,1" }, db.migrationSnapshot.tables.chars["Player-1-0A"].days)
+            assert.are.equal(1, db.migrationSnapshot.fromVersion)
+            assert.are.equal(2, db.migrationSnapshot.toVersion)
+        end)
     end)
 end)

@@ -104,6 +104,7 @@ describe("FishingMastery cast history boot", function()
         w.printed = {}
         _G.SlashCmdList.FM("rebuild")
         assert.truthy(w.output():find("Totals rebuilt from 3 casts (3 catches) on 1 days", 1, true))
+        assert.truthy(w.output():find("Equal to the live totals.", 1, true))
         assert.are.same(live, char.totals)
         assert.are.equal(0, w.ns.Guard.errors)
     end)

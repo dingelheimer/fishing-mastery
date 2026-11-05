@@ -19,7 +19,7 @@ describe("FishingMastery boot", function()
     it("loads every TOC file and creates the character entry without errors", function()
         w.boot(nil, nil)
         assert.are.equal(0, w.ns.Guard.errors)
-        assert.are.equal(1, _G.FishingMasteryDB.schemaVersion)
+        assert.are.equal(2, _G.FishingMasteryDB.schemaVersion)
         assert.are.equal(GUID, w.ns.charKey)
         local entry = _G.FishingMasteryDB.chars[GUID]
         assert.are.equal("Dingel", entry.name)
@@ -74,8 +74,8 @@ describe("FishingMastery boot", function()
     end)
 
     it("drops a migration snapshot only on a later clean login", function()
-        local snapshot = { fromVersion = 0, toVersion = 1, tables = {} }
-        w.boot({ schemaVersion = 1, migrationSnapshot = snapshot }, nil)
+        local snapshot = { fromVersion = 1, toVersion = 2, tables = {} }
+        w.boot({ schemaVersion = 2, migrationSnapshot = snapshot }, nil)
         assert.is_nil(_G.FishingMasteryDB.migrationSnapshot)
     end)
 

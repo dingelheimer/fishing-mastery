@@ -26,7 +26,8 @@ describe("FishingMastery export and import", function()
     -- A character with packed days, one open cast, and subzone texts.
     local function character(seed, count)
         local entry = prepare({ name = "Dingel", part = "Brightwater" })
-        entry.subzones = { "Darkspear Strand", "Sen'jin | Village", "Razor Hill/Coast" }
+        entry.subzones =
+            { "Darkspear Strand", "Sen'jin | Village", "Razor Hill/Coast", "Echo Isles" }
         entry.casts = synthetic.casts(count or 600, 1793836800, seed)
         ns.History.Pack(entry)
         entry.casts = { { t = 1893836800, out = "cancel", map = 1411, sub = 2 } }
@@ -103,10 +104,24 @@ describe("FishingMastery export and import", function()
     end)
 
     it("adds only the missing days and keeps chunks in day order", function()
-        local full = character(5)
+        -- 2,000 casts span several days (600 span only two).
+        local full = character(5, 2000)
         local text = ns.Export.Build({ chars = { [GUID] = full } }, "char", GUID)[1]
+        db.chars[GUID] = character(5, 2000)
         local entry = db.chars[GUID]
-        local keep = { entry.days[1], entry.days[#entry.days] }
+        -- Keep every chunk of the first and the last day (a busy day spans several chunks;
+        -- import skips a day that is present at all).
+        local function dayOf(chunk)
+            return tonumber(chunk:match("^(%d+)|"))
+        end
+        local firstDay, lastDay = dayOf(entry.days[1]), dayOf(entry.days[#entry.days])
+        local keep = {}
+        for _, chunk in ipairs(entry.days) do
+            if dayOf(chunk) == firstDay or dayOf(chunk) == lastDay then
+                keep[#keep + 1] = chunk
+            end
+        end
+        assert.is_true(#keep < #entry.days)
         entry.days = keep
         entry.casts = {}
         local summary = assert(import(text))

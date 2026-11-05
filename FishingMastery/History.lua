@@ -64,11 +64,15 @@ end
 
 -- Decodes up to maxChunks more chunks. Broken chunks move to char.quarantine as
 -- { chunk, error, found }; the rest stays. A replaced days list (import) restarts the check.
--- Returns true when every chunk has been checked.
+-- Optional hooks: check.onCasts(casts) gets the casts of every valid chunk, check.onRestart()
+-- runs when the check starts over. Returns true when every chunk has been checked.
 function History.CheckStep(char, check, maxChunks)
     if char.days ~= check.days then
         check.days, check.index = char.days, 1
         check.result = { chunks = 0, casts = 0, quarantined = check.result.quarantined }
+        if check.onRestart then
+            check.onRestart()
+        end
     end
     local days, result = check.days, check.result
     local budget = maxChunks or History.CHECK_CHUNKS
@@ -80,6 +84,9 @@ function History.CheckStep(char, check, maxChunks)
             result.chunks = result.chunks + 1
             result.casts = result.casts + #casts
             check.index = i + 1
+            if check.onCasts then
+                check.onCasts(casts)
+            end
         else
             local quarantine = char.quarantine
             quarantine[#quarantine + 1] = { chunk = days[i], error = casts, found = check.now }

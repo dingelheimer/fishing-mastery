@@ -63,6 +63,9 @@ end)
 
 Commands.Register("status", L.CMD_STATUS, function()
     local castLog = ns.castLog
+    if castLog and castLog:Counting() then
+        ns.Print(L.STATUS_COUNTING)
+    end
     local session = castLog and castLog:Session()
     if not session then
         ns.Print(castLog and L.STATUS_NONE or L.STATUS_NOT_READY)
@@ -102,7 +105,10 @@ Commands.Register("status", L.CMD_STATUS, function()
 end)
 
 Commands.Register("rebuild", L.CMD_REBUILD, function()
-    local totals = ns.castLog and ns.castLog:Rebuild()
+    local totals, same = nil, false
+    if ns.castLog then
+        totals, same = ns.castLog:Rebuild()
+    end
     if not totals then
         ns.Print(L.STATUS_NOT_READY)
         return
@@ -112,4 +118,5 @@ Commands.Register("rebuild", L.CMD_REBUILD, function()
         casts, catches, days = casts + day.casts, catches + day.catches, days + 1
     end
     ns.Print(format(L.REBUILD_DONE, casts, catches, days))
+    ns.Print(same and L.REBUILD_SAME or L.REBUILD_CHANGED)
 end)

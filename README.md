@@ -39,7 +39,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Session.lua`   | Sessions: start, 15-minute idle end, logout, `/reload` resume, skill before and after (pure) |
 | `Codec.lua`     | Day chunk format: packs casts into `<day>\|<cast>;<cast>;…` strings and parses them back (pure) |
 | `History.lua`   | Packing the open day, load check with quarantine, on-demand history iterator (pure) |
-| `Totals.lua`    | Aggregates per outcome, day, and map/item; rebuild from the history (pure) |
+| `Totals.lua`    | Aggregates per outcome, day, map, map × lure, UTC hour, skill band, item, bite time, and active time; rebuild from the history (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
 | `Import.lua`    | Import: full validation, then merge of missing days (pure) |
 | `Backup.lua`    | Rolling snapshots of totals and settings; reload reminder rule (pure) |
@@ -90,18 +90,38 @@ copied and adapted, and the probe folder is never loaded or referenced.
   | 15 | extra  | Further loot slots `id:qty:q/id:qty:q` (catches)       | none |
 
   `-` stores "none" in a repeating field. Decoding parses the text field by field and never
-  runs `loadstring`. 200,000 synthetic casts take 10.8 bytes per cast.
+  runs `loadstring`. 200,000 synthetic casts take 11.6 bytes per cast (real casts ~15).
 - **Load check:** after login every chunk is decoded once, 10 chunks per frame (decoding all at
   login took 1.4 s for 200,000 casts on live); a broken chunk moves to `quarantine` (reported once
   in chat when the check ends) and the rest loads. Tracking works while the check runs.
   Statistics read the history through `History.Iterate`, which decodes one chunk at a time.
-- **Totals:** `outcomes[out]`, `days[day] = { casts, catches }`, `maps[map or 0] = { casts,
-  catches, items[itemID] = quantity }`, updated with every cast; `/fm rebuild` counts them again.
+- **Totals** (`version = 2`), updated with every cast; `map` is the `uiMapID` or 0:
+
+  | Table      | Shape |
+  |------------|-------|
+  | `outcomes` | `[outcome] = count` |
+  | `days`     | `[day] = { casts, catches }` |
+  | `maps`     | `[map] = { casts, catches, items = { [itemID] = quantity } }` |
+  | `zones`    | `[map].on / .off` (lure or not) `= { casts, outcomes, items = { [itemID] = quantity }, bites = { [tenths] = catches } }` |
+  | `hours`    | `[UTC hour 0-23] = { casts, outcomes }` (shifted to the realm or local hour when shown) |
+  | `skills`   | `[map][band] = { hooked, getaways }`, band = lower bound of 5 points of rank + modifier |
+  | `items`    | `[itemID] = { n (catches with it), qty, first, last (server time), best (map with the most) }` |
+  | `active`   | `[map] = seconds`: Σ min(gap to the next cast, 60 s), 60 s for the latest cast |
+  | `last`     | `{ t, map }` of the latest cast (for the active time) |
+
+  Hooked = catch + getaway. `/fm rebuild` counts everything again and says whether the result
+  equals the live totals. Totals of another version (after the schema 2 update or a restored old
+  snapshot) are counted again after login, in the same steps as the load check (one decode for
+  both); `/fm status` says "Counting your history" until it is done, and casts during the count
+  are counted once. 200,000 synthetic casts give about 86 KB of totals in the saved file (8 maps, 12 items);
+  on live the load check with the rebuild took 2.3 s in 80 steps (longest 48 ms).
 - `FishingMasteryCharDB` (per character): `schemaVersion` and `ui` (UI layout only).
 - **Migrations:** on `ADDON_LOADED`, `Db.MIGRATIONS[v]` upgrades schema `v` to `v + 1`. Before
   the first step, the tables a step names are copied into `migrationSnapshot`; a failing step
   restores them and keeps the old version. The snapshot is removed at the first later login
   that loads without Lua errors. A schema newer than the addon is left unmigrated, with a warning.
+  Schema 2 marks every character's totals stale (the snapshot holds `chars`, so the saved file is
+  about twice as large until the next clean login).
 - **Repair:** missing or invalid top-level tables are recreated; character entries that are not
   tables are dropped.
 
@@ -117,8 +137,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm export all`           | Full backup of every character, including character IDs and names (keep it private) |
 | `/fm import`               | Paste one export page and press Import; days you already have are skipped |
 | `/fm reminder on\|off`     | Reload reminder after every 2 hours of fishing in one session (on by default) |
-| `/fm rebuild`              | Counts the totals again from the whole history and prints casts, catches, and days |
-| `/fm status`               | Current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch) |
+| `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
+| `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch) |
 
 ### Attempt Detection
 
@@ -187,7 +207,8 @@ do not see it.
 - **Load measurement:** `PLAYER_LOGOUT` (also on `/reload`) saves `GetTimePreciseSec()` in
   `dev.logoutAt`; after the reload the addon prints the time from it to its `ADDON_LOADED`, the
   tracker start, and the stepped load check of `dev.stress` (total time, steps, longest step,
-  size), and stores them in `dev.loads`. The line test chunks are decoded and compared after each
+  size; the check also rebuilds the test totals), and stores them in `dev.loads`. A second line
+  gives the size of the rebuilt totals in the saved file and their key counts. The line test chunks are decoded and compared after each
   reload.
 - **Raw capture** (`dev.capture`, ring buffer of 2,000 entries): at a fishing cast start
   `{ k = "cast", t, mod, auras = { spell IDs } }`, at fishing loot `{ k = "loot", t, src =

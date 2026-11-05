@@ -6,7 +6,8 @@
 --   dev.logoutAt GetTimePreciseSec() at the last PLAYER_LOGOUT
 local _, ns = ...
 
-local type, ipairs, floor, tremove = type, ipairs, math.floor, table.remove
+local type, ipairs, pairs, floor, tremove, tostring =
+    type, ipairs, pairs, math.floor, table.remove, tostring
 
 local Codec, History, Totals, Synthetic = ns.Codec, ns.History, ns.Totals, ns.Synthetic
 
@@ -107,6 +108,54 @@ function Stress.CheckLines(lines)
         results[i] = result
     end
     return results
+end
+
+-- Characters the client's SavedVariables writer needs for value: one value per line, array
+-- items 1..#value bare (a hole inside #value is written as nil), other keys as `[key] = `, no
+-- indentation, CRLF (strings counted without escapes). Same rules as spec/helpers/synthetic.lua.
+function Stress.SavedSize(value)
+    if type(value) == "string" then
+        return #value + 2
+    elseif type(value) ~= "table" then
+        return #tostring(value)
+    end
+    local size, n = 4, #value -- "{", CRLF, "}"
+    for i = 1, n do
+        size = size + Stress.SavedSize(value[i]) + 3 -- ",", CRLF
+    end
+    for key, child in pairs(value) do
+        if not (type(key) == "number" and key >= 1 and key <= n and key % 1 == 0) then
+            -- "[", "] = ", ",", CRLF
+            size = size + Stress.SavedSize(key) + Stress.SavedSize(child) + 8
+        end
+    end
+    return size
+end
+
+-- Size of a totals table: { bytes, items, maps, hours, bands, bites (keys in all groups) }.
+function Stress.TotalsSize(totals)
+    local size = { bytes = Stress.SavedSize(totals), items = 0, maps = 0, hours = 0 }
+    size.bands, size.bites = 0, 0
+    for _ in pairs(totals.items or {}) do
+        size.items = size.items + 1
+    end
+    for _ in pairs(totals.hours or {}) do
+        size.hours = size.hours + 1
+    end
+    for _, bands in pairs(totals.skills or {}) do
+        for _ in pairs(bands) do
+            size.bands = size.bands + 1
+        end
+    end
+    for _, groups in pairs(totals.zones or {}) do
+        size.maps = size.maps + 1
+        for _, group in pairs(groups) do
+            for _ in pairs(group.bites or {}) do
+                size.bites = size.bites + 1
+            end
+        end
+    end
+    return size
 end
 
 -- Seconds from the saved logout time to ADDON_LOADED, or nil when there is no usable pair.
