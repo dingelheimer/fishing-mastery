@@ -40,6 +40,7 @@ local function parse(text)
         fail("no text")
     end
     text = gsub(gsub(gsub(text, "\r\n?", "\n"), "^%s+", ""), "%s+$", "")
+    text = Export.FromShown(text)
     local header, body = match(text, "^([^\n]*)\n(.*)$")
     if not header then
         fail("missing header")

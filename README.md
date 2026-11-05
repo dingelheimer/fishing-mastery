@@ -152,9 +152,11 @@ Only channels of the fishing spell (7620, or a spell with the same name) start a
 - **Export:** `/fm export all` shows the whole history as text pages (each at most 200,000
   characters, never splitting a day). Copy every page into a text file you keep outside the game.
   `/fm import` adds the days of a page that you do not have yet; pages can be imported in any
-  order and twice without harm, and an invalid page changes nothing. Format: `FMX|1|<scope>|<page>|
-  <pages>|<checksum>`, then `C|<character ID>|<name>|<second part>|<subzones>` and one
-  `D|<day chunk>` per chunk; a sharing export (`/fm export`) writes `-` for ID and names.
+  order and twice without harm, and an invalid page changes nothing. Format: `FMX!1!<scope>!<page>!
+  <pages>!<checksum>`, then `C!<character ID>!<name>!<second part>!<subzones>` and one
+  `D!<day chunk>` per chunk; a sharing export (`/fm export`) writes `-` for ID and names. The
+  text uses `!` where the saved data uses `|`, because the game's edit boxes treat `|` as an
+  escape character (and double it on paste); the import accepts both.
 - **New PC or reinstall:** copy the whole `WTF` folder (it also holds your game settings), or
   import your export pages.
 

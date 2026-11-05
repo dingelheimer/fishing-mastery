@@ -1,10 +1,11 @@
 -- Pure logic: export text of the fishing history (Import.lua reads it back). Every page stands
--- alone:
---   FMX|<version>|<scope>|<page>|<pages>|<checksum>
---   C|<guid>|<name>|<part>|<subzone>/<subzone>/...   one per character on the page
---   D|<day chunk>                                    that character's chunks (Codec format)
+-- alone. Pages are built with "|" separators and shown with "!" instead (Export.SEPARATOR),
+-- because a client edit box treats "|" as an escape character and doubles it on paste:
+--   FMX!<version>!<scope>!<page>!<pages>!<checksum>
+--   C!<guid>!<name>!<part>!<subzone>/<subzone>/...   one per character on the page
+--   D!<day chunk>                                    that character's chunks (Codec format)
 -- scope "char" (for sharing) writes "-" for GUID and names; scope "all" (backup) keeps them.
--- A page never splits a day. The checksum covers every line after the header.
+-- A page never splits a day. The checksum covers every line after the header, in "|" form.
 local _, ns = ...
 
 local ipairs, pairs, tonumber, concat, sort = ipairs, pairs, tonumber, table.concat, table.sort
@@ -18,6 +19,17 @@ ns.Export = Export
 
 Export.VERSION = 1
 Export.PAGE_SIZE = 200000 -- characters per page (one edit box)
+Export.SEPARATOR = "!" -- stands for "|" in the shown text
+
+-- Shown text from the "|" form; "!" never occurs there (subzone texts escape it).
+function Export.ToShown(text)
+    return (gsub(text, "|", Export.SEPARATOR))
+end
+
+-- "|" form from pasted text: pipes doubled by the edit box are undone, "!" becomes "|".
+function Export.FromShown(text)
+    return (gsub(gsub(text, "||", "|"), Export.SEPARATOR, "|"))
+end
 
 -- 32-bit polynomial hash as 8 hex digits (no bit library needed).
 function Export.Checksum(text)
@@ -29,7 +41,7 @@ function Export.Checksum(text)
 end
 
 local function escape(text)
-    return (gsub(text, "[%%|/\r\n]", function(c)
+    return (gsub(text, "[%%|!/\r\n]", function(c)
         return format("%%%02X", byte(c))
     end))
 end
@@ -144,7 +156,7 @@ function Export.Build(db, scope, key, pageSize)
         local text = concat(body, "\n")
         local header =
             format("FMX|%d|%s|%d|%d|%s", Export.VERSION, scope, i, #bodies, Export.Checksum(text))
-        pages[i] = header .. "\n" .. text
+        pages[i] = Export.ToShown(header .. "\n" .. text)
     end
     return pages
 end

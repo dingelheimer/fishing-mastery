@@ -185,10 +185,11 @@ function Frame:HighlightText()
     editBox(self, "HighlightText")
     self.highlighted = true
 end
--- Test helper: the player types into the edit box.
+-- Test helper: the player types or pastes into the edit box. Like the client, the edit box
+-- stores a typed "|" as "||" (an escaped pipe).
 function Frame:Type(text)
     editBox(self, "Type")
-    self.text = text
+    self.text = (text:gsub("|", "||"))
     if self.scripts.OnTextChanged then
         self.scripts.OnTextChanged(self, true)
     end

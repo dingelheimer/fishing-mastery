@@ -71,13 +71,14 @@ describe("FishingMastery export and import", function()
 
     it("leaves GUID and names out of a character export and keeps them in a full backup", function()
         local text = ns.Export.Build(db, "char", GUID)[1]
-        assert.truthy(text:find("^FMX|1|char|1|1|%x+\nC|%-|%-|%-|"))
+        assert.truthy(text:find("^FMX!1!char!1!1!%x+\nC!%-!%-!%-!"))
+        assert.is_nil(text:find("|", 1, true)) -- the client edit box treats "|" as an escape
         assert.is_nil(text:find("Player-", 1, true))
         assert.is_nil(text:find("Dingel", 1, true))
         db.chars[OTHER] = character(6, 100)
         local full = ns.Export.Build(db, "all")[1]
-        assert.truthy(full:find("C|" .. GUID .. "|Dingel|Brightwater|", 1, true))
-        assert.truthy(full:find("C|" .. OTHER .. "|", 1, true))
+        assert.truthy(full:find("C!" .. GUID .. "!Dingel!Brightwater!", 1, true))
+        assert.truthy(full:find("C!" .. OTHER .. "!", 1, true))
     end)
 
     it("restores every character from a full backup, creating missing ones", function()
@@ -138,7 +139,7 @@ describe("FishingMastery export and import", function()
         assert.is_true(#pages > 2)
         db.chars[GUID] = prepare({})
         for i = #pages, 1, -1 do -- any order works
-            assert.truthy(pages[i]:find("^FMX|1|char|" .. i .. "|" .. #pages .. "|"))
+            assert.truthy(pages[i]:find("^FMX!1!char!" .. i .. "!" .. #pages .. "!"))
             assert(import(pages[i]))
         end
         assert.are.same(expected, casts(db.chars[GUID]))
@@ -151,8 +152,21 @@ describe("FishingMastery export and import", function()
         assert.are.equal(601, #casts(db.chars[GUID]))
     end)
 
+    it("survives the edit box: doubled pipes on paste and '!' in a subzone name", function()
+        db.chars[GUID].subzones[2] = "Sen'jin! Village"
+        local expected = casts(db.chars[GUID])
+        local shown = ns.Export.Build(db, "char", GUID)[1]
+        assert.is_nil(shown:find("|", 1, true))
+        db.chars[GUID] = prepare({})
+        -- An edit box doubles every "|" it is given; the import undoes that too.
+        local pasted = ns.Export.FromShown(shown):gsub("|", "||")
+        assert(import(pasted))
+        assert.are.same(expected, casts(db.chars[GUID]))
+    end)
+
     it("rejects damaged or foreign text and changes nothing", function()
-        local text = ns.Export.Build(db, "char", GUID)[1]
+        -- Cases are written in the internal "|" form, which the import also accepts.
+        local text = ns.Export.FromShown(ns.Export.Build(db, "char", GUID)[1])
         local header, body = text:match("^([^\n]*)\n(.*)$")
         local function signed(newBody)
             return header:gsub("%x+$", ns.Export.Checksum(newBody)) .. "\n" .. newBody
@@ -177,7 +191,7 @@ describe("FishingMastery export and import", function()
             assert.is_nil(summary)
             assert.truthy(err:find(case[2], 1, true), tostring(err))
         end
-        local full = ns.Export.Build(db, "all")[1]
+        local full = ns.Export.FromShown(ns.Export.Build(db, "all")[1])
         local fullHeader, fullBody = full:match("^([^\n]*)\n(.*)$")
         local noGuid = (fullBody:gsub("^C|[^|]+|", "C|-|"))
         local _, err = import(fullHeader:gsub("%x+$", ns.Export.Checksum(noGuid)) .. "\n" .. noGuid)
