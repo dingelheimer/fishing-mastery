@@ -93,6 +93,6 @@ describe("FishingMastery totals rebuild boot", function()
         assert.is_false(w.ns.castLog:Counting())
         char = _G.FishingMasteryDB.chars[GUID]
         assert.are.equal(1, char.totals.outcomes.catch)
-        assert.are.equal(3, char.totals.version)
+        assert.are.equal(w.ns.Totals.VERSION, char.totals.version)
     end)
 end)

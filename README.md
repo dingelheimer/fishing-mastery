@@ -39,9 +39,13 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Session.lua`   | Sessions: start, 15-minute idle end, logout, `/reload` resume, skill before and after, active time, last catch (pure) |
 | `Codec.lua`     | Day chunk format: packs casts into `<day>\|<cast>;<cast>;…` strings and parses them back (pure) |
 | `History.lua`   | Packing the open day, load check with quarantine, on-demand history iterator (pure) |
-| `Totals.lua`    | Aggregates per outcome, day, map, map × lure, UTC hour, skill band, item, bite time, and active time; rebuild from the history (pure) |
+| `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
 | `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
 | `HudModel.lua`  | HUD numbers and texts from the session, rank, lure, and item; count/grey rules and tooltip ranges (pure) |
+| `StatsModel.lua` | Stats window data: one character's totals or all characters merged (subzones by text), favorite zone, Overview with per-character numbers and session records (pure) |
+| `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
+| `ZoneTable.lua` | Zones table: zones with their subzones, casts, catches per hour, species, top items with shares (pure) |
+| `OverviewTable.lua` | Overview lines (account totals, rates with ranges, favorite zone, records) and the character rows (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
 | `Import.lua`    | Import: full validation, then merge of missing days (pure) |
@@ -59,6 +63,9 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
 | `Hud.lua`       | HUD frame: shown from the first cast to the session end, lure tick, tooltip, `/fm hud` |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
+| `StatsList.lua` | Table widget of the stats window: sort buttons or header labels over a ScrollBox list, grey cells, row tooltips |
+| `StatsWindow.lua` | Stats window `/fm stats`: tab, scope, sort, and filter state; draws only the shown tab from the aggregates; redraws when item names load and while the history is counted |
+| `StatsFrame.lua` | Stats window layout: movable frame, status line, scope and quality buttons, one panel per tab, 8 tab buttons |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; prints a test line until the stats window exists |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
@@ -104,7 +111,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
   login took 1.4 s for 200,000 casts on live); a broken chunk moves to `quarantine` (reported once
   in chat when the check ends) and the rest loads. Tracking works while the check runs.
   Statistics read the history through `History.Iterate`, which decodes one chunk at a time.
-- **Totals** (`version = 3`), updated with every cast; `map` is the `uiMapID` or 0:
+- **Totals** (`version = 4`), updated with every cast; `map` is the `uiMapID` or 0:
 
   | Table      | Shape |
   |------------|-------|
@@ -114,18 +121,21 @@ copied and adapted, and the probe folder is never loaded or referenced.
   | `zones`    | `[map].on / .off` (lure or not) `= { casts, outcomes, items = { [itemID] = quantity }, bites = { [tenths] = catches }, clicks = { [tenths] = early clicks } }` |
   | `hours`    | `[UTC hour 0-23] = { casts, outcomes }` (shifted to the realm or local hour when shown) |
   | `skills`   | `[map][band] = { hooked, getaways }`, band = lower bound of 5 points of rank + modifier |
-  | `items`    | `[itemID] = { n (catches with it), qty, first, last (server time), best (map with the most) }` |
+  | `items`    | `[itemID] = { n (catches with it), qty, first, last (server time), best (map with the most), hours = { [UTC hour] = catches }, fair (fair casts counted at its last catch) }` |
   | `active`   | `[map] = seconds`: Σ min(gap to the next cast, 60 s), 60 s for the latest cast |
-  | `last`     | `{ t, map }` of the latest cast (for the active time) |
+  | `subs`     | `[map][sub] = { casts, outcomes, items = { [itemID] = catches with it }, active }`, sub = subzone index or 0 (none); the same active time split per subzone |
+  | `last`     | `{ t, map, sub }` of the latest cast (for the active time) |
 
   Hooked = catch + getaway. `/fm rebuild` counts everything again and says whether the result
   equals the live totals. Totals of another version (after the schema 2 update, a new totals
-  version such as 3 for the early-click times, or a restored old snapshot) are counted again after login, in the same steps as the load check (one decode for
+  version such as 3 for the early-click times or 4 for subzones and item hours, or a restored old snapshot) are counted again after login, in the same steps as the load check (one decode for
   both); `/fm status` says "Counting your history" until it is done, and casts during the count
-  are counted once. 200,000 synthetic casts give about 86 KB of totals in the saved file (8 maps, 12 items);
+  are counted once. 200,000 synthetic casts give about 86 KB of totals in the saved file (8 maps, 12 items;
+  version 4 adds about 20 % for subzones and item hours: the spec estimate goes from 76,076 to 91,269
+  characters);
   on live the load check with the rebuild took 2.3 s in 80 steps (longest 48 ms).
 - `FishingMasteryCharDB` (per character): `schemaVersion` and `ui` (UI layout only: window and
-  HUD positions).
+  HUD positions; `ui.stats` is the stats window).
 - `FishingMasteryDB.settings.hud` (account): `enabled` (default on), `locked`, `scale` (0.5-2,
   default 1), `style` (`full` or `text`). `FishingMasteryDB.settings.summary.style`: `window`
   (default) or `chat`.
@@ -156,8 +166,30 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm hud style full\|text` | Five lines, or one line of text                              |
 | `/fm summary`              | Summary of the open session, or of the last one (also shown when a session ends after 15 minutes without a cast) |
 | `/fm summary window\|chat` | Where summaries appear: a small window (default) or your chat frame |
+| `/fm stats`                | Statistics window, see below |
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
 | `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch, click time for an early click or getaway) |
+
+### Stats Window
+
+`/fm stats` opens a movable window (position saved per character) with 8 tabs. It reads the
+totals and the session records only, never the history, and draws only the shown tab. Ranges are
+in the row tooltips; values from small samples are grey (counts only below 10).
+
+- **Overview:** all characters' casts, catches, fishing days, success rate and catches per hour
+  with ranges, active time, species, favorite zone (most catches); records (most catches in a
+  session, most catches per hour in a session with at least 30 fair casts, longest session);
+  one row per character of this account.
+- **Fish:** every item with catches, share of catches, best zone, best hour (realm time), first
+  and last catch; for uncommon and better items the dry streak (fair casts since the last one)
+  and the expected casts per item. Click a header to sort, again to flip the order; the quality
+  button filters.
+- **Zones:** every zone (most casts first) and its subzones: casts, catches per hour, species,
+  the top 3 items with their shares; all items with ranges in the tooltip.
+- Failures, Bite times, Sessions, Skill, and Compare: "coming soon".
+- The scope button switches Fish and Zones between this character and all characters (dry
+  streaks only for one character). The status line counts the characters whose totals are from
+  an older version until they log in once.
 
 ### Attempt Detection
 

@@ -16,11 +16,11 @@ Stats.DEFAULTS = {
     greyBelow = 30, -- n below this: percentage greyed ("few casts")
     narrowWidth = 0.10, -- a range narrower than this is never greyed
     blendWeight = 20, -- m pseudo-catches of the reference share (module 3)
-    activeCap = ns.Totals and ns.Totals.ACTIVE_CAP or 60, -- seconds, T
+    activeCap = ns.Totals.ACTIVE_CAP, -- seconds, T
 }
 
 -- Outcomes that are not fair casts (the player's choice or no channel at all).
-Stats.UNFAIR = { cancel = true, unknown = true, invalid_target = true }
+Stats.UNFAIR = ns.Totals.UNFAIR
 
 -- DEFAULTS with the keys of overrides (e.g. db.settings.thresholds) that are numbers.
 function Stats.Thresholds(overrides)

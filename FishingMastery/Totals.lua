@@ -10,10 +10,14 @@
 --   hours    = { [UTC hour 0-23] = { casts, outcomes = { [outcome] = n } } },
 --   skills   = { [map] = { [band] = { hooked, getaways } } }, band = lower bound of a
 --              SKILL_BAND-point band of effective skill (rank + modifier),
---   items    = { [itemID] = { n (catches with it), qty, first, last (server time), best (map) } },
+--   items    = { [itemID] = { n (catches with it), qty, first, last (server time), best (map),
+--                hours = { [UTC hour] = catches with it }, fair (fair casts counted at its last
+--                catch, for the dry streak) } },
 --   active   = { [map] = seconds }: Σ min(gap to the next cast, ACTIVE_CAP), and ACTIVE_CAP
 --              for the latest cast,
---   last     = { t, map } of the latest cast (for the active time),
+--   subs     = { [map] = { [sub] = { casts, outcomes, items = { [itemID] = catches with it },
+--                active } } }, sub = index into char.subzones or 0 (no subzone text),
+--   last     = { t, map, sub } of the latest cast (for the active time),
 -- }
 -- map is the uiMapID or 0. Every key is an ID or a number; no names.
 local _, ns = ...
@@ -25,10 +29,13 @@ local Codec, History = ns.Codec, ns.History
 local Totals = {}
 ns.Totals = Totals
 
-Totals.VERSION = 3 -- 3: early-click times (Story 3.4)
+Totals.VERSION = 4 -- 3: early-click times (Story 3.4); 4: subzones, item hours (Story 3.7)
 Totals.ACTIVE_CAP = 60 -- seconds; T in Statistics Methods
 Totals.SKILL_BAND = 5
-Totals.TABLES = { "outcomes", "days", "maps", "zones", "hours", "skills", "items", "active" }
+Totals.TABLES =
+    { "outcomes", "days", "maps", "zones", "hours", "skills", "items", "active", "subs" }
+-- Outcomes that are not fair casts (the player's choice or no channel at all); Stats uses them.
+Totals.UNFAIR = { cancel = true, unknown = true, invalid_target = true }
 
 function Totals.New()
     local totals = { version = Totals.VERSION }
@@ -81,25 +88,43 @@ end
 local function newBand()
     return { hooked = 0, getaways = 0 }
 end
+local function newSub()
+    return { casts = 0, outcomes = {}, items = {}, active = 0 }
+end
 
 local function bump(list, key, n)
     list[key] = (list[key] or 0) + (n or 1)
 end
 
-local function addItems(totals, cast, map, group)
+-- Fair casts counted so far (every outcome except the UNFAIR ones).
+local function fairCasts(outcomes)
+    local n = 0
+    for name, count in pairs(outcomes) do
+        if not Totals.UNFAIR[name] then
+            n = n + count
+        end
+    end
+    return n
+end
+
+local function addItems(totals, cast, map, group, sub, hour)
     local mapItems = get(totals.maps[map], "items", newTable)
+    local fair = fairCasts(totals.outcomes)
     for _, item in ipairs(cast.loot or {}) do
         local id = item.id
         if type(id) == "number" then
             local qty = item.qty or 1
             bump(mapItems, id, qty)
             bump(group.items, id, qty)
+            bump(sub.items, id)
             local entry = totals.items[id]
             if not entry then
                 entry = { n = 0, qty = 0, first = cast.t, best = map }
                 totals.items[id] = entry
             end
             entry.n, entry.qty, entry.last = entry.n + 1, entry.qty + qty, cast.t
+            entry.fair = fair
+            bump(get(entry, "hours", newTable), hour)
             local best = totals.maps[entry.best]
             if (best.items[id] or 0) < mapItems[id] then
                 entry.best = map
@@ -108,8 +133,13 @@ local function addItems(totals, cast, map, group)
     end
 end
 
+local function subGroup(totals, map, sub)
+    return get(get(totals.subs, map, newTable), sub, newSub)
+end
+
 -- The previous cast's active time shrinks from ACTIVE_CAP to the gap when the gap is shorter.
-local function addActive(totals, t, map)
+-- The same time is kept per subzone.
+local function addActive(totals, t, map, sub)
     if type(t) ~= "number" then
         return
     end
@@ -118,10 +148,16 @@ local function addActive(totals, t, map)
         local gap = t - last.t
         if gap >= 0 and gap < cap then
             bump(totals.active, last.map, gap - cap)
+            if type(last.map) == "number" and type(last.sub) == "number" then
+                local previous = subGroup(totals, last.map, last.sub)
+                previous.active = previous.active + gap - cap
+            end
         end
     end
     bump(totals.active, map, cap)
-    totals.last = { t = t, map = map }
+    local group = subGroup(totals, map, sub)
+    group.active = group.active + cap
+    totals.last = { t = t, map = map, sub = sub }
 end
 
 local function addSkill(totals, cast, map, out)
@@ -153,12 +189,17 @@ function Totals.Add(totals, cast)
     local group = get(get(totals.zones, map, newTable), lure, newGroup)
     group.casts = group.casts + 1
     bump(group.outcomes, out)
-    local hour = get(totals.hours, floor((t % 86400) / 3600), newOutcomes)
+    local hourKey = floor((t % 86400) / 3600)
+    local hour = get(totals.hours, hourKey, newOutcomes)
     hour.casts = hour.casts + 1
     bump(hour.outcomes, out)
+    local subKey = type(cast.sub) == "number" and cast.sub or 0
+    local sub = subGroup(totals, map, subKey)
+    sub.casts = sub.casts + 1
+    bump(sub.outcomes, out)
 
     if catch == 1 then
-        addItems(totals, cast, map, group)
+        addItems(totals, cast, map, group, sub, hourKey)
         if type(cast.bite) == "number" then
             bump(group.bites, cast.bite)
         end
@@ -167,7 +208,7 @@ function Totals.Add(totals, cast)
         bump(group.clicks, cast.click)
     end
     addSkill(totals, cast, map, out)
-    addActive(totals, cast.t, map)
+    addActive(totals, cast.t, map, subKey)
 end
 
 -- True when a and b hold the same values (deep comparison of the totals tables).

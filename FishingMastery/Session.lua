@@ -7,7 +7,7 @@
 -- quantity caught per item ID (every loot slot).
 local _, ns = ...
 
-local type, ipairs = type, ipairs
+local type, ipairs, HUGE = type, ipairs, math.huge
 
 local Session = {}
 ns.Session = Session
@@ -127,6 +127,13 @@ function Session.Active(session, now, cap)
         since = 0
     end
     return (session.active or 0) + min(since, cap or Session.ACTIVE_CAP)
+end
+
+-- Active seconds of a session as the summary and records count them: an idle end adds the full
+-- cap for the last cast; a logout counts up to its end, an open session up to now.
+function Session.Counted(session, now, cap)
+    local endAt = session.endReason == "idle" and HUGE or session.ended or now
+    return Session.Active(session, endAt, cap)
 end
 
 -- Skill-ups in a session.

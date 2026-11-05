@@ -89,9 +89,7 @@ end
 function SummaryModel.Build(input)
     local session, t = input.session, input.thresholds or Stats.DEFAULTS
     local totals = input.totals or {}
-    -- An idle end adds the full cap for the last cast; a logout or an open session counts up to it.
-    local endAt = session.endReason == "idle" and HUGE or session.ended or input.now
-    local active = Session.Active(session, endAt, t.activeCap)
+    local active = Session.Counted(session, input.now, t.activeCap)
     local entries = itemEntries(session, totals, input.items or {})
     local model = {
         open = session.ended == nil,
@@ -167,7 +165,9 @@ local function percent(p)
     return floor(p * 100 + 0.5)
 end
 
-local function rateLines(model)
+-- The success rate and catches per hour lines (with ranges, or counts for small samples) of a
+-- model with success and perHour; the stats window uses them too.
+function SummaryModel.RateLines(model)
     local success, perHour = model.success, model.perHour
     local lines = {}
     if success.display == "count" or not success.low then
@@ -201,7 +201,7 @@ function SummaryModel.Lines(model, zoneName)
         format(L.SUMMARY_TIME, Hud.Duration(model.active), Hud.Duration(model.total)),
         format(L.SUMMARY_COUNTS, model.casts, model.catches),
     }
-    for _, line in ipairs(rateLines(model)) do
+    for _, line in ipairs(SummaryModel.RateLines(model)) do
         lines[#lines + 1] = line
     end
     local failures = {}

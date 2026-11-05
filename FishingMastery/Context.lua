@@ -72,6 +72,16 @@ function Context.LureTime(env)
     return number(info[Context.ENCHANT_ID]), ms and ms / 1000 or nil
 end
 
+-- Localized name of a uiMapID from C_Map.GetMapInfo, or nil.
+function Context.MapName(env, map)
+    if type(map) ~= "number" then
+        return nil
+    end
+    local info = Context.Call(env, "C_Map.GetMapInfo", map)
+    local name = type(info) == "table" and plain(info.name) or nil
+    return type(name) == "string" and name or nil
+end
+
 -- Context for one cast; every field is a number or plain string, or nil when unavailable.
 function Context.Read(env)
     local rank, modifier = Context.Fishing(env)

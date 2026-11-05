@@ -6,9 +6,6 @@ local _, ns = ...
 
 local setmetatable, type, ipairs, pairs, concat, lower, match =
     setmetatable, type, ipairs, pairs, table.concat, string.lower, string.match
-local isSecret = issecretvalue or function()
-    return false
-end
 local L, Frames, SummaryModel, Context = ns.L, ns.Frames, ns.SummaryModel, ns.Context
 
 local Summary = {}
@@ -50,15 +47,6 @@ function Summary.Start(deps)
     return self
 end
 
-local function zoneName(env, map)
-    if type(map) ~= "number" then
-        return nil
-    end
-    local info = Context.Call(env, "C_Map.GetMapInfo", map)
-    local name = type(info) == "table" and info.name or nil
-    return not isSecret(name) and type(name) == "string" and name or nil
-end
-
 -- Summary lines of a session; onLoad runs when an uncached item's data arrives.
 function Summary:Lines(session, onLoad)
     local castLog = self.castLog
@@ -74,7 +62,7 @@ function Summary:Lines(session, onLoad)
         thresholds = self.thresholds,
     })
     self.model = model
-    return SummaryModel.Lines(model, model.compare and zoneName(self.env, model.compare.map))
+    return SummaryModel.Lines(model, model.compare and Context.MapName(self.env, model.compare.map))
 end
 
 local function build(self)

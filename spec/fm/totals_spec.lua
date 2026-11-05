@@ -13,8 +13,8 @@ describe("FishingMastery Totals", function()
         Totals = ns.Totals
     end)
 
-    -- 3 casts in map 1411 (one with a lure) at UTC hour 5, then 3 catches in 1412 and an invalid
-    -- target without a map an hour later.
+    -- 3 casts in map 1411 (one with a lure; subzones 1, 1, 2) at UTC hour 5, then 3 catches in
+    -- 1412 (no subzone) and an invalid target without a map an hour later.
     local function session()
         local t1 = DAY + 5 * 3600
         local t4 = t1 + 50 + 3600
@@ -22,6 +22,7 @@ describe("FishingMastery Totals", function()
             {
                 t = t1,
                 map = 1411,
+                sub = 1,
                 lure = 263,
                 rank = 50,
                 mod = 25,
@@ -29,10 +30,11 @@ describe("FishingMastery Totals", function()
                 bite = 120,
                 loot = { { id = 6303, qty = 1 }, { id = 6358, qty = 2 } },
             },
-            { t = t1 + 20, map = 1411, rank = 50, mod = 0, out = "getaway", click = 95 },
+            { t = t1 + 20, map = 1411, sub = 1, rank = 50, mod = 0, out = "getaway", click = 95 },
             {
                 t = t1 + 50,
                 map = 1411,
+                sub = 2,
                 rank = 52,
                 out = "catch",
                 bite = 80,
@@ -69,7 +71,7 @@ describe("FishingMastery Totals", function()
                 assert.are.equal(1411, totals.items[6303].best)
             end
         end
-        assert.are.equal(3, totals.version)
+        assert.are.equal(4, totals.version)
         assert.are.same({
             [1411] = {
                 on = {
@@ -118,12 +120,47 @@ describe("FishingMastery Totals", function()
             [1412] = { [50] = { hooked = 3, getaways = 0 } },
         }, totals.skills)
         assert.are.same({
-            [6303] = { n = 5, qty = 5, first = casts[1].t, last = casts[6].t, best = 1412 },
-            [6358] = { n = 1, qty = 2, first = casts[1].t, last = casts[1].t, best = 1411 },
+            -- fair: fair casts counted at the item's last catch (dry streaks).
+            [6303] = {
+                n = 5,
+                qty = 5,
+                first = casts[1].t,
+                last = casts[6].t,
+                best = 1412,
+                hours = { [5] = 2, [6] = 3 },
+                fair = 6,
+            },
+            [6358] = {
+                n = 1,
+                qty = 2,
+                first = casts[1].t,
+                last = casts[1].t,
+                best = 1411,
+                hours = { [5] = 1 },
+                fair = 1,
+            },
         }, totals.items)
         -- 1411: gaps 20 + 30, then a break capped at 60; 1412: 10 + 40 + 5; the last cast 60.
         assert.are.same({ [1411] = 110, [1412] = 55, [0] = 60 }, totals.active)
-        assert.are.same({ t = casts[7].t, map = 0 }, totals.last)
+        -- Subzones split the same casts and active time; items count catches with the item.
+        assert.are.same({
+            [1411] = {
+                [1] = {
+                    casts = 2,
+                    outcomes = { catch = 1, getaway = 1 },
+                    items = { [6303] = 1, [6358] = 1 },
+                    active = 50,
+                },
+                [2] = { casts = 1, outcomes = { catch = 1 }, items = { [6303] = 1 }, active = 60 },
+            },
+            [1412] = {
+                [0] = { casts = 3, outcomes = { catch = 3 }, items = { [6303] = 3 }, active = 55 },
+            },
+            [0] = {
+                [0] = { casts = 1, outcomes = { invalid_target = 1 }, items = {}, active = 60 },
+            },
+        }, totals.subs)
+        assert.are.same({ t = casts[7].t, map = 0, sub = 0 }, totals.last)
         assert.are.same(
             { casts = 3, catches = 2, items = { [6303] = 2, [6358] = 2 } },
             totals.maps[1411]

@@ -187,10 +187,12 @@ describe("FishingMastery Stats", function()
     it("needs no frame or WoW API: it runs with the Lua standard library only", function()
         local env = { math = math, table = table, string = string, type = type, pairs = pairs }
         env.ipairs, env.tostring, env.tonumber = ipairs, tostring, tonumber
-        local chunk = assert(loadfile("FishingMastery/Stats.lua"))
-        setfenv(chunk, env)
         local ns = {}
-        chunk("FishingMastery", ns)
+        for _, file in ipairs({ "Totals.lua", "Stats.lua" }) do -- Stats takes UNFAIR from Totals
+            local chunk = assert(loadfile("FishingMastery/" .. file))
+            setfenv(chunk, env)
+            chunk("FishingMastery", ns)
+        end
         local pure = ns.Stats
         local outcomes = { catch = 30, getaway = 3, cancel = 1 }
         assert.are.equal("full", pure.SuccessRate(outcomes).display)

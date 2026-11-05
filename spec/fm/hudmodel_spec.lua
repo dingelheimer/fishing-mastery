@@ -6,7 +6,7 @@ describe("FishingMastery HUD model", function()
 
     before_each(function()
         ns = addon.load(
-            { "Locale.lua", "Session.lua", "Stats.lua", "HudModel.lua" },
+            { "Locale.lua", "Session.lua", "Totals.lua", "Stats.lua", "HudModel.lua" },
             nil,
             "FishingMastery"
         )

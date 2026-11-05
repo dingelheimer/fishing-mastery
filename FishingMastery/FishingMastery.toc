@@ -28,6 +28,10 @@ Totals.lua
 Stats.lua
 HudModel.lua
 SummaryModel.lua
+StatsModel.lua
+StatsTables.lua
+ZoneTable.lua
+OverviewTable.lua
 Export.lua
 Import.lua
 Backup.lua
@@ -44,6 +48,9 @@ Commands.lua
 DataCommands.lua
 Hud.lua
 Summary.lua
+StatsList.lua
+StatsWindow.lua
+StatsFrame.lua
 Dev.lua
 Compartment.lua
 Core.lua
