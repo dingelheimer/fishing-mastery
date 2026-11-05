@@ -85,7 +85,8 @@ end
 -- deps: { env, bus, char (nil when the character is unknown), serverTime(), report(entries),
 -- settings (db.settings), remind(), after(seconds, fn) }. report gets the quarantine entries
 -- the load check found that were not reported before; remind runs when a session reaches
--- another 2 hours. With after, the load check runs in steps after login.
+-- another 2 hours. With after, the load check runs in steps after login and a timer ends an idle
+-- session on time (listeners from OnSessionEnd).
 function CastLog.Start(deps)
     local env, char = deps.env, deps.char
     local self = setmetatable({
@@ -95,6 +96,10 @@ function CastLog.Start(deps)
         items = ns.Items.New(env),
         settings = deps.settings or {},
         remind = deps.remind,
+        after = deps.after,
+        endListeners = {},
+        idleFor = nil, -- the session table the idle timer watches
+        idleLast = nil, -- its last cast when the timer was set
     }, CastLog)
     if self.char then
         local rank = Context.Fishing(env)
@@ -126,6 +131,7 @@ function CastLog.Start(deps)
                 self.serverTime(),
                 not isSecret(isReloadingUi) and isReloadingUi
             )
+            self:WatchIdle()
         end
     end)
     bus:On("PLAYER_LOGOUT", function()
@@ -163,7 +169,41 @@ function CastLog:OnAttempt(record)
     if self.remind and ns.Backup.ShouldRemind(self.settings, session) then
         self.remind()
     end
+    self:WatchIdle()
     return cast
+end
+
+-- fn(session) runs when an open session ends after IDLE seconds without a cast (not at logout).
+function CastLog:OnSessionEnd(fn)
+    self.endListeners[#self.endListeners + 1] = fn
+end
+
+-- One timer per new last cast: IDLE seconds after it, the session ends and the listeners run.
+-- A cast in between moves the watch to the new last cast.
+function CastLog:WatchIdle()
+    local session = self.char and Session.Current(self.char)
+    if not self.after or not session then
+        return
+    end
+    if self.idleFor == session and self.idleLast == session.last then
+        return
+    end
+    self.idleFor, self.idleLast = session, session.last
+    local wait = Session.IDLE - (self.serverTime() - session.last) + 1
+    self.after(wait > 0 and wait or 1, function()
+        if self.idleFor ~= session or self.idleLast ~= session.last then
+            return -- a newer timer watches this session
+        end
+        self.idleFor, self.idleLast = nil, nil
+        Session.Expire(self.char, self.serverTime())
+        if session.ended and session.endReason == "idle" then
+            for _, fn in ipairs(self.endListeners) do
+                fn(session)
+            end
+        else
+            self:WatchIdle()
+        end
+    end)
 end
 
 function CastLog:OnSkillLines()

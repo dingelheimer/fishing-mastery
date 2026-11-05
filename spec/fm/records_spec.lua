@@ -192,6 +192,54 @@ describe("FishingMastery cast records", function()
             end
             assert.are.equal(ns.Items.MAX_PENDING, items.count)
         end)
+
+        it(
+            "gives name, icon, quality, and sell price and calls back once for uncached items",
+            function()
+                env.C_Item.GetItemInfo = function(id)
+                    if cached[id] then
+                        return "Oily Blackmouth",
+                            "link",
+                            cached[id],
+                            15,
+                            0,
+                            "Trade Goods",
+                            "Meat",
+                            20,
+                            "",
+                            134300,
+                            4
+                    end
+                end
+                env.C_Item.GetItemIconByID = function()
+                    return 134300
+                end
+                local items = ns.Items.New(env)
+                local calls = {}
+                local info = items:Info(6358, function(id, success)
+                    calls[#calls + 1] = { id, success }
+                end)
+                assert.are.same({ icon = 134300 }, info)
+                items:Info(6358, function()
+                    calls[#calls + 1] = "second"
+                end)
+                items:Fill({ id = 6358 }) -- quality fill for the same item: still one request
+                assert.are.same({ 6358 }, requested)
+                cached[6358] = 1
+                items:OnLoaded(6358, true)
+                assert.are.same({ { 6358, true }, "second" }, calls)
+                assert.are.same(
+                    { name = "Oily Blackmouth", icon = 134300, quality = 1, sellPrice = 4 },
+                    items:Info(6358, function()
+                        calls[#calls + 1] = "cached"
+                    end)
+                )
+                items:OnLoaded(6358, true)
+                assert.are.equal(2, #calls) -- callbacks run once; a cached item needs none
+                assert.are.equal(0, items.waiting)
+                assert.are.same({}, items:Info(nil))
+            end
+        )
     end)
 
     describe("Records", function()

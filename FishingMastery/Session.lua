@@ -3,7 +3,8 @@
 -- server times (seconds). skillStart is the fishing rank at the first cast, skill the latest
 -- known rank; skill - skillStart is the number of skill-ups. active is the sum of the gaps
 -- between casts, each capped at the active cap (Statistics Methods); Session.Active adds the
--- time since the last cast. lastItem and lastBite describe the latest catch.
+-- time since the last cast. lastItem and lastBite describe the latest catch; items counts the
+-- quantity caught per item ID (every loot slot).
 local _, ns = ...
 
 local type, ipairs = type, ipairs
@@ -75,6 +76,7 @@ function Session.Add(char, cast, cap)
             zones = {},
             skillStart = cast.rank,
             active = 0,
+            items = {},
         }
         char.sessions[#char.sessions + 1] = current
     elseif t > current.last then
@@ -84,9 +86,16 @@ function Session.Add(char, cast, cap)
     current.casts = current.casts + 1
     if cast.out == "catch" then
         current.catches = current.catches + 1
-        local first = type(cast.loot) == "table" and cast.loot[1]
-        current.lastItem = first and first.id or nil
+        local loot = type(cast.loot) == "table" and cast.loot or {}
+        current.lastItem = loot[1] and loot[1].id or nil
         current.lastBite = cast.bite
+        -- Sessions from before Story 3.6 count items from the next catch.
+        current.items = current.items or {}
+        for _, item in ipairs(loot) do
+            if type(item.id) == "number" then
+                current.items[item.id] = (current.items[item.id] or 0) + (item.qty or 1)
+            end
+        end
     end
     current.counts[cast.out] = (current.counts[cast.out] or 0) + 1
     if t > current.last then

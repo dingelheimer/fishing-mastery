@@ -33,13 +33,14 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Attempt.lua`   | Attempt classifier: cast, message, and loot events to one outcome per attempt (pure) |
 | `Context.lua`   | Cast context: server time, map, subzone text, fishing rank and modifier, lure enchant |
 | `Loot.lua`      | Loot slots (item ID, quantity, quality) and loot source type and object ID |
-| `Items.lua`     | Item quality the loot window did not give, filled in after `ITEM_DATA_LOAD_RESULT` |
+| `Items.lua`     | Item cache: quality the loot window did not give, and name, icon, quality, sell price for the UI; uncached items requested once and filled in after `ITEM_DATA_LOAD_RESULT` |
 | `Tracker.lua`   | Game events to classifier input (fishing spell, message names, channel length, fishing loot), end-of-attempt timer, outcome counts |
 | `Records.lua`   | Saved cast record from an attempt; per-character subzone table (pure) |
 | `Session.lua`   | Sessions: start, 15-minute idle end, logout, `/reload` resume, skill before and after, active time, last catch (pure) |
 | `Codec.lua`     | Day chunk format: packs casts into `<day>\|<cast>;<cast>;…` strings and parses them back (pure) |
 | `History.lua`   | Packing the open day, load check with quarantine, on-demand history iterator (pure) |
 | `Totals.lua`    | Aggregates per outcome, day, map, map × lure, UTC hour, skill band, item, bite time, and active time; rebuild from the history (pure) |
+| `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
 | `HudModel.lua`  | HUD numbers and texts from the session, rank, lure, and item; count/grey rules and tooltip ranges (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
@@ -48,7 +49,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Synthetic.lua` | Deterministic synthetic casts for the stress test and the storage specs (pure) |
 | `Stress.lua`    | Developer storage test: test entry filled in steps, line test chunks, load measurements (pure) |
 | `Capture.lua`   | Raw capture ring buffer; aura spell IDs and loot source readers |
-| `CastLog.lua`   | Saves each attempt as a cast record, counts sessions and totals, detects skill-ups, packs at logout and day change, runs the load check |
+| `CastLog.lua`   | Saves each attempt as a cast record, counts sessions and totals, detects skill-ups, packs at logout and day change, runs the load check, ends idle sessions on time (session-end listeners) |
 | `Frames.lua`    | Frame helpers: template fallback, saved position, movable, guarded buttons |
 | `TextWindow.lua` | Export (read-only pages, Select all) and import (paste box, Import button) window |
 | `Confirm.lua`   | Confirmation dialog (backup restore) |
@@ -57,6 +58,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
 | `Hud.lua`       | HUD frame: shown from the first cast to the session end, lure tick, tooltip, `/fm hud` |
+| `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; prints a test line until the stats window exists |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
@@ -78,7 +80,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 - Session: `start`, `last` (last cast), `ended` and `endReason` (`idle` or `logout`), `casts`,
   `catches`, `counts` per outcome, `zones` (map IDs), `skillStart` and `skill` (rank at the first
   cast and the latest rank), `active` (seconds: gaps between casts, each at most 60 s; the time
-  since the last cast is added when shown), `lastItem` and `lastBite` (latest catch). A session ends 15 minutes after its last cast or at logout; a
+  since the last cast is added when shown), `lastItem` and `lastBite` (latest catch), `items`
+  (`[itemID] = quantity` caught in the session). A session ends 15 minutes after its last cast or at logout; a
   `/reload` within 15 minutes continues it.
 - **Day chunk:** `<day>|<cast>;<cast>;…`, day = `floor(serverTime / 86400)`, at most 4,000
   characters (a busy day gets several chunks). A cast is comma-separated integers in a fixed
@@ -124,7 +127,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 - `FishingMasteryCharDB` (per character): `schemaVersion` and `ui` (UI layout only: window and
   HUD positions).
 - `FishingMasteryDB.settings.hud` (account): `enabled` (default on), `locked`, `scale` (0.5-2,
-  default 1), `style` (`full` or `text`).
+  default 1), `style` (`full` or `text`). `FishingMasteryDB.settings.summary.style`: `window`
+  (default) or `chat`.
 - **Migrations:** on `ADDON_LOADED`, `Db.MIGRATIONS[v]` upgrades schema `v` to `v + 1`. Before
   the first step, the tables a step names are copied into `migrationSnapshot`; a failing step
   restores them and keeps the old version. The snapshot is removed at the first later login
@@ -150,6 +154,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm hud lock\|unlock\|reset` | Locks or unlocks dragging; reset puts it back at the top center with scale 1 |
 | `/fm hud scale <0.5-2>`    | HUD size                                                     |
 | `/fm hud style full\|text` | Five lines, or one line of text                              |
+| `/fm summary`              | Summary of the open session, or of the last one (also shown when a session ends after 15 minutes without a cast) |
+| `/fm summary window\|chat` | Where summaries appear: a small window (default) or your chat frame |
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
 | `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch, click time for an early click or getaway) |
 

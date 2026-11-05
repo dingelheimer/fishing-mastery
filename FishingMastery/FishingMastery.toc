@@ -27,6 +27,7 @@ History.lua
 Totals.lua
 Stats.lua
 HudModel.lua
+SummaryModel.lua
 Export.lua
 Import.lua
 Backup.lua
@@ -42,6 +43,7 @@ UiCheck.lua
 Commands.lua
 DataCommands.lua
 Hud.lua
+Summary.lua
 Dev.lua
 Compartment.lua
 Core.lua

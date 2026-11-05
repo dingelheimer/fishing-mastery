@@ -44,16 +44,19 @@ describe("FishingMastery sessions", function()
         assert.are.equal(30 + 60 + 10, s.active)
         assert.are.equal(6291, s.lastItem)
         assert.are.equal(88, s.lastBite)
+        assert.are.same({ [6303] = 1, [6358] = 1, [6291] = 1 }, s.items)
         -- The time since the last cast counts up to the cap.
         assert.are.equal(100 + 25, Session.Active(s, 445))
         assert.are.equal(100 + 60, Session.Active(s, 800))
         assert.are.equal(100 + 5, Session.Active(s, 800, 5))
         assert.are.equal(100, Session.Active(s, 300)) -- a clock behind the last cast
         -- A session from before the active time starts counting at its next cast.
-        s.active = nil
+        s.active, s.items = nil, nil
         Session.Add(char, cast(450, "cancel"))
         assert.are.equal(30, s.active)
         assert.are.equal(6291, s.lastItem)
+        Session.Add(char, cast(460, "catch", { loot = { { id = 6303, qty = 2 } } }))
+        assert.are.same({ [6303] = 2 }, s.items)
     end)
 
     it("ends after 15 minutes without a cast and starts a new one", function()

@@ -100,6 +100,14 @@ local function startTracker()
         serverTime = GetServerTime,
         after = timer("timer:hud"),
     })
+    ns.summary = ns.Summary.Start({
+        env = _G,
+        castLog = castLog,
+        settings = ns.db.settings,
+        store = ns.charDb.ui,
+        serverTime = GetServerTime,
+        print = ns.Print,
+    })
 end
 
 bus:On("PLAYER_LOGIN", function()

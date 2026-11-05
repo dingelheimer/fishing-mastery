@@ -6,11 +6,7 @@ local _, ns = ...
 
 local setmetatable, type, ipairs, pairs, tonumber = setmetatable, type, ipairs, pairs, tonumber
 local match, lower = string.match, string.lower
-local isSecret = issecretvalue or function()
-    return false
-end
-local L, Frames, HudModel, Session, Context = ns.L, ns.Frames, ns.HudModel, ns.Session, ns.Context
-local Call = Context.Call
+local L, Frames, HudModel, Context = ns.L, ns.Frames, ns.HudModel, ns.Context
 
 local Hud = {}
 Hud.__index = Hud
@@ -53,7 +49,6 @@ function Hud.Start(deps)
         store = deps.store,
         serverTime = deps.serverTime,
         after = deps.after,
-        idleFor = nil, -- session.last the idle timer was set for
         ticking = false,
         forced = false, -- shown by /fm hud show without an open session
     }, Hud)
@@ -62,12 +57,9 @@ function Hud.Start(deps)
     end
     deps.bus:On("SKILL_LINES_CHANGED", refresh)
     deps.bus:On("PLAYER_ENTERING_WORLD", refresh)
-    deps.bus:On("ITEM_DATA_LOAD_RESULT", function(_, itemID)
-        if not isSecret(itemID) and itemID == self.waitingItem then
-            self.waitingItem = nil
-            self:Refresh()
-        end
-    end)
+    if self.castLog then
+        self.castLog:OnSessionEnd(refresh)
+    end
     return self
 end
 
@@ -111,21 +103,24 @@ local function build(self)
     return frame
 end
 
--- Name and icon of the last caught item; an uncached name is requested once and filled in on
--- ITEM_DATA_LOAD_RESULT.
+-- Name and icon of the last caught item from the item cache; an uncached name is requested once
+-- and the HUD refreshes when it arrives.
 local function itemInfo(self, id)
-    if type(id) ~= "number" then
+    local items = self.castLog and self.castLog.items
+    if not items or type(id) ~= "number" then
         return nil, nil
     end
-    local name = Call(self.env, "C_Item.GetItemInfo", id)
-    local icon = Call(self.env, "C_Item.GetItemIconByID", id)
-    name = not isSecret(name) and type(name) == "string" and name or nil
-    icon = not isSecret(icon) and icon or nil
-    if not name and self.requested ~= id then
-        self.requested, self.waitingItem = id, id
-        Call(self.env, "C_Item.RequestLoadItemDataByID", id)
+    local onLoad = nil
+    if self.requested ~= id then
+        onLoad = function()
+            self:Refresh()
+        end
     end
-    return name, icon
+    local info = items:Info(id, onLoad)
+    if not info.name then
+        self.requested = id
+    end
+    return info.name, info.icon
 end
 
 function Hud:Model(session)
@@ -174,19 +169,6 @@ local function draw(self, model)
     frame:SetScale(self.settings.scale)
 end
 
--- Ends the session on time when nobody casts: one timer per new last cast.
-local function scheduleIdle(self, session)
-    if not self.after or self.idleFor == session.last then
-        return
-    end
-    self.idleFor = session.last
-    local wait = Session.IDLE - (self.serverTime() - session.last) + 1
-    self.after(wait > 0 and wait or 1, function()
-        self.idleFor = nil
-        self:Refresh()
-    end)
-end
-
 local function scheduleTick(self)
     if not self.after or self.ticking then
         return
@@ -219,9 +201,6 @@ function Hud:Refresh()
     end
     draw(self, model)
     self.frame:Show()
-    if session.casts > 0 then
-        scheduleIdle(self, session)
-    end
     if model.lureSeconds then
         scheduleTick(self)
     end
