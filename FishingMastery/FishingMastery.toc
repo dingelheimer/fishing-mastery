@@ -5,6 +5,7 @@
 ## Version: 0.1.0
 ## Category: Professions
 ## IconTexture: Interface\Icons\Trade_Fishing
+## AddonCompartmentFunc: FishingMastery_OnAddonCompartmentClick
 ## SavedVariables: FishingMasteryDB
 ## SavedVariablesPerCharacter: FishingMasteryCharDB
 ## X-License: GPL-3.0
@@ -34,7 +35,10 @@ CastLog.lua
 Frames.lua
 TextWindow.lua
 Confirm.lua
+UiTest.lua
+UiCheck.lua
 Commands.lua
 DataCommands.lua
 Dev.lua
+Compartment.lua
 Core.lua

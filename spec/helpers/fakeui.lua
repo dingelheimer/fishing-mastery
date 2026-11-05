@@ -140,6 +140,12 @@ end
 function Frame:IsEnabled()
     return self.enabled
 end
+function Frame:SetID(id)
+    self.id = id
+end
+function Frame:GetID()
+    return self.id
+end
 -- Test helper: a click as the player would do it (ignored when hidden or disabled).
 function Frame:Click()
     if self.shown and self.enabled and self.scripts.OnClick then
@@ -273,5 +279,8 @@ function M.button(env, label)
     end
     error("no button " .. label)
 end
+
+-- The shared frame prototype: specs may add a method for one test and remove it afterwards.
+M.Frame = Frame
 
 return M

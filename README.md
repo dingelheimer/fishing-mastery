@@ -50,9 +50,12 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Frames.lua`    | Frame helpers: template fallback, saved position, movable, guarded buttons |
 | `TextWindow.lua` | Export (read-only pages, Select all) and import (paste box, Import button) window |
 | `Confirm.lua`   | Confirmation dialog (backup restore) |
+| `UiTest.lua`    | UI check test window: one line, one bar, an item icon, a 3-row scroll list, two tabs, "Open settings" (dev flag only) |
+| `UiCheck.lua`   | UI API check: each statistics UI API missing, ok, or error; results in `dev.ui` (dev flag only) |
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
+| `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; prints a test line until the stats window exists |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
 
 ### Saved Data
@@ -179,6 +182,7 @@ do not see it.
 | `/fm dev load`               | Lists the last 10 load measurements                          |
 | `/fm dev clear`              | Removes `dev.stress` and `dev.lines`                         |
 | `/fm dev capture [on\|off\|clear]` | Raw capture switch; without an argument, a summary of the captured aura IDs and loot sources |
+| `/fm dev ui`                 | UI API check: opens the test window, prints one line per API (ok, missing, error with the text), and keeps the results in `dev.ui` |
 
 - **Load measurement:** `PLAYER_LOGOUT` (also on `/reload`) saves `GetTimePreciseSec()` in
   `dev.logoutAt`; after the reload the addon prints the time from it to its `ADDON_LOADED`, the
@@ -189,6 +193,15 @@ do not see it.
   `{ k = "cast", t, mod, auras = { spell IDs } }`, at fishing loot `{ k = "loot", t, src =
   { "GameObject:35591", ... } }`. Only spell IDs, GUID types, and object IDs are kept: no names,
   no aura casters, no player GUIDs.
+
+- **UI API check** (`dev.ui = { at, results = { { name, status, detail, note } }, openSettings,
+  tooltipSeen, compartmentClicks }`): checks `Frame:CreateLine`, color texture bars, the Settings
+  API (vertical layout category, test checkbox, add-on category, open), the ScrollBox list
+  utilities, `C_Item.GetItemIconByID`, `C_Item.GetItemQualityColor`, `ITEM_QUALITY_COLORS`, the
+  item tooltip post-call, tab templates with `PanelTemplates`, `GetMinimapShape`, and the addon
+  compartment. The test settings category "Fishing Mastery (UI check)" (checkbox value in
+  `dev.uiSetting`) and the tooltip post-call stay registered until `/reload`; the tooltip line
+  shows only while the dev flag is set.
 
 ## FishingMasteryProbe
 

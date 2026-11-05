@@ -27,9 +27,16 @@ files["FishingMasteryProbe/"] = {
     read_globals = { SlashCmdList = { fields = { FMP = { read_only = false } } } },
 }
 
--- The addon may write only its two SavedVariables and the /fm slash command.
+-- The addon may write only its two SavedVariables, the /fm slash command, and the addon
+-- compartment handler named in its TOC (AddonCompartmentFunc).
 files["FishingMastery/"] = {
-    globals = { "FishingMasteryDB", "FishingMasteryCharDB", "SLASH_FM1", "SLASH_FM2" },
+    globals = {
+        "FishingMasteryDB",
+        "FishingMasteryCharDB",
+        "SLASH_FM1",
+        "SLASH_FM2",
+        "FishingMastery_OnAddonCompartmentClick",
+    },
     read_globals = { SlashCmdList = { fields = { FM = { read_only = false } } } },
 }
 

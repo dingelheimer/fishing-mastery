@@ -40,6 +40,7 @@ M.STUBS = {
     "GetLootSourceInfo",
     "C_Item",
     "C_UnitAuras",
+    "FishingMastery_OnAddonCompartmentClick",
 }
 
 local function stubGame(w)
