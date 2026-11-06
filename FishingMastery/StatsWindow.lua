@@ -80,6 +80,7 @@ local function inputs(self)
         info = function(id)
             return itemInfo(self, id)
         end,
+        areas = ns.area,
         mapName = function(map)
             if names[map] == nil then
                 names[map] = Context.MapName(env, map) or false

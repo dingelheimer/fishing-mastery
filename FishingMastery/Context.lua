@@ -83,6 +83,38 @@ function Context.MapName(env, map)
     return type(name) == "string" and name or nil
 end
 
+-- Client name of an AreaTable ID from C_Map.GetAreaInfo (client language), or nil.
+function Context.AreaName(env, area)
+    if type(area) ~= "number" then
+        return nil
+    end
+    local name = plain((Context.Call(env, "C_Map.GetAreaInfo", area)))
+    return type(name) == "string" and name ~= "" and name or nil
+end
+
+-- Instance map ID inside an instance (GetInstanceInfo, 8th return), nil in the open world.
+function Context.Instance(env)
+    local info = { Context.Call(env, "GetInstanceInfo") }
+    local kind = plain(info[2])
+    if type(kind) ~= "string" or kind == "none" then
+        return nil
+    end
+    return number(info[8])
+end
+
+-- The area the player stands in now (Area resolver), or nil without data.
+function Context.CurrentArea(env, areas)
+    if not areas then
+        return nil
+    end
+    local subzone = plain((Context.Call(env, "GetSubZoneText")))
+    return areas:Resolve(
+        number((Context.Call(env, "C_Map.GetBestMapForUnit", "player"))),
+        type(subzone) == "string" and subzone or nil,
+        Context.Instance(env)
+    )
+end
+
 -- Context for one cast; every field is a number or plain string, or nil when unavailable.
 function Context.Read(env)
     local rank, modifier = Context.Fishing(env)

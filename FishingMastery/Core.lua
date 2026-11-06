@@ -103,6 +103,9 @@ end
 -- this login is set first, so totals counted with another T are counted again.
 local function startTracker()
     ns.Totals.SetCap(ns.Options.Get(ns.db.settings, "activeCap"))
+    ns.area = ns.Area.New(ns.Zones, function(id)
+        return ns.Context.AreaName(_G, id)
+    end)
     local after = timer("timer:attempt") or function() end
     local castLog = ns.CastLog.Start({
         env = _G,

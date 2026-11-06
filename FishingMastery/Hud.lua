@@ -5,7 +5,7 @@
 local _, ns = ...
 
 local setmetatable, type, ipairs, pairs, tonumber = setmetatable, type, ipairs, pairs, tonumber
-local match, lower = string.match, string.lower
+local match, lower, format = string.match, string.lower, string.format
 local L, Frames, HudModel, Context = ns.L, ns.Frames, ns.HudModel, ns.Context
 
 local Hud = {}
@@ -206,6 +206,31 @@ function Hud:Refresh()
     end
 end
 
+-- Dev flag only: the area the lookup resolves at the current spot, for the in-game check.
+function Hud.DevAreaLine(env, areas)
+    local area = Context.CurrentArea(env, areas)
+    if not area then
+        return L.HUD_DEV_NO_AREA
+    end
+    local info = areas:Info(area) or {}
+    local kind = info.instance and L.HUD_DEV_DUNGEON
+        or info.zone and L.HUD_DEV_SUBZONE
+        or L.HUD_DEV_ZONE
+    return format(L.HUD_DEV_AREA, area, Context.AreaName(env, area) or "?", kind)
+end
+
+-- Dev flag only: the getaway risk here at the current effective skill (model and own rate).
+function Hud.DevRiskLines(env, areas, char, t)
+    local rank, modifier = Context.Fishing(env)
+    if not (rank and areas) then
+        return {}
+    end
+    local area = Context.CurrentArea(env, areas)
+    local byArea = ns.Getaway.ByArea(ns.StatsView.Build({ char }), areas)
+    local risk = ns.Getaway.Risk(byArea[area], rank + (modifier or 0), areas:Base(area), t)
+    return ns.Getaway.Lines(risk)
+end
+
 function Hud:ShowTooltip(owner)
     local tip = self.env.GameTooltip
     if not tip or not self.model then
@@ -215,6 +240,13 @@ function Hud:ShowTooltip(owner)
     tip:SetText(L.PREFIX)
     for _, line in ipairs(HudModel.Tooltip(self.model)) do
         tip:AddLine(line, 1, 1, 1, true)
+    end
+    if ns.Dev and ns.Dev.Enabled(ns.db) then
+        tip:AddLine(Hud.DevAreaLine(self.env, ns.area), 0.6, 0.8, 1, true)
+        local risk = Hud.DevRiskLines(self.env, ns.area, ns.char or {}, self.thresholds)
+        for _, line in ipairs(risk) do
+            tip:AddLine(line, 0.6, 0.8, 1, true)
+        end
     end
     tip:Show()
 end

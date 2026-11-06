@@ -1,12 +1,14 @@
--- Pure logic: the Failures tab from a StatsView view: one row per outcome with its count and
--- rates (of fair casts; getaways and catches also of hooked casts), the getaway rate by band of
--- effective skill with Wilson ranges (all zones together until module 3 brings the zone
--- requirements), and early clicks by time band (click times saved since Story 3.4). Cancels,
--- invalid targets, and unknown attempts are counts only. No frame or API calls.
+-- Pure logic: the Failures tab from a StatsView view: one row per outcome with its count and rates
+-- (of fair casts; getaways and catches also of hooked casts), the getaway rate by band of
+-- effective skill with Wilson ranges (all zones together), or by band of skill above the water's
+-- base level with the Classic model as a mark (waters with zone data only), and early clicks by
+-- time band (click times saved since Story 3.4). Cancels, invalid targets, and unknown attempts
+-- are counts only. No frame or API calls.
 local _, ns = ...
 
 local format, ipairs, pairs, sort, floor = string.format, ipairs, pairs, table.sort, math.floor
-local L, Stats, HudModel, ChartModel = ns.L, ns.Stats, ns.HudModel, ns.ChartModel
+local L, Stats, HudModel, ChartModel, Getaway =
+    ns.L, ns.Stats, ns.HudModel, ns.ChartModel, ns.Getaway
 
 local FailureTable = {}
 ns.FailureTable = FailureTable
@@ -102,6 +104,60 @@ function FailureTable.SkillChart(view, t)
         }
     end
     return ChartModel.Build(bars, true)
+end
+
+-- Tooltip lines of the Classic model next to an own rate.
+local function modelLines(tip, rate, model, from)
+    local compare = Getaway.Compare(rate, model)
+    if from < 0 then
+        tip[#tip + 1] = L.STATS_TIP_BELOW_BASE
+    end
+    tip[#tip + 1] = format(L.STATS_TIP_MODEL, pct(model))
+    if compare.differs then
+        tip[#tip + 1] = L.STATS_TIP_DIFFERS
+    end
+end
+
+-- Getaway rate per band of effective skill minus the water's base, with the Classic model of
+-- the band as a mark: chart (or nil without hooked casts in waters with a base), and the hooked
+-- casts left out (no zone data or no base). areas: the Area resolver.
+function FailureTable.RelativeChart(view, areas, t)
+    local byArea, unknown = Getaway.ByArea(view, areas)
+    local relative, noBase = Getaway.Relative(byArea, areas)
+    local bands = {}
+    for band, entry in pairs(relative) do
+        if entry.hooked > 0 then
+            bands[#bands + 1] = band
+        end
+    end
+    local left = unknown + noBase
+    if #bands == 0 then
+        return nil, left
+    end
+    sort(bands)
+    local size = ns.Totals.SKILL_BAND
+    local bars = {}
+    for i, band in ipairs(bands) do
+        local entry = relative[band]
+        local rate = Stats.Proportion(entry.getaways, entry.hooked, t)
+        local model = Getaway.BandModel(band, size, 0)
+        local tip = {
+            format(L.STATS_TIP_REL_BAND, format("%+d to %+d", band, band + size - 1)),
+            FailureTable.RateLine(L.STATS_GETAWAYS, rate),
+        }
+        modelLines(tip, rate, model, band)
+        bars[i] = {
+            label = format("%+d", band),
+            value = rate.p,
+            low = rate.low,
+            high = rate.high,
+            mark = model,
+            text = HudModel.Percent(rate),
+            grey = rate.display ~= "full",
+            tip = tip,
+        }
+    end
+    return ChartModel.Build(bars, true), left
 end
 
 -- Early clicks per 1-second band of the click time, or nil when no early click has a time.

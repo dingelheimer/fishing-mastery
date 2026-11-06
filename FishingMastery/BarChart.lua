@@ -1,8 +1,9 @@
 -- Bar chart widget for the stats window: a title, y axis labels with faint grid lines, one color
 -- texture per bar, a range mark (95 % range from low to high, with caps) where the chart has
--- ranges, value labels above bars wide enough for them, x labels at a step, and an invisible
--- hover frame per bar with its tooltip. Textures, font strings, and hover frames are pooled and
--- reused on every draw. Unnamed, insecure frames only.
+-- ranges, a reference mark (a line across the bar, e.g. the Classic model), value labels above
+-- bars wide enough for them, x labels at a step, and an invisible hover frame per bar with its
+-- tooltip. Textures, font strings, and hover frames are pooled and reused on every draw. Unnamed,
+-- insecure frames only.
 local _, ns = ...
 
 local setmetatable, ipairs, max, floor = setmetatable, ipairs, math.max, math.floor
@@ -18,6 +19,7 @@ BarChart.BAR = { 0.25, 0.6, 1, 1 } -- one categorical color
 BarChart.BAR_GREY = { 0.45, 0.45, 0.45, 1 } -- small samples
 BarChart.RANGE = { 1, 0.82, 0, 1 }
 BarChart.GRID = { 1, 1, 1, 0.12 }
+BarChart.MARK = { 1, 1, 1, 0.9 }
 
 -- parent: the frame the chart is drawn in, width × height in pixels.
 function BarChart.Create(env, parent, width, height)
@@ -147,6 +149,11 @@ local function bars(self, chart, plotW, plotH)
             texture(self, BarChart.RANGE, mid - floor(cap / 2), low, cap, 1)
             texture(self, BarChart.RANGE, mid - floor(cap / 2), high, cap, 1)
             top = max(top, high - bottom)
+        end
+        if bar.mark then
+            local y = bottom + bar.mark * scale
+            texture(self, BarChart.MARK, x - 2, y - 1, layout.bar + 4, 2)
+            top = max(top, y + 1 - bottom)
         end
         if layout.slot >= BarChart.VALUE_MIN_SLOT and bar.text then
             label(self, bar.text, "BOTTOM", x + layout.bar / 2, bottom + top + 2, layout.slot)

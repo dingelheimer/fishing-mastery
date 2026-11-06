@@ -5,3 +5,6 @@ probe-results/
 .luarocks/
 luacov.*.out
 *.zip
+
+# Python bytecode of the tools
+__pycache__/

@@ -10,6 +10,8 @@
 --   hours    = { [UTC hour 0-23] = { casts, outcomes = { [outcome] = n } } },
 --   skills   = { [map] = { [band] = { hooked, getaways } } }, band = lower bound of a
 --              SKILL_BAND-point band of effective skill (rank + modifier),
+--   subskills = { [map] = { [sub] = { [band] = { hooked, getaways } } } }: the same per subzone,
+--              so the own getaway rate can be split by resolved area (Getaway.lua),
 --   items    = { [itemID] = { n (catches with it), qty, first, last (server time), best (map),
 --                hours = { [UTC hour] = catches with it }, fair (fair casts counted at its last
 --                catch, for the dry streak) } },
@@ -30,7 +32,8 @@ local Codec, History = ns.Codec, ns.History
 local Totals = {}
 ns.Totals = Totals
 
-Totals.VERSION = 4 -- 3: early-click times (Story 3.4); 4: subzones, item hours (Story 3.7)
+Totals.VERSION = 5 -- 3: early-click times (Story 3.4); 4: subzones, item hours (Story 3.7);
+-- 5: hooked casts per subzone and skill band (Story 4.4)
 Totals.ACTIVE_CAP = ns.Options.DEFAULTS.thresholds.activeCap -- seconds; default T
 -- T of this login (settings.thresholds.activeCap, set by Core before the cast log starts). Totals
 -- counted with another T are not current, so the next login counts them again.
@@ -46,8 +49,18 @@ function Totals.SetCap(cap)
     return cap
 end
 Totals.SKILL_BAND = 5
-Totals.TABLES =
-    { "outcomes", "days", "maps", "zones", "hours", "skills", "items", "active", "subs" }
+Totals.TABLES = {
+    "outcomes",
+    "days",
+    "maps",
+    "zones",
+    "hours",
+    "skills",
+    "items",
+    "active",
+    "subs",
+    "subskills",
+}
 -- Outcomes that are not fair casts (the player's choice or no channel at all); Stats uses them.
 Totals.UNFAIR = { cancel = true, unknown = true, invalid_target = true }
 
@@ -180,17 +193,22 @@ local function addActive(totals, t, map, sub)
     totals.last = { t = t, map = map, sub = sub }
 end
 
-local function addSkill(totals, cast, map, out)
+local function countBand(bands, band, out)
+    local entry = get(bands, band, newBand)
+    entry.hooked = entry.hooked + 1
+    if out == "getaway" then
+        entry.getaways = entry.getaways + 1
+    end
+end
+
+local function addSkill(totals, cast, map, sub, out)
     if (out ~= "catch" and out ~= "getaway") or type(cast.rank) ~= "number" then
         return
     end
     local skill = cast.rank + (type(cast.mod) == "number" and cast.mod or 0)
     local band = floor(skill / Totals.SKILL_BAND) * Totals.SKILL_BAND
-    local entry = get(get(totals.skills, map, newTable), band, newBand)
-    entry.hooked = entry.hooked + 1
-    if out == "getaway" then
-        entry.getaways = entry.getaways + 1
-    end
+    countBand(get(totals.skills, map, newTable), band, out)
+    countBand(get(get(totals.subskills, map, newTable), sub, newTable), band, out)
 end
 
 -- Counts one cast (live or decoded). Casts must arrive oldest first (active time).
@@ -227,7 +245,7 @@ function Totals.Add(totals, cast)
     if out == "early_click" and type(cast.click) == "number" then
         bump(group.clicks, cast.click)
     end
-    addSkill(totals, cast, map, out)
+    addSkill(totals, cast, map, subKey, out)
     addActive(totals, cast.t, map, subKey)
 end
 

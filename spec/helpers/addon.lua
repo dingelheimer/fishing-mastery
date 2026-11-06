@@ -8,7 +8,8 @@ function M.load(files, ns, addonName)
     ns = ns or {}
     addonName = addonName or M.ADDON_NAME
     for _, file in ipairs(files) do
-        local chunk = assert(loadfile(addonName .. "/" .. file))
+        -- TOC paths use the client's backslash; loadfile needs a slash on every OS.
+        local chunk = assert(loadfile(addonName .. "/" .. file:gsub("\\", "/")))
         chunk(addonName, ns)
     end
     return ns

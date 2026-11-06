@@ -1,6 +1,7 @@
 -- Pure logic: bar chart math for the stats window. Nice axis scales (steps of 1, 2, 2.5, 5 × 10^k),
 -- histogram bins from tenth-second keys, bar positions in a plot width, and the label step that
--- keeps the x labels apart. A chart is { bars = { { label, value, low, high, text, grey, tip } },
+-- keeps the x labels apart. A chart is { bars = { { label, value, low, high, mark, text, grey,
+-- tip } }, mark = a reference value drawn as a line across the bar,
 -- axis = Scale, percent }; a line chart (Line) holds points with an x range. No frame or API calls.
 local _, ns = ...
 
@@ -95,7 +96,7 @@ end
 function ChartModel.Build(bars, percent)
     local top = 0
     for _, bar in ipairs(bars) do
-        top = max(top, bar.high or 0, bar.value or 0)
+        top = max(top, bar.high or 0, bar.value or 0, bar.mark or 0)
     end
     if percent and top > 1 then
         top = 1

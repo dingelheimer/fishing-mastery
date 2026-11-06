@@ -12,6 +12,7 @@
 
 Locale.lua
 LocaleStats.lua
+Data\Zones.lua
 Options.lua
 Guard.lua
 Events.lua
@@ -19,6 +20,7 @@ Db.lua
 Character.lua
 Attempt.lua
 Context.lua
+Area.lua
 Loot.lua
 Items.lua
 Tracker.lua
@@ -29,6 +31,7 @@ History.lua
 Totals.lua
 Stats.lua
 HudModel.lua
+Getaway.lua
 SummaryModel.lua
 StatsView.lua
 StatsModel.lua
@@ -58,6 +61,7 @@ TextWindow.lua
 Confirm.lua
 UiTest.lua
 UiCheck.lua
+AreaCheck.lua
 Commands.lua
 DataCommands.lua
 Hud.lua

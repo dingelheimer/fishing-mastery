@@ -75,7 +75,7 @@ describe("FishingMastery Totals", function()
                 assert.are.equal(1411, totals.items[6303].best)
             end
         end
-        assert.are.equal(4, totals.version)
+        assert.are.equal(5, totals.version)
         assert.are.same({
             [1411] = {
                 on = {
@@ -123,6 +123,14 @@ describe("FishingMastery Totals", function()
             },
             [1412] = { [50] = { hooked = 3, getaways = 0 } },
         }, totals.skills)
+        -- The same bands per subzone (for the getaway rate per resolved area).
+        assert.are.same({
+            [1411] = {
+                [1] = { [75] = { hooked = 1, getaways = 0 }, [50] = { hooked = 1, getaways = 1 } },
+                [2] = { [50] = { hooked = 1, getaways = 0 } },
+            },
+            [1412] = { [0] = { [50] = { hooked = 3, getaways = 0 } } },
+        }, totals.subskills)
         assert.are.same({
             -- fair: fair casts counted at the item's last catch (dry streaks).
             [6303] = {

@@ -1,6 +1,8 @@
 -- Pure logic: the Zones table of the stats window from a StatsModel view: every zone (most casts
 -- first) with its subzones below, casts, catches per hour, species, and the top items with their
--- shares; ranges in the tooltips. Rows as in StatsTables.lua. No frame or API calls.
+-- shares; ranges in the tooltips. Subzone texts that resolve to a subzone of the zone data form
+-- one row per area; other texts keep their own row. Rows as in StatsTables.lua and carry the
+-- resolved area ID (nil without data). No frame or API calls.
 local _, ns = ...
 
 local format, pairs, ipairs, sort, concat = string.format, pairs, ipairs, table.sort, table.concat
@@ -84,7 +86,8 @@ local function byCasts(a, b)
     return a.key < b.key
 end
 
--- Zone totals from its subzones (every cast belongs to exactly one subzone group).
+-- Sum of groups (a zone from its subzones, or the texts of one area; every cast belongs to
+-- exactly one subzone group).
 local function zoneTotal(subs)
     local total = { casts = 0, outcomes = {}, items = {}, active = 0 }
     for _, group in pairs(subs) do
@@ -99,10 +102,35 @@ local function zoneTotal(subs)
     return total
 end
 
--- input: { info(id), mapName(map), thresholds }. Returns the Zones rows: each zone (most casts
--- first) followed by its subzones; a zone fished only without a subzone text has none.
+-- Subzone groups of one map keyed for rows: texts resolving to a subzone area share a key.
+-- Returns { { key, name, unnamed, area, groups } }.
+local function subGroups(map, subs, areas)
+    local byKey, list = {}, {}
+    for name, group in pairs(subs) do
+        local unnamed = name == ns.StatsView.NO_SUBZONE
+        local area = areas and areas:Resolve(map, not unnamed and name or nil) or nil
+        local key = name
+        if areas and areas:IsSubzone(area) then
+            key = format("#%d", area)
+        end
+        local entry = byKey[key]
+        if not entry then
+            entry = { key = key, name = name, unnamed = unnamed, area = area, groups = {} }
+            byKey[key] = entry
+            list[#list + 1] = entry
+        elseif name < entry.name then
+            entry.name = name
+        end
+        entry.groups[#entry.groups + 1] = group
+    end
+    return list
+end
+
+-- input: { info(id), mapName(map), thresholds, areas (Area resolver, optional) }. Returns the
+-- Zones rows: each zone (most casts first) followed by its subzones; a zone fished only without a
+-- subzone text has none. Each row has .area: the resolved area ID or nil.
 function ZoneTable.Rows(view, input)
-    local zones = {}
+    local zones, areas = {}, input.areas
     for map, subs in pairs(view.subs) do
         local zone = zoneRow(
             format("%09d", map),
@@ -110,17 +138,17 @@ function ZoneTable.Rows(view, input)
             zoneTotal(subs),
             input
         )
+        zone.area = areas and areas:Resolve(map, nil) or nil
         zone.subs = {}
-        for name, group in pairs(subs) do
-            local unnamed = name == ns.StatsView.NO_SUBZONE
+        for _, entry in ipairs(subGroups(map, subs, areas)) do
             local sub = zoneRow(
-                zone.key .. "/" .. name,
-                unnamed and L.STATS_NO_SUBZONE or name,
-                group,
+                zone.key .. "/" .. entry.key,
+                entry.unnamed and L.STATS_NO_SUBZONE or entry.name,
+                #entry.groups == 1 and entry.groups[1] or zoneTotal(entry.groups),
                 input,
                 true
             )
-            sub.unnamed = unnamed
+            sub.unnamed, sub.area = entry.unnamed, entry.area
             zone.subs[#zone.subs + 1] = sub
         end
         zones[#zones + 1] = zone

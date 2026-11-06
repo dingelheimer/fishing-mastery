@@ -1,7 +1,7 @@
 -- Developer tools, active only while FishingMasteryDB.settings.dev is true: the storage stress
 -- test (/fm dev stress, lines, load, clear), load time measurement across /reload, the raw
--- capture (/fm dev capture), and the UI API check (/fm dev ui, UiCheck.lua). All test data
--- lives in db.dev, never in a real character entry.
+-- capture (/fm dev capture), the UI API check (/fm dev ui, UiCheck.lua), and the area API check
+-- (/fm dev area, AreaCheck.lua). All test data lives in db.dev, never in a real character entry.
 local _, ns = ...
 
 local format, match, lower, tonumber, ipairs, type, min, concat =
@@ -254,6 +254,11 @@ local function command(rest)
             charDb = ns.charDb,
             serverTime = self.deps.serverTime,
         })
+    elseif action == "area" then
+        ns.AreaCheck.Run(
+            { env = self.deps.env, db = self.db, serverTime = self.deps.serverTime },
+            value
+        )
     else
         ns.Print(L.DEV_USAGE)
     end

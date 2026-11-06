@@ -14,7 +14,8 @@ under `projects/wow-fishing-addon`.
 | `spec/`                 | busted tests for the probe: pure logic, fake-UI window tests, and a boot test of all TOC files |
 | `spec/fm/`              | busted tests for `FishingMastery/`, including a boot test of all its TOC files |
 | `spec/fixtures/`        | Redacted event sequences from the live probe run, replayed by the tracker specs |
-| `tools/`                | Developer scripts (fixture extraction from a probe log)         |
+| `tools/`                | Developer scripts: fixture extraction from a probe log, zone data fetch and build |
+| `tools/data/`           | Trimmed, pinned copies of the zone data sources (input of the zone data build) |
 | `docs/`                 | Longer docs (probe reference)                                    |
 | `probe-results/`        | Local copies of probe logs; git-ignored, never committed         |
 
@@ -28,12 +29,14 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Locale.lua`    | User-facing strings (`ns.L`), English fallback                         |
 | `Options.lua`   | Every setting's default in one table; settings panel controls with ranges; the proxy the panel writes through (pure) |
 | `LocaleStats.lua` | User-facing strings of the stats window                              |
+| `Data/Zones.lua` | Generated zone data `ns.Zones`: Classic loot lists, base skills, area placement (see Zone Data) |
 | `Guard.lua`     | Runs every handler and slash command through `xpcall`; counts errors   |
 | `Events.lua`    | Event bus: one frame, dispatch table, player-only unit events; events the client cannot register are skipped and listed |
 | `Db.lua`        | Schema version, migration walk, repair of missing fields, migration snapshot (pure) |
 | `Character.lua` | Character key `UnitGUID("player")` and the character entry           |
 | `Attempt.lua`   | Attempt classifier: cast, message, and loot events to one outcome per attempt (pure) |
-| `Context.lua`   | Cast context: server time, map, subzone text, fishing rank and modifier, lure enchant |
+| `Context.lua`   | Cast context: server time, map, subzone text, fishing rank and modifier, lure enchant; area name, instance ID, current area |
+| `Area.lua`      | Area lookup: instance ID, UI map, and subzone text to an area of the zone data; subzone names from `C_Map.GetAreaInfo`, cached per zone (pure) |
 | `Loot.lua`      | Loot slots (item ID, quantity, quality) and loot source type and object ID |
 | `Items.lua`     | Item cache: quality the loot window did not give, and name, icon, quality, sell price for the UI; uncached items requested once and filled in after `ITEM_DATA_LOAD_RESULT` |
 | `Tracker.lua`   | Game events to classifier input (fishing spell, message names, channel length, fishing loot), end-of-attempt timer, outcome counts |
@@ -43,14 +46,15 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `History.lua`   | Packing the open day, load check with quarantine, on-demand history iterator (pure) |
 | `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
 | `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
+| `Getaway.lua`   | Getaway risk: Classic model at an effective skill and base, own rate per resolved area and skill band with its range, the comparison, and its text lines (pure) |
 | `HudModel.lua`  | HUD numbers and texts from the session, rank, lure, and item; count/grey rules and tooltip ranges (pure) |
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Overview model: per-character and account numbers, favorite zone, session records (pure) |
 | `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
-| `ZoneTable.lua` | Zones table: zones with their subzones, casts, catches per hour, species, top items with shares (pure) |
+| `ZoneTable.lua` | Zones table: zones with their subzones (one row per resolved subzone area, else per text), casts, catches per hour, species, top items with shares; rows carry the area ID (pure) |
 | `OverviewTable.lua` | Overview lines (account totals, rates with ranges, favorite zone, records) and the character rows (pure) |
 | `ChartModel.lua` | Chart math: nice axis scales, histogram bins, bar layout, x label step, line chart range and placement (pure) |
-| `FailureTable.lua` | Failures tab: outcome rows with rates of fair and hooked casts, getaway rate by skill band, early clicks by click time (pure) |
+| `FailureTable.lua` | Failures tab: outcome rows with rates of fair and hooked casts, getaway rate by skill band or by skill above the water's base with the Classic model, early clicks by click time (pure) |
 | `BiteTable.lua` | Bite times tab: groups per zone and lure state with median and quartiles, histogram chart (pure) |
 | `SessionTable.lua` | Sessions tab: sortable session rows with rates in the tooltip (pure) |
 | `SkillScan.lua` | Skill tab history scan in steps: first cast and catches per fishing rank; open casts added per result (pure) |
@@ -73,9 +77,10 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Confirm.lua`   | Confirmation dialog (backup restore) |
 | `UiTest.lua`    | UI check test window: one line, one bar, an item icon, a 3-row scroll list, two tabs, "Open settings" (dev flag only) |
 | `UiCheck.lua`   | UI API check: each statistics UI API missing, ok, or error; results in `dev.ui` (dev flag only) |
+| `AreaCheck.lua` | Area API check: map, zone and subzone texts, instance, area IDs at the position, test area names with byte-exact match flags; runs in `dev.area` (dev flag only) |
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
-| `Hud.lua`       | HUD frame: shown from the first cast to the session end, lure tick, tooltip, `/fm hud` |
+| `Hud.lua`       | HUD frame: shown from the first cast to the session end, lure tick, tooltip (dev flag: resolved area line), `/fm hud` |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
 | `StatsList.lua` | Table widget of the stats window: sort buttons or header labels over a ScrollBox list, grey cells, row tooltips |
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
@@ -148,11 +153,13 @@ copied and adapted, and the probe folder is never loaded or referenced.
   | `items`    | `[itemID] = { n (catches with it), qty, first, last (server time), best (map with the most), hours = { [UTC hour] = catches }, fair (fair casts counted at its last catch) }` |
   | `active`   | `[map] = seconds`: Σ min(gap to the next cast, 60 s), 60 s for the latest cast |
   | `subs`     | `[map][sub] = { casts, outcomes, items = { [itemID] = catches with it }, active }`, sub = subzone index or 0 (none); the same active time split per subzone |
+  | `subskills` | `[map][sub][band] = { hooked, getaways }`: the `skills` bands per subzone, so the getaway rate can be split by resolved area |
   | `last`     | `{ t, map, sub }` of the latest cast (for the active time) |
 
   Hooked = catch + getaway. `/fm rebuild` counts everything again and says whether the result
   equals the live totals. Totals of another version (after the schema 2 update, a new totals
-  version such as 3 for the early-click times or 4 for subzones and item hours, or a restored old snapshot) are counted again after login, in the same steps as the load check (one decode for
+  version such as 3 for the early-click times, 4 for subzones and item hours, or 5 for the
+  skill bands per subzone, or a restored old snapshot) are counted again after login, in the same steps as the load check (one decode for
   both); `/fm status` says "Counting your history" until it is done, and casts during the count
   are counted once. 200,000 synthetic casts give about 86 KB of totals in the saved file (8 maps, 12 items;
   version 4 adds about 20 % for subzones and item hours: the spec estimate goes from 76,076 to 91,269
@@ -220,11 +227,17 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   and the expected casts per item. Click a header to sort, again to flip the order; the quality
   button filters.
 - **Zones:** every zone (most casts first) and its subzones: casts, catches per hour, species,
-  the top 3 items with their shares; all items with ranges in the tooltip.
+  the top 3 items with their shares; all items with ranges in the tooltip. Subzones with their
+  own zone data get one row per area; other subzone texts keep their own row.
 - **Failures:** every outcome with its count and rates (of fair casts; catches and getaways also
   of hooked casts; cancels, invalid targets, and unknown attempts are counts only); bar charts of
-  the getaway rate by 5-point band of effective skill (rank + modifier, all zones together) with
-  95 % range marks, and of early clicks by click time (1-second bands).
+  the getaway rate with 95 % range marks, and of early clicks by click time (1-second bands).
+  The getaway chart groups by 5-point band of effective skill minus the water's base level
+  (resolved area, a subzone's own base or its zone's) with the Classic model as a white line and
+  in the tooltip ("Differs from Classic" when the own range excludes it); hooked casts in waters
+  without a base are left out and counted next to the button. The button switches to bands of
+  effective skill (rank + modifier, all zones together); without any water with a base only that
+  chart is shown.
 - **Bite times:** histogram (1-second bins up to 30 s) of all zones or of one zone and lure state
   (the button steps through them), median and quartiles; a table of every group.
 - **Sessions:** every session (newest first) with date, character, zone, active time, casts,
@@ -330,6 +343,7 @@ do not see it.
 | `/fm dev clear`              | Removes `dev.stress` and `dev.lines`                         |
 | `/fm dev capture [on\|off\|clear]` | Raw capture switch; without an argument, a summary of the captured aura IDs and loot sources |
 | `/fm dev ui`                 | UI API check: opens the test window, prints one line per API (ok, missing, error with the text), and keeps the results in `dev.ui` |
+| `/fm dev area [clear]`       | Area API check at the current spot: prints the readings and the area the lookup resolves, appends them to `dev.area.runs` (30 kept); `clear` removes the runs |
 
 - **Load measurement:** `PLAYER_LOGOUT` (also on `/reload`) saves `GetTimePreciseSec()` in
   `dev.logoutAt`; after the reload the addon prints the time from it to its `ADDON_LOADED`, the
@@ -350,6 +364,21 @@ do not see it.
   compartment. The test settings category "Fishing Mastery (UI check)" (checkbox value in
   `dev.uiSetting`) and the tooltip post-call stay registered until `/reload`; the tooltip line
   shows only while the dev flag is set.
+- **Area API check** (`dev.area.runs`, at most 30, oldest dropped): each run is `{ at, map,
+  mapName, mapType, zone, realZone, subzone, minimap, instanceType, instanceID, here = { x, y,
+  areas = { { id, name, subzone, zone } } }, tests = { { id, name, subzone, zone, english } },
+  missing }`. `map` is `C_Map.GetBestMapForUnit`; the texts come from `GetZoneText`,
+  `GetRealZoneText`, `GetSubZoneText`, and `GetMinimapZoneText`; the instance from
+  `GetInstanceInfo` (type, 8th return); `here.areas` from
+  `C_MapExplorationInfo.GetExploredAreaIDsAtPosition` at `C_Map.GetPlayerMapPosition`. Names
+  come from `C_Map.GetAreaInfo`; `subzone`/`zone` mean the same bytes as the subzone or zone
+  text, `english` the English name in the client export. The 26 test areas are listed in
+  `AreaCheck.TEST_AREAS`. No player names or GUIDs are stored.
+- **HUD dev lines:** while the dev flag is set, the HUD tooltip ends with the resolved area
+  ("Dev: area 367 Sen'jin Village (subzone)", "(zone)", "(dungeon)", or "no area data here")
+  and the getaway risk at the current effective skill: the Classic model ("unknown" without a
+  base level), the own rate of the skill's band in this area, and "Differs from Classic" when
+  its range excludes the model.
 
 ## FishingMasteryProbe
 
@@ -374,6 +403,55 @@ On Windows the tools install without admin rights:
 
 `.luacheckrc` turns the LuaJIT JIT compiler off for luacheck: with it on, full-tree runs crashed
 with a segfault in most attempts, while the interpreter is stable.
+
+### Zone Data
+
+`FishingMastery/Data/Zones.lua` is generated; never edit it by hand. It holds the Classic
+fishing loot lists, base skills, and area placement as `ns.Zones` (`lists`, `areas`,
+`mapToArea`, `children`, `instanceToArea`; format in the file header). Chances are Classic
+estimates (CMaNGOS reconstructions), not Blizzard values; Forever-only zones have no entry.
+
+- An area's list replaces its zone's list (server rule); an area without `list` uses the zone's.
+- A subzone list with only seasonal or quest rows is merged with its zone's list
+  (`merged = true`), because those rows add to the zone's fish rather than replace them.
+- `partial` is the percent of a roll the Classic data does not cover (e.g. Silverpine 45.4);
+  the rest is shown as not in the Classic data, never spread over the known fish.
+
+**Area lookup** (`Area.lua`): a dungeon by its instance ID, else the zone of the UI map
+(`mapToArea`), and inside it the subzone whose `C_Map.GetAreaInfo` name equals the subzone text
+byte for byte; no match or no text gives the zone, a place without data `nil`. Past cast records
+resolve the same way from their map and subzone text (no schema change); texts saved under
+another client language fall back to the zone, and past dungeon casts (no instance ID saved)
+have no area.
+
+```powershell
+python tools/fetch_zone_sources.py   # download the pinned sources, rewrite tools/data/, list changed areas
+python tools/build_zone_data.py      # write Data/Zones.lua from tools/data/ (fails if an area cannot be placed)
+python -m unittest discover -s tools -p "test_*.py"
+```
+
+Both scripts need only Python 3 (standard library). The fetch uses fixed HTTPS URLs; to move to a
+newer source, change the pinned commits and client build in `tools/zone_sources.py`, run both
+scripts, review the changed areas, and commit `tools/data/` with the new `Zones.lua`.
+`spec/fm/zones_spec.lua` checks the counts; update them only after reviewing a source change.
+
+**Getaway model** (`Getaway.lua`, CMaNGOS server rule): catch chance of a hooked fish =
+clamp(effective skill − base + 5, 0, 100) %; below the base no fish is caught (every hooked fish
+gets away), and getaways stop at base + 95. A subzone without its own base uses its zone's. The
+own getaway rate (getaways / hooked) per resolved area and 5-point skill band is compared with
+the model's mean over the band only when it is shown (at least the count threshold of hooked
+casts); places without a base level show "unknown" and the own rate only.
+
+### Data Sources and Credits
+
+- **CMaNGOS classic-db** (https://github.com/cmangos/classic-db, GPL-3.0), commit
+  `37eeeeb1d4`: fishing loot, reference loot, base skill, and season condition rows.
+- **AllTheThings** Forever client exports (https://github.com/ATTWoWAddon/AllTheThings, MIT,
+  copyright (c) 2026 AllTheThings WoW Addon), commit `e15f5d9cee`, client build `1.60.1.70790`:
+  `AreaTable`, `UiMap`, `UiMapAssignment` rows. The MIT notice is in
+  `tools/data/LICENSE-AllTheThings.txt`.
+
+Item names, icons, and zone names are read from the game client at runtime.
 
 ### Install for In-Game Testing
 

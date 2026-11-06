@@ -1,0 +1,137 @@
+ID,AreaName_lang,ContinentID,ParentAreaID
+1,Dun Morogh,0,0
+2,Longshore,0,40
+8,Swamp of Sorrows,0,0
+10,Duskwood,0,0
+11,Wetlands,0,0
+12,Elwynn Forest,0,0
+14,Durotar,1,0
+15,Dustwallow Marsh,1,0
+16,Azshara,1,0
+17,The Barrens,1,0
+28,Western Plaguelands,0,0
+33,Stranglethorn Vale,0,0
+35,Booty Bay,0,33
+36,Alterac Mountains,0,0
+38,Loch Modan,0,0
+40,Westfall,0,0
+41,Deadwind Pass,0,0
+43,Wild Shore,0,33
+44,Redridge Mountains,0,0
+45,Arathi Highlands,0,0
+46,Burning Steppes,0,0
+47,The Hinterlands,0,0
+85,Tirisfal Glades,0,0
+104,The Vile Reef,0,33
+115,Westfall Lighthouse,0,40
+117,Grom'gol Base Camp,0,33
+122,Zuuldaia Ruins,0,33
+130,Silverpine Forest,0,0
+139,Eastern Plaguelands,0,0
+141,Teldrassil,1,0
+148,Darkshore,1,0
+150,Menethil Harbor,0,11
+168,The North Coast,0,85
+169,Whispering Shore,0,85
+215,Mulgore,1,0
+226,The Skittering Dark,0,130
+267,Hillsbrad Foothills,0,0
+271,Southshore,0,267
+294,Eastern Strand,0,267
+295,Western Strand,0,267
+297,Jaguero Isle,0,33
+298,Baradin Bay,0,11
+299,Menethil Bay,0,11
+300,Misty Reed Strand,0,8
+301,The Savage Coast,0,33
+302,The Crystal Shore,0,33
+305,North Tide's Run,0,130
+306,South Tide's Run,0,130
+307,The Overlook Cliffs,0,47
+311,Ruins of Aboraz,0,33
+327,Faldir's Cove,0,45
+328,The Drowned Reef,0,45
+331,Ashenvale,1,0
+357,Feralas,1,0
+361,Felwood,1,0
+367,Sen'jin Village,1,14
+382,The Sludge Fen,1,17
+384,Dreadmist Peak,1,17
+386,The Forgotten Pools,1,17
+387,Lushwater Oasis,1,17
+388,The Stagnant Oasis,1,17
+400,Thousand Needles,1,0
+405,Desolace,1,0
+406,Stonetalon Mountains,1,0
+414,The Zoram Strand,1,331
+440,Tanaris,1,0
+443,Ruins of Mathystra,1,148
+445,Cliffspring Falls,1,148
+448,Grove of the Ancients,1,148
+454,Wildbend River,1,148
+456,Cliffspring River,1,148
+463,Cragpool Lake,1,406
+490,Un'Goro Crater,1,0
+493,Moonglade,1,0
+513,Theramore Isle,1,15
+516,Dustwallow Bay,1,15
+517,Tidefury Cove,1,15
+518,Dreadmurk Shore,1,15
+537,Fire Plume Ridge,1,490
+598,Sar'theris Strand,1,405
+618,Winterspring,1,0
+636,Blackwolf River,1,406
+702,Rut'theran Village,1,141
+718,Wailing Caverns,43,0
+719,Blackfathom Deeps,48,0
+796,Scarlet Monastery,189,0
+814,Southfury River,1,14
+815,Southfury River,1,17
+1039,The Lost Fleet,0,11
+1108,The Forgotten Coast,1,357
+1112,Jademir Lake,1,357
+1116,Feathermoon Stronghold,1,357
+1117,Ruins of Solarsal,1,357
+1120,Sardor Isle,1,357
+1121,Isle of Dread,1,357
+1156,Southern Barrens,1,17
+1222,Hetaera's Clutch,1,16
+1226,Temple of Arkkoran,1,16
+1227,Bay of Storms,1,16
+1228,The Shattered Strand,1,16
+1229,Tower of Eldara,1,16
+1230,Jagged Reef,1,16
+1231,Southridge Beach,1,16
+1256,The Ruined Reaches,1,16
+1377,Silithus,1,0
+1417,Sunken Temple,109,0
+1497,Undercity,0,0
+1519,Stormwind City,0,0
+1537,Ironforge,0,0
+1577,The Cape of Stranglethorn,0,33
+1578,Southern Savage Coast,0,33
+1581,The Deadmines,36,0
+1637,Orgrimmar,1,0
+1638,Thunder Bluff,1,0
+1657,Darnassus,1,0
+1701,Blackthorn Ridge,1,17
+1739,Bloodsail Compound,0,33
+1797,Stagalbog,0,8
+1977,Zul'Gurub,309,0
+2017,Stratholme,329,0
+2057,Scholomance,289,0
+2077,Twilight Vale,1,148
+2079,Alcaz Island,1,15
+2100,Maraudon,349,0
+2104,Deepwater Tavern,0,11
+2324,The Veiled Sea,1,405
+2398,The Great Sea,0,130
+2403,The Forbidding Sea,0,8
+2405,Ethel Rethor,1,405
+2406,Ranazjar Isle,1,405
+2408,Shadowprey Village,1,405
+2521,Verdantis River,1,357
+2979,Tor'kren Farm,1,14
+3140,Scalebeard's Cave,1,16
+3317,Revantusk Village,0,47
+3357,Yojamba Isle,0,33

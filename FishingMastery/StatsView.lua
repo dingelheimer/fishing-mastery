@@ -71,6 +71,22 @@ local function mergeSubs(view, totals, subzones)
     end
 end
 
+-- Hooked casts and getaways per map, subzone text, and skill band.
+local function mergeSubSkills(view, totals, subzones)
+    for map, subs in pairs(tbl(totals.subskills)) do
+        local zone = child(view.subskills, map)
+        for index, bands in pairs(tbl(subs)) do
+            local name = index ~= 0 and subzones[index] or nil
+            local into = child(zone, type(name) == "string" and name or StatsView.NO_SUBZONE)
+            for band, entry in pairs(tbl(bands)) do
+                local sum = child(into, band)
+                add(sum, "hooked", entry.hooked)
+                add(sum, "getaways", entry.getaways)
+            end
+        end
+    end
+end
+
 -- Lure groups per map: casts, outcomes, bite and early-click histograms.
 local function mergeZones(view, totals)
     for map, lures in pairs(tbl(totals.zones)) do
@@ -116,6 +132,7 @@ local function mergeChar(view, char)
         mergeItem(view, id, entry)
     end
     mergeSubs(view, totals, tbl(char.subzones))
+    mergeSubSkills(view, totals, tbl(char.subzones))
     mergeZones(view, totals)
     for _, bands in pairs(tbl(totals.skills)) do
         for band, entry in pairs(tbl(bands)) do
@@ -141,7 +158,8 @@ end
 -- View of the characters in list (char entries): { outcomes, active, activeByMap, days ([day] =
 -- { casts, catches }), dayCount, hours ([UTC hour] = { casts, outcomes }), maps, items, subs,
 -- zones ([map][lure] with bites and clicks), skills ([band] = { hooked,
--- getaways }, all maps together), stale (characters counted by an older Totals version), fair
+-- getaways }, all maps together), subskills ([map][subzone text][band] = { hooked, getaways }),
+-- stale (characters counted by an older Totals version), fair
 -- (fair casts now; single character only, for dry streaks) }.
 function StatsView.Build(list)
     local view = {
@@ -154,6 +172,7 @@ function StatsView.Build(list)
         subs = {},
         zones = {},
         skills = {},
+        subskills = {},
         stale = 0,
         chars = #list,
     }

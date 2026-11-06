@@ -1,7 +1,8 @@
--- Failures, Bite times, and Sessions tabs of the stats window (entries as in StatsTabs.lua):
--- the outcome table with two bar charts (getaway rate by skill band with ranges, early clicks by
--- click time), the bite histogram of a chosen group with median and quartiles over the table of
--- groups, and the sortable session list.
+-- Failures, Bite times, and Sessions tabs of the stats window (entries as in StatsTabs.lua): the
+-- outcome table with two bar charts (getaway rate by skill band with ranges, early clicks by click
+-- time; a button groups the skill chart by skill above the water's base with the Classic model
+-- where waters have zone data), the bite histogram of a chosen group with median and quartiles
+-- over the table of groups, and the sortable session list.
 local _, ns = ...
 
 local type, pairs, format = type, pairs, string.format
@@ -14,6 +15,7 @@ ns.FailureTabs = FailureTabs
 FailureTabs.TABLE_HEIGHT = 150 -- outcome table on the Failures tab
 FailureTabs.CHART_GAP = 12
 FailureTabs.BITE_CHART = 190
+FailureTabs.SKILL_BUTTON = 200
 
 local function chart(self, panel, x, top, width, height)
     local widget = ns.BarChart.Create(self.env, panel, width, height)
@@ -26,7 +28,20 @@ StatsTabs.failures = {
     build = function(self, panel)
         local area = StatsFrame.Area(self, panel, 0, 0, FailureTabs.TABLE_HEIGHT)
         self.failures = ns.StatsList.Create(self.env, area, FailureTable.COLUMNS)
-        local top = FailureTabs.TABLE_HEIGHT + 8
+        local top = FailureTabs.TABLE_HEIGHT + 4
+        self.skillButton = StatsFrame.Button(self, panel, FailureTabs.SKILL_BUTTON, function()
+            self.skillEffective = not self.skillEffective
+        end)
+        self.skillButton:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -top)
+        self.skillLeft = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        self.skillLeft:SetPoint(
+            "TOPLEFT",
+            panel,
+            "TOPLEFT",
+            FailureTabs.SKILL_BUTTON + 12,
+            -top - 5
+        )
+        top = top + 28
         local width = (StatsFrame.PANEL_WIDTH - FailureTabs.CHART_GAP) / 2
         local height = StatsFrame.HEIGHT - 72 - top
         self.skillChart = chart(self, panel, 0, top, width, height)
@@ -36,11 +51,22 @@ StatsTabs.failures = {
         local view = StatsView.Build(self:Chars())
         local t = input.thresholds
         self.failures:SetRows(FailureTable.Rows(view, t), keepScroll)
-        self.skillChart:Draw(
-            L.STATS_CHART_SKILL,
-            FailureTable.SkillChart(view, t),
-            L.STATS_CHART_NO_HOOKED
-        )
+        -- By skill above the water's base when any hooked cast has zone data, unless switched.
+        local relative, left = FailureTable.RelativeChart(view, input.areas, t)
+        self.skillButton:SetShown(relative ~= nil)
+        if relative and not self.skillEffective then
+            self.skillButton:SetText(L.STATS_SKILL_RELATIVE)
+            self.skillLeft:SetText(left > 0 and format(L.STATS_SKILL_LEFT_OUT, left) or "")
+            self.skillChart:Draw(L.STATS_CHART_RELATIVE, relative)
+        else
+            self.skillButton:SetText(L.STATS_SKILL_EFFECTIVE)
+            self.skillLeft:SetText("")
+            self.skillChart:Draw(
+                L.STATS_CHART_SKILL,
+                FailureTable.SkillChart(view, t),
+                L.STATS_CHART_NO_HOOKED
+            )
+        end
         self.clickChart:Draw(
             L.STATS_CHART_CLICKS,
             FailureTable.ClickChart(view),

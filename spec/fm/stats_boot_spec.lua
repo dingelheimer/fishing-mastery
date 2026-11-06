@@ -194,13 +194,23 @@ describe("FishingMastery stats window boot", function()
         window.frame.Tabs[4]:Click()
         local rows = texts(window.failures)
         assert.are.same({ "catch", "2", "2/4", "2/3" }, rows[1])
-        -- Skill chart: one band (skill 11) with bar, range mark (bar + 3 range textures), and grid.
+        -- Skill chart in Durotar (base -70): skill 11 is band +80 above the base, with the model
+        -- mark (bar + 3 range textures + mark), and the button to group by effective skill.
         local skill = window.skillChart
+        assert.are.equal("Group: skill above water base", window.skillButton:GetText())
         assert.are.equal(1, #skill.drawn.bars)
-        assert.is_true(skill.textures.used >= 4)
+        assert.are.equal("+80", skill.drawn.bars[1].label)
+        assert.is_true(skill.textures.used >= 5)
         local hover = skill.hovers.list[1]
         hover:GetScript("OnEnter")(hover)
         local tip = table.concat(_G.GameTooltip.lines, " / ")
+        assert.truthy(tip:find("water's base level: +80 to +84", 1, true))
+        assert.truthy(tip:find("Classic model: 13 %", 1, true))
+        window.skillButton:Click()
+        assert.are.equal("Group: effective skill", window.skillButton:GetText())
+        hover = skill.hovers.list[1]
+        hover:GetScript("OnEnter")(hover)
+        tip = table.concat(_G.GameTooltip.lines, " / ")
         assert.truthy(tip:find("Effective skill 10-14", 1, true))
         assert.are.equal(1, window.clickChart.drawn.total) -- the early click at 4.2 s
 
