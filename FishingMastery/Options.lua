@@ -11,7 +11,7 @@ local Options = {}
 ns.Options = Options
 
 Options.DEFAULTS = {
-    hud = { enabled = true, locked = false, scale = 1, style = "full" },
+    hud = { enabled = true, locked = false, scale = 1, style = "full", zoneLine = true },
     summary = { style = "window" },
     minimap = { shown = true },
     tooltip = { shown = true }, -- item tooltip line
@@ -70,6 +70,16 @@ Options.CONTROLS = {
         end,
         set = function(s, v)
             section(s, "hud").style = v and "text" or "full"
+        end,
+    },
+    {
+        key = "hudZone",
+        kind = "checkbox",
+        get = function(s)
+            return section(s, "hud").zoneLine ~= false
+        end,
+        set = function(s, v)
+            section(s, "hud").zoneLine = v
         end,
     },
     {

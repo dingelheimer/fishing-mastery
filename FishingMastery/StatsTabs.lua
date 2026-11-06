@@ -1,10 +1,11 @@
 -- Filled tabs of the stats window, one entry per tab name: build(window, panel) creates its frames
 -- once, draw(window, input, keepScroll) fills them from the aggregates and returns the view it
 -- used (for the status line); scoped tabs show the scope button. This file: Overview, Fish, and
--- Zones; FailureTabs.lua adds Failures, Bite times, and Sessions; SkillTabs.lua Skill and Compare.
+-- Zones (a click on a zone row shows its Classic comparison below); FailureTabs.lua adds Failures,
+-- Bite times, and Sessions; SkillTabs.lua Skill and Compare.
 local _, ns = ...
 
-local concat, format = table.concat, string.format
+local concat, format, ipairs = table.concat, string.format, ipairs
 local L, StatsFrame = ns.L, ns.StatsFrame
 local StatsModel, StatsView, StatsTables, ZoneTable, OverviewTable =
     ns.StatsModel, ns.StatsView, ns.StatsTables, ns.ZoneTable, ns.OverviewTable
@@ -13,6 +14,7 @@ local StatsTabs = {}
 ns.StatsTabs = StatsTabs
 
 StatsTabs.OVERVIEW_TEXT = 150 -- height of the Overview text block
+StatsTabs.ZONE_LIST = 190 -- height of the zone list above the comparison
 
 StatsTabs.overview = {
     build = function(self, panel)
@@ -75,11 +77,36 @@ StatsTabs.fish = {
 StatsTabs.zones = {
     scoped = true,
     build = function(self, panel)
-        self.zones = ns.StatsList.Create(self.env, StatsFrame.Area(self, panel), ZoneTable.COLUMNS)
+        local list = StatsFrame.Area(self, panel, 0, 0, StatsTabs.ZONE_LIST)
+        self.zones = ns.StatsList.Create(self.env, list, ZoneTable.COLUMNS, nil, function(row)
+            self.zoneKey = row.key
+            self:Render(true)
+        end)
+        self.zoneNote = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        self.zoneNote:SetPoint("TOPLEFT", panel, "TOPLEFT", 2, -StatsTabs.ZONE_LIST - 6)
+        self.zoneNote:SetWidth(StatsFrame.PANEL_WIDTH - 4)
+        self.zoneNote:SetJustifyH("LEFT")
+        local detail = StatsFrame.Area(self, panel, 0, StatsTabs.ZONE_LIST + 26)
+        self.zoneDetail = ns.StatsList.Create(self.env, detail, ns.ZoneRef.COLUMNS)
     end,
     draw = function(self, input, keepScroll)
         local view = StatsView.Build(self:Chars())
-        self.zones:SetRows(ZoneTable.Rows(view, input), keepScroll)
+        local rows = ZoneTable.Rows(view, input)
+        local selected = nil
+        for _, row in ipairs(rows) do
+            if row.key == self.zoneKey then
+                selected = row
+            end
+        end
+        selected = selected or rows[1]
+        if selected then
+            selected.selected = true
+            self.zoneKey = selected.key
+        end
+        self.zones:SetRows(rows, keepScroll)
+        local detail = ns.ZoneRef.Detail(view, selected, input)
+        self.zoneNote:SetText(detail.note)
+        self.zoneDetail:SetRows(detail.rows, keepScroll)
         return view
     end,
 }

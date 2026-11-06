@@ -92,7 +92,10 @@ describe("FishingMastery HUD boot", function()
     it("handles /fm hud show, hide, lock, unlock, scale, style, and reset", function()
         login()
         local settings = _G.FishingMasteryDB.settings.hud
-        assert.are.same({ enabled = true, locked = false, scale = 1, style = "full" }, settings)
+        assert.are.same(
+            { enabled = true, locked = false, scale = 1, style = "full", zoneLine = true },
+            settings
+        )
 
         -- show without a session: shown with zeros so it can be placed.
         _G.SlashCmdList.FM("hud show")
@@ -201,6 +204,32 @@ describe("FishingMastery HUD boot", function()
         loaded = true
         w.fire("ITEM_DATA_LOAD_RESULT", 6303, true)
         assert.are.equal("Raw Slitherskin Mackerel, bite 9.0 s", text("last"))
+        assert.are.equal(0, w.ns.Guard.errors)
+    end)
+
+    it("shows the zone line, updates it on zone changes, and hides it by setting", function()
+        login()
+        _G.C_Map.GetMapInfo = function(map)
+            return map == 1411 and { name = "Durotar" } or nil
+        end
+        -- Durotar (base -70, list 6303 and 6356) at skill 11: catch 86 %.
+        w.catch(5000, 9)
+        assert.is_true(hud().lines.zone:IsShown())
+        assert.are.equal("Durotar: getaway 14 %, 1 of 2 fish not caught here", text("zone"))
+        local frame = hud().frame
+        frame:GetScript("OnEnter")(frame)
+        local tip = table.concat(_G.GameTooltip.lines, " / ")
+        assert.truthy(tip:find("Getaway risk at skill 11: 14 %", 1, true))
+        assert.truthy(tip:find("Your getaways at skill 10-14 here: 0 of 1 hooked", 1, true))
+
+        w.game.map = 9999 -- a Forever zone without Classic data
+        w.fire("ZONE_CHANGED_NEW_AREA")
+        assert.are.equal("Here: getaway ?, no Classic data", text("zone"))
+
+        _G.FishingMasteryDB.settings.hud.zoneLine = false
+        hud():Refresh()
+        assert.is_false(hud().lines.zone:IsShown())
+        assert.are.equal(10 + 5 * 14, frame.height)
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 end)

@@ -146,6 +146,7 @@ local function startTracker()
         store = ns.charDb.ui,
         serverTime = GetServerTime,
         after = timer("timer:hud"),
+        areas = ns.area,
     })
     ns.summary = ns.Summary.Start({
         env = _G,

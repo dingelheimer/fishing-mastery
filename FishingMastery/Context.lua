@@ -102,6 +102,11 @@ function Context.Instance(env)
     return number(info[8])
 end
 
+-- The UI map the player is on now, or nil.
+function Context.CurrentMap(env)
+    return number((Context.Call(env, "C_Map.GetBestMapForUnit", "player")))
+end
+
 -- The area the player stands in now (Area resolver), or nil without data.
 function Context.CurrentArea(env, areas)
     if not areas then

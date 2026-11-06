@@ -106,6 +106,43 @@ describe("FishingMastery stats window boot", function()
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 
+    it("compares the selected zone with the Classic data, and places without data", function()
+        fish()
+        -- One catch in a Forever zone without Classic data.
+        w.ns.Totals.Add(w.ns.char.totals, {
+            t = w.serverTime,
+            map = 9999,
+            out = "catch",
+            loot = { { id = 6303 } },
+        })
+        _G.SlashCmdList.FM("stats")
+        local window = stats()
+        window.frame.Tabs[3]:Click()
+        -- The first row (Durotar) is selected: its list next to the 2 own catches.
+        assert.are.equal("000001411", window.zoneKey)
+        assert.truthy(window.zoneNote:GetText():find("^Durotar: Classic estimate", 1))
+        local rows = texts(window.zoneDetail)
+        assert.are.same(
+            { "98 %", "", "2/2", "2" },
+            { rows[1][2], rows[1][3], rows[1][4], rows[1][5] }
+        )
+        assert.are.same({ "2 %", "-", "0" }, { rows[2][2], rows[2][4], rows[2][5] })
+
+        local other
+        for _, row in ipairs(window.zones.box.drawn) do
+            if row.data.map == 9999 then
+                other = row
+            end
+        end
+        other:GetScript("OnMouseUp")(other)
+        assert.are.equal(other.data.key, window.zoneKey)
+        assert.truthy(window.zoneNote:GetText():find("No reference data (new in Forever)", 1, true))
+        rows = texts(window.zoneDetail)
+        assert.are.equal(1, #rows)
+        assert.are.same({ "-", "1/1", "1" }, { rows[1][2], rows[1][4], rows[1][5] })
+        assert.are.equal(0, w.ns.Guard.errors)
+    end)
+
     it("merges every character with the scope button and saves the position", function()
         fish()
         local db = _G.FishingMasteryDB

@@ -233,33 +233,36 @@ describe("FishingMastery area check boot", function()
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 
-    it("shows the resolved area in the check and the HUD dev line", function()
+    it("shows the resolved area in the check and the HUD dev and risk lines", function()
         stubAll(w, { subzone = "Sen'jin Village", minimap = "Sen'jin Village", areas = { 367 } })
         _G.SlashCmdList.FM("dev area")
         assert.are.equal(367, lastRun().resolved)
         assert.truthy(w.output():find("Area lookup: 367", 1, true))
-        local Hud = w.ns.Hud
-        assert.are.equal("Dev: area 367 Sen'jin Village (subzone)", Hud.DevAreaLine(_G, w.ns.area))
+        local HudZone = w.ns.HudZone
+        assert.are.equal(
+            "Dev: area 367 Sen'jin Village (subzone)",
+            HudZone.DevAreaLine(_G, w.ns.area)
+        )
 
         w.game.subzone = "Razor Hill" -- no own data: the zone
-        assert.are.equal("Dev: area 14 Durotar (zone)", Hud.DevAreaLine(_G, w.ns.area))
+        assert.are.equal("Dev: area 14 Durotar (zone)", HudZone.DevAreaLine(_G, w.ns.area))
         -- Getaway risk at skill 11 (+ 0) in Durotar (base -70): catch 86 %; no hooked casts yet.
         assert.are.same(
             { "Getaway risk at skill 11: 14 % (Classic model; none from skill 25)" },
-            Hud.DevRiskLines(_G, w.ns.area, w.ns.char, nil)
+            HudZone.Read(_G, w.ns.area, w.ns.char, nil).tips
         )
 
         _G.GetInstanceInfo = function()
             return "The Deadmines", "party", 1, "Normal", 5, 0, false, 36
         end
-        assert.are.equal("Dev: area 1581 ? (dungeon)", Hud.DevAreaLine(_G, w.ns.area))
+        assert.are.equal("Dev: area 1581 ? (dungeon)", HudZone.DevAreaLine(_G, w.ns.area))
 
         w.game.map = 9999
         _G.GetInstanceInfo = nil
-        assert.are.equal("Dev: no area data here", Hud.DevAreaLine(_G, w.ns.area))
+        assert.are.equal("Dev: no area data here", HudZone.DevAreaLine(_G, w.ns.area))
         assert.are.same(
             { "Getaway risk at skill 11: unknown (no Classic base level here)" },
-            Hud.DevRiskLines(_G, w.ns.area, w.ns.char, nil)
+            HudZone.Read(_G, w.ns.area, w.ns.char, nil).tips
         )
         assert.are.equal(0, w.ns.Guard.errors)
     end)

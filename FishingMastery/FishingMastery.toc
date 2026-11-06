@@ -37,6 +37,7 @@ StatsView.lua
 StatsModel.lua
 StatsTables.lua
 ZoneTable.lua
+ZoneRef.lua
 OverviewTable.lua
 ChartModel.lua
 FailureTable.lua
@@ -64,6 +65,7 @@ UiCheck.lua
 AreaCheck.lua
 Commands.lua
 DataCommands.lua
+HudZone.lua
 Hud.lua
 Summary.lua
 StatsList.lua

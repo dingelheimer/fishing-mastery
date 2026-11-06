@@ -74,8 +74,9 @@ describe("FishingMastery item tooltip line", function()
                 "Other addon: 5 in bank",
                 "Fishing Mastery: caught 2x (best: Durotar)",
             }, tip.lines)
-            postCall(tip, { id = 6303 }) -- the zone name is looked up once
-            assert.are.equal(1, lookups)
+            -- The zone name is looked up once by the tooltip and once by the HUD zone line.
+            postCall(tip, { id = 6303 })
+            assert.are.equal(2, lookups)
 
             local other = tooltip()
             postCall(other, { id = 2589 })

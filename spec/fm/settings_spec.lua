@@ -27,6 +27,7 @@ describe("FishingMastery settings and minimap math", function()
                 hudEnabled = true,
                 hudLocked = false,
                 hudText = false,
+                hudZone = true,
                 hudScale = 1,
                 summaryChat = false,
                 minimapShown = true,
@@ -40,7 +41,7 @@ describe("FishingMastery settings and minimap math", function()
                 assert.are.equal(expected[control.key], ns.Options.Get(settings, control.key))
                 assert.are.equal(expected[control.key], ns.Options.Default(control.key))
             end
-            assert.are.equal(11, #ns.Options.CONTROLS)
+            assert.are.equal(12, #ns.Options.CONTROLS)
             -- Hud, Summary, Stats, and Totals take their defaults from the same table.
             assert.are.equal(10, ns.Stats.DEFAULTS.countBelow)
             assert.are.equal(60, ns.Totals.ACTIVE_CAP)

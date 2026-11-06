@@ -1,7 +1,8 @@
 -- A table for the stats window: a header (sort buttons or labels) over a ScrollBox list with a
 -- scroll bar (APIs confirmed on live in Story 3.1). Rows come from the table builders
 -- (StatsTables, ZoneTable, OverviewTable): cells per column, grey cells for small samples, and
--- tooltip lines shown on hover. Unnamed, insecure frames only.
+-- tooltip lines shown on hover; with onSelect a click on a row selects it (row data .selected
+-- draws its first cell in gold). Unnamed, insecure frames only.
 local _, ns = ...
 
 local setmetatable, ipairs, pcall = setmetatable, ipairs, pcall
@@ -17,6 +18,7 @@ StatsList.SCROLLBAR_WIDTH = 16
 StatsList.SCROLL_TEMPLATE = "WowScrollBoxList"
 StatsList.SCROLLBAR_TEMPLATE = "MinimalScrollBar"
 StatsList.GREY, StatsList.WHITE = { 0.55, 0.55, 0.55 }, { 1, 1, 1 }
+StatsList.GOLD = { 1, 0.82, 0 }
 
 local function header(self, parent)
     local x = 0
@@ -79,6 +81,16 @@ local function buildRow(self, row)
             tip:Hide()
         end
     end)
+    if self.onSelect then
+        row:SetScript(
+            "OnMouseUp",
+            ns.Guard.Wrap("stats:select", function(frame)
+                if frame.data then
+                    self.onSelect(frame.data)
+                end
+            end)
+        )
+    end
 end
 
 local function initRow(self, row, data)
@@ -89,6 +101,9 @@ local function initRow(self, row, data)
     for i, cell in ipairs(row.cells) do
         cell:SetText(data.cells[i] or "")
         local color = data.grey and data.grey[i] and StatsList.GREY or StatsList.WHITE
+        if data.selected and i == 1 then
+            color = StatsList.GOLD
+        end
         cell:SetTextColor(color[1], color[2], color[3])
     end
 end
@@ -117,9 +132,12 @@ local function scrollBox(self, parent)
 end
 
 -- parent: the frame the list fills. columns: { { key, label, width, right } }. onSort(key):
--- optional; makes the header cells buttons.
-function StatsList.Create(env, parent, columns, onSort)
-    local self = setmetatable({ env = env, columns = columns, onSort = onSort }, StatsList)
+-- optional; makes the header cells buttons. onSelect(rowData): optional; makes rows clickable.
+function StatsList.Create(env, parent, columns, onSort, onSelect)
+    local self = setmetatable(
+        { env = env, columns = columns, onSort = onSort, onSelect = onSelect },
+        StatsList
+    )
     header(self, parent)
     scrollBox(self, parent)
     return self

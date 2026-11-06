@@ -84,3 +84,30 @@ function Area:Base(area)
     local zone = self:Info(info.zone)
     return zone and type(zone.base) == "number" and zone.base or nil
 end
+
+-- The area whose loot list applies here: the area with its own list, else its zone (a subzone
+-- without a list uses its zone's); nil without a list.
+function Area:ListArea(area)
+    local info = self:Info(area)
+    if info and info.list then
+        return area
+    end
+    local zone = info and self:Info(info.zone)
+    return zone and zone.list and info.zone or nil
+end
+
+-- The loot list rows that apply in an area and the list's area entry ({ list, partial, ... }),
+-- or nil without a list.
+function Area:List(area)
+    local listArea = self:ListArea(area)
+    local info = self:Info(listArea)
+    local lists = self.zones.lists
+    local rows = info and type(lists) == "table" and lists[info.list]
+    return rows, rows and info or nil, rows and listArea or nil
+end
+
+-- True when casts resolved to `resolved` count for the list of `area`: the same area, or a
+-- subzone of it without its own list.
+function Area:Uses(resolved, area)
+    return area ~= nil and resolved ~= nil and (resolved == area or self:ListArea(resolved) == area)
+end

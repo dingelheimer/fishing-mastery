@@ -1,11 +1,11 @@
 -- The HUD: a compact, movable bar with the session numbers, shown from the first cast until the
--- session ends (on by default). Updates when an attempt ends, on skill changes and login, and
--- once per second only while a lure is shown. Unnamed, insecure frame; never touches protected
--- frames. Texts come from HudModel.lua.
+-- session ends (on by default). Updates when an attempt ends, on skill and zone changes and login,
+-- and once per second only while a lure is shown (the zone line is kept on those ticks). Unnamed,
+-- insecure frame; never touches protected frames. Texts come from HudModel.lua.
 local _, ns = ...
 
 local setmetatable, type, ipairs, pairs, tonumber = setmetatable, type, ipairs, pairs, tonumber
-local match, lower, format = string.match, string.lower, string.format
+local match, lower = string.match, string.lower
 local L, Frames, HudModel, Context = ns.L, ns.Frames, ns.HudModel, ns.Context
 
 local Hud = {}
@@ -18,8 +18,9 @@ Hud.STYLES = { full = true, text = true }
 Hud.MIN_SCALE, Hud.MAX_SCALE = 0.5, 2
 Hud.POSITION_KEY = "hud"
 Hud.FALLBACK = { point = "TOP", x = 0, y = -140 }
-Hud.WIDTH, Hud.TEXT_WIDTH, Hud.LINE = 240, 420, 14
-Hud.LINES = { "session", "rates", "skill", "lure", "last" }
+Hud.WIDTH, Hud.TEXT_WIDTH, Hud.LINE = 280, 420, 14
+Hud.LINES = { "session", "rates", "skill", "lure", "last", "zone" }
+Hud.ZONE_EVENTS = { "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA" }
 Hud.GREY, Hud.WHITE = { 0.55, 0.55, 0.55 }, { 1, 1, 1 }
 Hud.TICK = 1 -- seconds between updates while a lure is shown
 
@@ -39,7 +40,7 @@ function Hud.Settings(settings)
 end
 
 -- deps: { env, bus, castLog, settings (db.settings), store (FishingMasteryCharDB.ui),
--- serverTime(), after(seconds, fn) (nil: no timers) }.
+-- serverTime(), after(seconds, fn) (nil: no timers), areas (Area resolver, optional) }.
 function Hud.Start(deps)
     local self = setmetatable({
         env = deps.env,
@@ -49,6 +50,7 @@ function Hud.Start(deps)
         store = deps.store,
         serverTime = deps.serverTime,
         after = deps.after,
+        areas = deps.areas,
         ticking = false,
         forced = false, -- shown by /fm hud show without an open session
     }, Hud)
@@ -57,6 +59,9 @@ function Hud.Start(deps)
     end
     deps.bus:On("SKILL_LINES_CHANGED", refresh)
     deps.bus:On("PLAYER_ENTERING_WORLD", refresh)
+    for _, event in ipairs(Hud.ZONE_EVENTS) do
+        deps.bus:On(event, refresh)
+    end
     if self.castLog then
         self.castLog:OnSessionEnd(refresh)
     end
@@ -93,7 +98,9 @@ local function build(self)
     for i, name in ipairs(Hud.LINES) do
         local line = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         line:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -5 - (i - 1) * Hud.LINE)
+        line:SetWidth(Hud.WIDTH - 12)
         line:SetJustifyH("LEFT")
+        line:SetWordWrap(false)
         self.lines[name] = line
     end
     self.icon = frame:CreateTexture(nil, "ARTWORK")
@@ -147,9 +154,11 @@ end
 local function draw(self, model)
     local frame, full = self.frame, self.settings.style == "full"
     local texts = HudModel.Lines(model)
+    local zone = full and self.settings.zoneLine and self.zone ~= nil
+    texts.zone = zone and self.zone.text or nil
     for i, name in ipairs(Hud.LINES) do
         local line = self.lines[name]
-        line:SetShown(full or i == 1)
+        line:SetShown(full and (name ~= "zone" or zone) or i == 1)
         line:SetText(full and texts[name] or nil)
     end
     if full then
@@ -160,7 +169,7 @@ local function draw(self, model)
         last:SetPoint("TOPLEFT", frame, "TOPLEFT", texts.icon and 22 or 6, -5 - 4 * Hud.LINE)
         self.icon:SetTexture(texts.icon)
         self.icon:SetShown(texts.icon ~= nil)
-        frame:SetSize(Hud.WIDTH, 10 + #Hud.LINES * Hud.LINE)
+        frame:SetSize(Hud.WIDTH, 10 + (#Hud.LINES - (zone and 0 or 1)) * Hud.LINE)
     else
         self.lines.session:SetText(HudModel.Short(model))
         self.icon:SetShown(false)
@@ -176,12 +185,13 @@ local function scheduleTick(self)
     self.ticking = true
     self.after(Hud.TICK, function()
         self.ticking = false
-        self:Refresh()
+        self:Refresh(true)
     end)
 end
 
 -- Shows the HUD with fresh numbers while a session is open (or forced), else hides it.
-function Hud:Refresh()
+-- keepZone: the lure tick, which reuses the zone line.
+function Hud:Refresh(keepZone)
     local session = self.castLog and self.castLog:Session()
     if session then
         self.forced = false
@@ -194,6 +204,10 @@ function Hud:Refresh()
         return
     end
     session = session or emptySession(self.serverTime())
+    if self.settings.zoneLine and not (keepZone and self.zone) then
+        local char = self.castLog and self.castLog.char
+        self.zone = ns.HudZone.Read(self.env, self.areas, char, self.thresholds)
+    end
     local model = self:Model(session)
     self.model = model
     if not self.frame then
@@ -206,31 +220,6 @@ function Hud:Refresh()
     end
 end
 
--- Dev flag only: the area the lookup resolves at the current spot, for the in-game check.
-function Hud.DevAreaLine(env, areas)
-    local area = Context.CurrentArea(env, areas)
-    if not area then
-        return L.HUD_DEV_NO_AREA
-    end
-    local info = areas:Info(area) or {}
-    local kind = info.instance and L.HUD_DEV_DUNGEON
-        or info.zone and L.HUD_DEV_SUBZONE
-        or L.HUD_DEV_ZONE
-    return format(L.HUD_DEV_AREA, area, Context.AreaName(env, area) or "?", kind)
-end
-
--- Dev flag only: the getaway risk here at the current effective skill (model and own rate).
-function Hud.DevRiskLines(env, areas, char, t)
-    local rank, modifier = Context.Fishing(env)
-    if not (rank and areas) then
-        return {}
-    end
-    local area = Context.CurrentArea(env, areas)
-    local byArea = ns.Getaway.ByArea(ns.StatsView.Build({ char }), areas)
-    local risk = ns.Getaway.Risk(byArea[area], rank + (modifier or 0), areas:Base(area), t)
-    return ns.Getaway.Lines(risk)
-end
-
 function Hud:ShowTooltip(owner)
     local tip = self.env.GameTooltip
     if not tip or not self.model then
@@ -241,12 +230,13 @@ function Hud:ShowTooltip(owner)
     for _, line in ipairs(HudModel.Tooltip(self.model)) do
         tip:AddLine(line, 1, 1, 1, true)
     end
-    if ns.Dev and ns.Dev.Enabled(ns.db) then
-        tip:AddLine(Hud.DevAreaLine(self.env, ns.area), 0.6, 0.8, 1, true)
-        local risk = Hud.DevRiskLines(self.env, ns.area, ns.char or {}, self.thresholds)
-        for _, line in ipairs(risk) do
-            tip:AddLine(line, 0.6, 0.8, 1, true)
+    if self.settings.zoneLine and self.zone then
+        for _, line in ipairs(self.zone.tips) do
+            tip:AddLine(line, 1, 1, 1, true)
         end
+    end
+    if ns.Dev and ns.Dev.Enabled(ns.db) then
+        tip:AddLine(ns.HudZone.DevAreaLine(self.env, self.areas), 0.6, 0.8, 1, true)
     end
     tip:Show()
 end

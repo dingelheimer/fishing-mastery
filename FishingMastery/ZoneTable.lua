@@ -128,17 +128,14 @@ end
 
 -- input: { info(id), mapName(map), thresholds, areas (Area resolver, optional) }. Returns the
 -- Zones rows: each zone (most casts first) followed by its subzones; a zone fished only without a
--- subzone text has none. Each row has .area: the resolved area ID or nil.
+-- subzone text has none. Each row has .area (the resolved area ID or nil), .map, and .name.
 function ZoneTable.Rows(view, input)
     local zones, areas = {}, input.areas
     for map, subs in pairs(view.subs) do
-        local zone = zoneRow(
-            format("%09d", map),
-            input.mapName(map) or format(L.SUMMARY_ZONE_ID, map),
-            zoneTotal(subs),
-            input
-        )
-        zone.area = areas and areas:Resolve(map, nil) or nil
+        local name = input.mapName(map) or format(L.SUMMARY_ZONE_ID, map)
+        local zone = zoneRow(format("%09d", map), name, zoneTotal(subs), input)
+        zone.name = name
+        zone.area, zone.map = areas and areas:Resolve(map, nil) or nil, map
         zone.subs = {}
         for _, entry in ipairs(subGroups(map, subs, areas)) do
             local sub = zoneRow(
@@ -148,7 +145,8 @@ function ZoneTable.Rows(view, input)
                 input,
                 true
             )
-            sub.unnamed, sub.area = entry.unnamed, entry.area
+            sub.unnamed, sub.area, sub.map = entry.unnamed, entry.area, map
+            sub.name = entry.unnamed and L.STATS_NO_SUBZONE or entry.name
             zone.subs[#zone.subs + 1] = sub
         end
         zones[#zones + 1] = zone

@@ -51,6 +51,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Overview model: per-character and account numbers, favorite zone, session records (pure) |
 | `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
+| `ZoneRef.lua`   | Classic reference next to own catches: own group per area, comparison rows (Classic estimate, season or quest flag, own share, fish not in the Classic data), note, HUD zone line text (pure) |
 | `ZoneTable.lua` | Zones table: zones with their subzones (one row per resolved subzone area, else per text), casts, catches per hour, species, top items with shares; rows carry the area ID (pure) |
 | `OverviewTable.lua` | Overview lines (account totals, rates with ranges, favorite zone, records) and the character rows (pure) |
 | `ChartModel.lua` | Chart math: nice axis scales, histogram bins, bar layout, x label step, line chart range and placement (pure) |
@@ -80,7 +81,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `AreaCheck.lua` | Area API check: map, zone and subzone texts, instance, area IDs at the position, test area names with byte-exact match flags; runs in `dev.area` (dev flag only) |
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
-| `Hud.lua`       | HUD frame: shown from the first cast to the session end, lure tick, tooltip (dev flag: resolved area line), `/fm hud` |
+| `HudZone.lua`   | HUD zone line data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; dev area readout |
+| `Hud.lua`       | HUD frame: shown from the first cast to the session end, zone line, lure tick, tooltip (risk lines; dev flag: resolved area line), `/fm hud` |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
 | `StatsList.lua` | Table widget of the stats window: sort buttons or header labels over a ScrollBox list, grey cells, row tooltips |
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
@@ -169,7 +171,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
   HUD positions; `ui.stats` is the stats window, `ui.minimap.angle` the minimap button, degrees,
   default 220).
 - `FishingMasteryDB.settings` (account; every default in `Options.DEFAULTS`): `hud` = `enabled`
-  (default on), `locked`, `scale` (0.5-2, default 1), `style` (`full` or `text`);
+  (default on), `locked`, `scale` (0.5-2, default 1), `style` (`full` or `text`), `zoneLine` (default on);
   `summary.style` = `window` (default) or `chat`; `minimap.shown` (default on);
   `tooltip.shown` (item tooltip line, default on);
   `reloadReminder` (default on); `thresholds` = `countBelow` (5-30, default 10), `greyBelow`
@@ -210,6 +212,16 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
 | `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch, click time for an early click or getaway) |
 
+### HUD Zone Line
+
+The last HUD line (full style only) names the water you stand in (resolved area, else the map
+name), its getaway risk at your effective skill from the Classic model ("?" without a base
+level; "(you N %)" once your own rate there is shown), and how many of its expected fish (quest
+rows left out) you have not caught there yet. It updates on `ZONE_CHANGED`,
+`ZONE_CHANGED_INDOORS`, `ZONE_CHANGED_NEW_AREA`, skill changes, and attempt ends (the lure tick
+keeps it). The HUD tooltip adds the risk lines ("Differs from Classic" when your range excludes
+the model). The setting "HUD zone line" hides it.
+
 ### Stats Window
 
 `/fm stats` opens a movable window (position saved per character) with 8 tabs. It reads the
@@ -228,7 +240,13 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   button filters.
 - **Zones:** every zone (most casts first) and its subzones: casts, catches per hour, species,
   the top 3 items with their shares; all items with ranges in the tooltip. Subzones with their
-  own zone data get one row per area; other subzone texts keep their own row.
+  own zone data get one row per area; other subzone texts keep their own row. A click on a row
+  selects it (gold name; the first row by default) and fills the comparison below: the
+  water's expected fish with their "Classic estimate" chance, season (winter, summer) or quest
+  flag, and your share with its range, then fish caught there that are "not in Classic data".
+  A subzone without its own list shows its zone's list and the zone's catches where that list
+  applies. The note names the list and the part of a catch it does not cover (partial lists);
+  places without data show "No reference data (new in Forever)" and your catches only.
 - **Failures:** every outcome with its count and rates (of fair casts; catches and getaways also
   of hooked casts; cancels, invalid targets, and unknown attempts are counts only); bar charts of
   the getaway rate with 95 % range marks, and of early clicks by click time (1-second bands).
@@ -264,7 +282,7 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
 ### Settings and Minimap Button
 
 - **Settings panel** (game menu Options > AddOns > Fishing Mastery, `/fm settings`, or a right
-  click on the minimap button): HUD on/off, lock, one text line, scale; summary in the chat;
+  click on the minimap button): HUD on/off, lock, one text line, zone line, scale; summary in the chat;
   minimap button; item tooltip line; reload reminder; the count-only and grey sample sizes; the idle cap T. Changes
   apply at once (T at the next login). Checkboxes use the Settings API confirmed on live; sliders
   appear only when the client has `Settings.CreateSlider`, else `/fm settings` names them.
@@ -374,11 +392,8 @@ do not see it.
   come from `C_Map.GetAreaInfo`; `subzone`/`zone` mean the same bytes as the subzone or zone
   text, `english` the English name in the client export. The 26 test areas are listed in
   `AreaCheck.TEST_AREAS`. No player names or GUIDs are stored.
-- **HUD dev lines:** while the dev flag is set, the HUD tooltip ends with the resolved area
-  ("Dev: area 367 Sen'jin Village (subzone)", "(zone)", "(dungeon)", or "no area data here")
-  and the getaway risk at the current effective skill: the Classic model ("unknown" without a
-  base level), the own rate of the skill's band in this area, and "Differs from Classic" when
-  its range excludes the model.
+- **HUD dev line:** while the dev flag is set, the HUD tooltip ends with the resolved area
+  ("Dev: area 367 Sen'jin Village (subzone)", "(zone)", "(dungeon)", or "no area data here").
 
 ## FishingMasteryProbe
 
