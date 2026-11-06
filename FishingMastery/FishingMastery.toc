@@ -63,6 +63,9 @@ Confirm.lua
 UiTest.lua
 UiCheck.lua
 AreaCheck.lua
+JournalCheck.lua
+JournalTrade.lua
+JournalTradeUI.lua
 Commands.lua
 DataCommands.lua
 HudZone.lua

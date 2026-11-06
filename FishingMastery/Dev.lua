@@ -1,7 +1,9 @@
 -- Developer tools, active only while FishingMasteryDB.settings.dev is true: the storage stress
 -- test (/fm dev stress, lines, load, clear), load time measurement across /reload, the raw
--- capture (/fm dev capture), the UI API check (/fm dev ui, UiCheck.lua), and the area API check
--- (/fm dev area, AreaCheck.lua). All test data lives in db.dev, never in a real character entry.
+-- capture (/fm dev capture), the UI API check (/fm dev ui, UiCheck.lua), the area API check
+-- (/fm dev area, AreaCheck.lua), and the journal API check (/fm dev journal, JournalCheck.lua;
+-- trade skill windows are read on TRADE_SKILL_SHOW, JournalTrade.lua). All test data lives in
+-- db.dev, never in a real character entry.
 local _, ns = ...
 
 local format, match, lower, tonumber, ipairs, type, min, concat =
@@ -146,6 +148,16 @@ function Dev.Start(deps)
             onLoot(self)
         end
     end)
+    bus:On("TRADE_SKILL_SHOW", function()
+        if Dev.Enabled(self.db) then
+            ns.JournalTrade.Run({
+                env = deps.env,
+                db = self.db,
+                serverTime = deps.serverTime,
+                after = deps.after,
+            })
+        end
+    end)
     return self
 end
 
@@ -256,6 +268,11 @@ local function command(rest)
         })
     elseif action == "area" then
         ns.AreaCheck.Run(
+            { env = self.deps.env, db = self.db, serverTime = self.deps.serverTime },
+            value
+        )
+    elseif action == "journal" then
+        ns.JournalCheck.Run(
             { env = self.deps.env, db = self.db, serverTime = self.deps.serverTime },
             value
         )

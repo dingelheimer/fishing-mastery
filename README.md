@@ -79,6 +79,9 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `UiTest.lua`    | UI check test window: one line, one bar, an item icon, a 3-row scroll list, two tabs, "Open settings" (dev flag only) |
 | `UiCheck.lua`   | UI API check: each statistics UI API missing, ok, or error; results in `dev.ui` (dev flag only) |
 | `AreaCheck.lua` | Area API check: map, zone and subzone texts, instance, area IDs at the position, test area names with byte-exact match flags; runs in `dev.area` (dev flag only) |
+| `JournalCheck.lua` | Journal API check: recipe spells known, new Forever spell names, gear tooltips and counts, item classes, fishing modifier and main-hand tooltip; runs in `dev.journal` (dev flag only) |
+| `JournalTrade.lua` | Trade skill read on `TRADE_SKILL_SHOW` for the journal check, repeated 1 s later: Classic API part (line, recipe count, first 3 recipes with spell, product, and reagent IDs) plus the `C_TradeSkillUI` part (dev flag only) |
+| `JournalTradeUI.lua` | `C_TradeSkillUI` part of the trade read: function names, base profession, recipe IDs with learned flag, learned recipes with product and reagents (dev flag only) |
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
 | `HudZone.lua`   | HUD zone line data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; dev area readout |
@@ -362,6 +365,7 @@ do not see it.
 | `/fm dev capture [on\|off\|clear]` | Raw capture switch; without an argument, a summary of the captured aura IDs and loot sources |
 | `/fm dev ui`                 | UI API check: opens the test window, prints one line per API (ok, missing, error with the text), and keeps the results in `dev.ui` |
 | `/fm dev area [clear]`       | Area API check at the current spot: prints the readings and the area the lookup resolves, appends them to `dev.area.runs` (30 kept); `clear` removes the runs |
+| `/fm dev journal [clear]`    | Journal API check: prints and appends a run to `dev.journal.runs` (10 kept); while the dev flag is on, every opened trade skill window adds a read to `dev.journal.trades` (10 kept); `clear` removes both |
 
 - **Load measurement:** `PLAYER_LOGOUT` (also on `/reload`) saves `GetTimePreciseSec()` in
   `dev.logoutAt`; after the reload the addon prints the time from it to its `ADDON_LOADED`, the
@@ -392,6 +396,25 @@ do not see it.
   come from `C_Map.GetAreaInfo`; `subzone`/`zone` mean the same bytes as the subzone or zone
   text, `english` the English name in the client export. The 26 test areas are listed in
   `AreaCheck.TEST_AREAS`. No player names or GUIDs are stored.
+- **Journal API check** (`dev.journal`, `runs` and `trades`, at most 10 each, oldest dropped):
+  a run is `{ at, recipes = { { id, name, known, player } }, newSpells = { { id, name } },
+  gear = { { id, tip, bags, bank } }, groups = { { id, class, subclass } }, fishing = { rank,
+  modifier, pole, tip }, missing }`. `known`/`player` come from `IsSpellKnown`/`IsPlayerSpell`,
+  names from `C_Spell.GetSpellInfo` (else `GetSpellInfo`), `tip` is up to 12 left lines of
+  `C_TooltipInfo.GetItemByID` (nil until the item is loaded), `bags`/`bank` are
+  `C_Item.GetItemCount` without and with the bank, `class`/`subclass` from
+  `C_Item.GetItemInfoInstant`, and `pole` is `GetInventoryItemID("player", 16)`. The ID lists
+  are `JournalCheck.RECIPES`, `NEW_SPELLS`, `GEAR`, and `GROUP_ITEMS`. A trade read is `{ at,
+  fired, line, num, recipes = { { index, spell, product, reagents = { { id, count } } } } }`
+  from `GetTradeSkillLine`, `GetNumTradeSkills`, `GetTradeSkillInfo` (headers skipped),
+  `GetTradeSkillRecipeLink`, `GetTradeSkillItemLink`, `GetTradeSkillNumReagents`,
+  `GetTradeSkillReagentInfo`, and `GetTradeSkillReagentItemLink` (all missing on Forever), plus
+  `phase` (`show`, or `later` for the read 1 s after the event) and `modern = { api, profession,
+  professionName, skill, maxSkill, total, learned, recipes = { { id, via, product, reagents } } }`
+  from `C_TradeSkillUI`: `api` lists its function names (150 kept), `recipes` the learned ones (60
+  kept), read with `GetRecipeSchematic` (`via = "schematic"`) or `GetRecipeNumReagents`,
+  `GetRecipeItemLink`, `GetRecipeReagentInfo`, `GetRecipeReagentItemLink` (`"reagentInfo"`).
+  Recipe names are printed, not saved. No player names or GUIDs are stored.
 - **HUD dev line:** while the dev flag is set, the HUD tooltip ends with the resolved area
   ("Dev: area 367 Sen'jin Village (subzone)", "(zone)", "(dungeon)", or "no area data here").
 
