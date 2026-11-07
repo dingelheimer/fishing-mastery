@@ -6,7 +6,7 @@ Usage (repository root):
 
 The terms come from the saved file's folder names (account, realm, character folders) and from
 `FishingMasteryDB.chars` (character keys, name parts). A term counts only as a whole word, so a
-name inside a longer word ("Angel" in "Angelfish") is no hit. The output gives counts per term
+name inside a longer word ("Brannoc" in "Brannocfish") is no hit. The output gives counts per term
 kind only; it never prints a term, the account folder, or the input path. Exit code 1 on any hit,
 2 on bad input. Python 3 standard library only.
 """

@@ -5,7 +5,8 @@ it into numbers you can trust: how often you catch, how fast, what gets away and
 each water should give you at your skill. A journal lists every fish, water, recipe, and piece of
 fishing gear, with what you have already caught and owned.
 
-Free and open source (GPL-3.0). Developers: see the [development reference](docs/development.md).
+Published on CurseForge as **Fishing Mastery Forever**; in game it is called Fishing Mastery. Free
+and open source (GPL-3.0). Developers: see the [development reference](docs/development.md).
 
 ## Features
 

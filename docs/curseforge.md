@@ -1,11 +1,15 @@
 # CurseForge Project Page
 
-Text for the CurseForge project "Fishing Mastery". Paste the summary into the project's summary
-field and the description into the description editor (Markdown). Keep it in step with the
+Text for the CurseForge project "Fishing Mastery Forever" (owner decision 2026-11-07: the name
+says the addon is for WoW: Forever; in game it stays "Fishing Mastery", and the folder and saved
+data names stay `FishingMastery`). Paste the summary into the project's summary field and the
+description into the description editor (Markdown). Keep it in step with the
 [README](../README.md).
 
 **Project settings:** game World of Warcraft, flavor Forever, category Professions, license
 GPL-3.0, source `https://github.com/dingelheimer/fishing-mastery`, issues on the same repository.
+**Logo:** `docs/images/logo-400.png` (400 × 400; `logo-1024.png` if a larger one is asked for),
+drawn by `tools/draw_logo.py`.
 
 ## Summary
 
@@ -14,8 +18,8 @@ rate with a confidence range, Classic estimates next to your own catches.
 
 ## Description
 
-**Fishing Mastery** records every fishing cast you make in World of Warcraft: Forever and turns it
-into numbers you can trust.
+**Fishing Mastery Forever** records every fishing cast you make in World of Warcraft: Forever and
+turns it into numbers you can trust.
 
 ### What you get
 

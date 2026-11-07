@@ -18,7 +18,7 @@ under `projects/wow-fishing-addon`.
 | `spec/fixtures/`        | Redacted event sequences from the live probe run, replayed by the tracker specs |
 | `tools/`                | Developer scripts: fixture extraction from a probe log, zone and journal data fetch and build, privacy scan |
 | `tools/data/`           | Trimmed, pinned copies of the zone and journal data sources (input of both builds) |
-| `docs/`                 | This development reference, the probe reference, the CurseForge page text |
+| `docs/`                 | This development reference, the probe reference, the CurseForge page text, the logo (`images/`, drawn by `tools/draw_logo.py`, needs Pillow) |
 | `.github/workflows/`    | `check.yml`: the quality gates on every push and pull request; `package.yml`: a dry run of the release zip (started by hand) |
 | `.pkgmeta`, `CHANGELOG.md` | Packager configuration (only `FishingMastery/`, `LICENSE`, and the changelog go into the zip) and the release notes |
 | `probe-results/`        | Local copies of probe logs; git-ignored, never committed         |
