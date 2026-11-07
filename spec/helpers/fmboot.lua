@@ -177,7 +177,8 @@ function M.new()
         _G.FishingMasteryCharDB = charSaved
         w.ns = {}
         for _, file in ipairs(addon.tocFiles(M.ADDON)) do
-            assert(loadfile(M.ADDON .. "/" .. file))(M.ADDON, w.ns)
+            -- TOC paths use the client's backslash; loadfile needs a slash on every OS.
+            assert(loadfile(M.ADDON .. "/" .. file:gsub("\\", "/")))(M.ADDON, w.ns)
         end
         w.fire("ADDON_LOADED", "SomeOtherAddon")
         w.fire("ADDON_LOADED", M.ADDON)
