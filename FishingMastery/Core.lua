@@ -6,7 +6,16 @@ local CreateFrame, GetServerTime, GetTimePreciseSec, format, tremove, _G =
     CreateFrame, GetServerTime, GetTimePreciseSec, string.format, table.remove, _G
 local L = ns.L
 
-ns.VERSION = C_AddOns and C_AddOns.GetAddOnMetadata(addonName, "Version") or "dev"
+-- The version for the chat: the TOC version the packager wrote, or "development build" in a
+-- checkout, where the TOC still holds the packager keyword (or without the API).
+function ns.VersionText(raw)
+    if type(raw) ~= "string" or raw == "" or raw:find("@", 1, true) then
+        return L.VERSION_DEV
+    end
+    return raw
+end
+
+ns.VERSION = ns.VersionText(C_AddOns and C_AddOns.GetAddOnMetadata(addonName, "Version"))
 
 function ns.Print(text)
     DEFAULT_CHAT_FRAME:AddMessage("|cff33bbff" .. L.PREFIX .. ":|r " .. text)

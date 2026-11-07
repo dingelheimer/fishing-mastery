@@ -2,13 +2,14 @@
 ## Title: Fishing Mastery
 ## Notes: Tracks every fishing cast and outcome for fishing statistics and expectations
 ## Author: dingel
-## Version: 0.1.0
+## Version: @project-version@
 ## Category: Professions
 ## IconTexture: Interface\Icons\Trade_Fishing
 ## AddonCompartmentFunc: FishingMastery_OnAddonCompartmentClick
 ## SavedVariables: FishingMasteryDB
 ## SavedVariablesPerCharacter: FishingMasteryCharDB
 ## X-License: GPL-3.0
+## X-Website: https://github.com/dingelheimer/fishing-mastery
 
 Locale.lua
 LocaleStats.lua

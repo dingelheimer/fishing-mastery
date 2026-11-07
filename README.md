@@ -17,7 +17,8 @@ under `projects/wow-fishing-addon`.
 | `tools/`                | Developer scripts: fixture extraction from a probe log, zone and journal data fetch and build |
 | `tools/data/`           | Trimmed, pinned copies of the zone and journal data sources (input of both builds) |
 | `docs/`                 | Longer docs (probe reference)                                    |
-| `.github/workflows/`    | `check.yml`: the quality gates on every push and pull request   |
+| `.github/workflows/`    | `check.yml`: the quality gates on every push and pull request; `package.yml`: a dry run of the release zip (started by hand) |
+| `.pkgmeta`, `CHANGELOG.md` | Packager configuration (only `FishingMastery/`, `LICENSE`, and the changelog go into the zip) and the release notes |
 | `probe-results/`        | Local copies of probe logs; git-ignored, never committed         |
 
 ## FishingMastery
@@ -511,6 +512,10 @@ game's language version, so code that only LuaJIT accepts fails there. Versions 
 luacheck 1.2.0, busted 2.3.0, StyLua 2.6.0, Python 3.14, each action at a release tag. Raise them
 together with the local tools.
 
+**Package dry run:** Actions → Package → Run workflow builds the release zip with the BigWigs
+packager (v2.7.0, `.pkgmeta`) without uploading, lists its files in the log, and keeps the zip
+as the workflow artifact `package` for 7 days.
+
 `.luacheckrc` turns the LuaJIT JIT compiler off for luacheck: with it on, full-tree runs crashed
 with a segfault in most attempts, while the interpreter is stable.
 
@@ -602,7 +607,8 @@ casts); places without a base level show "unknown" and the own rate only.
   `AreaTable`, `UiMap`, `UiMapAssignment`, and `SkillLineAbility` rows. The MIT notice is in
   `tools/data/LICENSE-AllTheThings.txt`.
 
-Item names, icons, and zone names are read from the game client at runtime.
+Item names, icons, and zone names are read from the game client at runtime. The package carries
+these notices, with the MIT text, in `FishingMastery/NOTICE.md`.
 
 ### Install for In-Game Testing
 

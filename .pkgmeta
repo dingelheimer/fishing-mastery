@@ -1,0 +1,22 @@
+# BigWigs packager configuration (https://github.com/BigWigsMods/packager). The repository holds the
+# addon in FishingMastery/ next to the frozen probe, specs, tools, and docs; only the addon folder
+# (with its NOTICE.md) and the license and changelog go into the package.
+package-as: FishingMastery
+
+move-folders:
+  FishingMastery/FishingMastery: FishingMastery
+
+ignore:
+  - FishingMasteryProbe
+  - spec
+  - tools
+  - docs
+  - probe-results
+  - README.md
+  - stylua.toml
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+enable-nolib-creation: no

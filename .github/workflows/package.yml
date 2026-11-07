@@ -1,0 +1,34 @@
+name: Package
+
+# Dry run of the release package: builds the zip with the BigWigs packager exactly as a release
+# would (.pkgmeta), uploads nothing, and keeps the zip as a workflow artifact for 7 days. Started
+# by hand (Actions -> Package -> Run workflow) before a release or after a .pkgmeta change.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Build the package without upload
+        uses: BigWigsMods/packager@v2.7.0
+        with:
+          args: -d
+          pandoc: "false"
+      - name: List the package
+        run: |
+          for zip in .release/*.zip; do
+            echo "$zip"
+            unzip -l "$zip"
+          done
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: package
+          path: .release/*.zip
+          retention-days: 7

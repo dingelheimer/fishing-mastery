@@ -10,6 +10,7 @@ ns.L = L
 
 L.PREFIX = "Fishing Mastery"
 L.HELP_HEADER = "Version %s. Commands:"
+L.VERSION_DEV = "development build"
 L.HELP_LINE = "  /fm %s - %s"
 L.CMD_HELP = "Show this help"
 L.UNKNOWN_COMMAND = "Unknown command: %s"
