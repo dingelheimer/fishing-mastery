@@ -31,4 +31,6 @@ jobs:
         with:
           name: package
           path: .release/*.zip
+          # .release is a dot folder, which the action skips by default.
+          include-hidden-files: true
           retention-days: 7
