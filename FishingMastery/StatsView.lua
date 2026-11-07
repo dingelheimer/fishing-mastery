@@ -1,7 +1,7 @@
 -- Pure logic: a view of the totals for the stats window: one character, or several characters
 -- merged in memory (subzones keyed by their text, since every character numbers its own; items by
--- first and last catch and summed hours, the best zone recomputed from the merged maps). No frame
--- or API calls.
+-- first and last catch, the first catch place (map and subzone text), and summed hours, the best
+-- zone recomputed from the merged maps). No frame or API calls.
 local _, ns = ...
 
 local type, pairs, ipairs = type, pairs, ipairs
@@ -35,7 +35,7 @@ local function addCounts(into, from)
     end
 end
 
-local function mergeItem(view, id, entry)
+local function mergeItem(view, id, entry, subzones)
     local item = view.items[id]
     if not item then
         item = { n = 0, qty = 0, hours = {} }
@@ -44,6 +44,11 @@ local function mergeItem(view, id, entry)
     item.n, item.qty = item.n + (entry.n or 0), item.qty + (entry.qty or 0)
     if type(entry.first) == "number" and (not item.first or entry.first < item.first) then
         item.first = entry.first
+        -- First catch place: map and subzone text (indices differ per character).
+        local name = type(entry.fs) == "number" and entry.fs ~= 0 and subzones[entry.fs] or nil
+        item.firstMap = type(entry.fm) == "number" and entry.fm or nil
+        item.firstSub = item.firstMap and (type(name) == "string" and name or StatsView.NO_SUBZONE)
+            or nil
     end
     if type(entry.last) == "number" and (not item.last or entry.last > item.last) then
         item.last = entry.last
@@ -129,7 +134,7 @@ local function mergeChar(view, char)
         addCounts(child(into, "items"), entry.items)
     end
     for id, entry in pairs(tbl(totals.items)) do
-        mergeItem(view, id, entry)
+        mergeItem(view, id, entry, tbl(char.subzones))
     end
     mergeSubs(view, totals, tbl(char.subzones))
     mergeSubSkills(view, totals, tbl(char.subzones))

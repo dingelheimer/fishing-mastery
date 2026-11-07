@@ -91,6 +91,11 @@ local function startSettings()
                 ns.stats:Toggle()
             end
         end,
+        openJournal = function()
+            if ns.castLog.char then
+                ns.journalWindow:Toggle()
+            end
+        end,
         openSettings = function()
             if not ns.settingsPanel:Open() then
                 ns.Print(L.OPT_UNAVAILABLE)
@@ -164,6 +169,17 @@ local function startTracker()
         store = ns.charDb.ui,
         serverTime = GetServerTime,
         after = timer("timer:stats"),
+    })
+    ns.journalWindow = ns.JournalWindow.Start({
+        env = _G,
+        castLog = castLog,
+        db = ns.db,
+        charKey = ns.charKey,
+        store = ns.charDb.ui,
+        areas = ns.area,
+        zones = ns.Zones,
+        journal = ns.Journal,
+        after = timer("timer:journal"),
     })
     startSettings()
     if ns.char then

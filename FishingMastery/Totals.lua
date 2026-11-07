@@ -13,6 +13,7 @@
 --   subskills = { [map] = { [sub] = { [band] = { hooked, getaways } } } }: the same per subzone,
 --              so the own getaway rate can be split by resolved area (Getaway.lua),
 --   items    = { [itemID] = { n (catches with it), qty, first, last (server time), best (map),
+--                fm, fs (map and subzone index of the first catch, as in subs),
 --                hours = { [UTC hour] = catches with it }, fair (fair casts counted at its last
 --                catch, for the dry streak) } },
 --   active   = { [map] = seconds }: Σ min(gap to the next cast, ACTIVE_CAP), and ACTIVE_CAP
@@ -32,8 +33,8 @@ local Codec, History = ns.Codec, ns.History
 local Totals = {}
 ns.Totals = Totals
 
-Totals.VERSION = 5 -- 3: early-click times (Story 3.4); 4: subzones, item hours (Story 3.7);
--- 5: hooked casts per subzone and skill band (Story 4.4)
+Totals.VERSION = 6 -- 3: early-click times (Story 3.4); 4: subzones, item hours (Story 3.7);
+-- 5: hooked casts per subzone and skill band (Story 4.4); 6: first catch place (Story 5.3)
 Totals.ACTIVE_CAP = ns.Options.DEFAULTS.thresholds.activeCap -- seconds; default T
 -- T of this login (settings.thresholds.activeCap, set by Core before the cast log starts). Totals
 -- counted with another T are not current, so the next login counts them again.
@@ -140,7 +141,7 @@ local function fairCasts(outcomes)
     return n
 end
 
-local function addItems(totals, cast, map, group, sub, hour)
+local function addItems(totals, cast, map, group, sub, subKey, hour)
     local mapItems = get(totals.maps[map], "items", newTable)
     local fair = fairCasts(totals.outcomes)
     for _, item in ipairs(cast.loot or {}) do
@@ -152,7 +153,7 @@ local function addItems(totals, cast, map, group, sub, hour)
             bump(sub.items, id)
             local entry = totals.items[id]
             if not entry then
-                entry = { n = 0, qty = 0, first = cast.t, best = map }
+                entry = { n = 0, qty = 0, first = cast.t, best = map, fm = map, fs = subKey }
                 totals.items[id] = entry
             end
             entry.n, entry.qty, entry.last = entry.n + 1, entry.qty + qty, cast.t
@@ -237,7 +238,7 @@ function Totals.Add(totals, cast)
     bump(sub.outcomes, out)
 
     if catch == 1 then
-        addItems(totals, cast, map, group, sub, hourKey)
+        addItems(totals, cast, map, group, sub, subKey, hourKey)
         if type(cast.bite) == "number" then
             bump(group.bites, cast.bite)
         end

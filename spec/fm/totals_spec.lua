@@ -75,7 +75,7 @@ describe("FishingMastery Totals", function()
                 assert.are.equal(1411, totals.items[6303].best)
             end
         end
-        assert.are.equal(5, totals.version)
+        assert.are.equal(6, totals.version)
         assert.are.same({
             [1411] = {
                 on = {
@@ -139,6 +139,8 @@ describe("FishingMastery Totals", function()
                 first = casts[1].t,
                 last = casts[6].t,
                 best = 1412,
+                fm = 1411,
+                fs = 1,
                 hours = { [5] = 2, [6] = 3 },
                 fair = 6,
             },
@@ -148,6 +150,8 @@ describe("FishingMastery Totals", function()
                 first = casts[1].t,
                 last = casts[1].t,
                 best = 1411,
+                fm = 1411,
+                fs = 1,
                 hours = { [5] = 1 },
                 fair = 1,
             },
@@ -207,6 +211,21 @@ describe("FishingMastery Totals", function()
         Totals.Add(totals, { t = DAY + 100, map = 1, out = "cancel" })
         Totals.Add(totals, { t = DAY + 90, map = 1, out = "cancel" })
         assert.are.equal(120, totals.active[1])
+    end)
+
+    it("rebuilds the first catch place from decoded casts", function()
+        local char = { casts = {}, days = {}, quarantine = {} }
+        local live = Totals.New()
+        for _, cast in ipairs(session()) do
+            ns.History.PackIfNewDay(char, cast.t)
+            char.casts[#char.casts + 1] = cast
+            Totals.Add(live, cast)
+        end
+        ns.History.Pack(char)
+        assert.are.equal(0, #char.casts)
+        local rebuilt = Totals.Rebuild(char)
+        assert.are.same({ 1411, 1 }, { rebuilt.items[6303].fm, rebuilt.items[6303].fs })
+        assert.are.same(live.items, rebuilt.items)
     end)
 
     it("rebuild from the packed history equals live counting in every aggregate", function()

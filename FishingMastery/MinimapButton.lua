@@ -19,7 +19,7 @@ MinimapButton.BACKGROUND = "Interface\\Minimap\\UI-Minimap-Background"
 MinimapButton.HIGHLIGHT = "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight"
 
 -- deps: { env, settings (db.settings), store (FishingMasteryCharDB.ui), hud, openStats(),
--- openSettings() }.
+-- openJournal() (Shift + left click), openSettings() }.
 function MinimapButton.Start(deps)
     local self = setmetatable({
         env = deps.env,
@@ -27,6 +27,7 @@ function MinimapButton.Start(deps)
         store = deps.store,
         hud = deps.hud,
         openStats = deps.openStats,
+        openJournal = deps.openJournal,
         openSettings = deps.openSettings,
     }, MinimapButton)
     self:Update()
@@ -104,6 +105,8 @@ local function build(self)
         ns.Guard.Wrap("minimap:click", function(_, mouseButton)
             if mouseButton == "RightButton" then
                 self.openSettings()
+            elseif ns.Context.Call(env, "IsShiftKeyDown") and self.openJournal then
+                self.openJournal()
             else
                 self.openStats()
             end

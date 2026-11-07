@@ -14,8 +14,8 @@ under `projects/wow-fishing-addon`.
 | `spec/`                 | busted tests for the probe: pure logic, fake-UI window tests, and a boot test of all TOC files |
 | `spec/fm/`              | busted tests for `FishingMastery/`, including a boot test of all its TOC files |
 | `spec/fixtures/`        | Redacted event sequences from the live probe run, replayed by the tracker specs |
-| `tools/`                | Developer scripts: fixture extraction from a probe log, zone data fetch and build |
-| `tools/data/`           | Trimmed, pinned copies of the zone data sources (input of the zone data build) |
+| `tools/`                | Developer scripts: fixture extraction from a probe log, zone and journal data fetch and build |
+| `tools/data/`           | Trimmed, pinned copies of the zone and journal data sources (input of both builds) |
 | `docs/`                 | Longer docs (probe reference)                                    |
 | `probe-results/`        | Local copies of probe logs; git-ignored, never committed         |
 
@@ -29,7 +29,9 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Locale.lua`    | User-facing strings (`ns.L`), English fallback                         |
 | `Options.lua`   | Every setting's default in one table; settings panel controls with ranges; the proxy the panel writes through (pure) |
 | `LocaleStats.lua` | User-facing strings of the stats window                              |
+| `LocaleJournal.lua` | User-facing strings of the journal window |
 | `Data/Zones.lua` | Generated zone data `ns.Zones`: Classic loot lists, base skills, area placement (see Zone Data) |
+| `Data/Journal.lua` | Generated journal data `ns.Journal`: item groups, Classic recipes that use fish, fishing gear, season rules (see Journal Data) |
 | `Guard.lua`     | Runs every handler and slash command through `xpcall`; counts errors   |
 | `Events.lua`    | Event bus: one frame, dispatch table, player-only unit events; events the client cannot register are skipped and listed |
 | `Db.lua`        | Schema version, migration walk, repair of missing fields, migration snapshot (pure) |
@@ -50,6 +52,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `HudModel.lua`  | HUD numbers and texts from the session, rank, lure, and item; count/grey rules and tooltip ranges (pure) |
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Overview model: per-character and account numbers, favorite zone, session records (pure) |
+| `JournalModel.lua` | Journal model: entries of the four journal groups with own catches (account-wide or one character), places, base and no-getaway skill, recipes, season, quest-only flag, new-in-Forever items by Forever class, progress per group, gear for a skill gap (pure) |
 | `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
 | `ZoneRef.lua`   | Classic reference next to own catches: own group per area, comparison rows (Classic estimate, season or quest flag, own share, fish not in the Classic data), note, HUD zone line text (pure) |
 | `ZoneTable.lua` | Zones table: zones with their subzones (one row per resolved subzone area, else per text), casts, catches per hour, species, top items with shares; rows carry the area ID (pure) |
@@ -94,13 +97,18 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `StatsWindow.lua` | Stats window `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
 | `StatsFrame.lua` | Stats window layout: movable frame, status line, scope button, one panel per tab, 8 tab buttons |
 | `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs |
+| `JournalTable.lua` | Fish tab of the journal: filtered rows (group, caught or not, plain-text search), dimmed not-caught rows, progress line, detail lines (pure) |
+| `JournalWindow.lua` | Journal window `/fm journal`: tab (saved per character), scope (account-wide by default), filters, selection; builds the model and the table inputs (own share per area) |
+| `JournalFrame.lua` | Layout of the journal window: movable frame, progress line, filter row with search box, scope button, panels, tabs |
+| `WatersTable.lua` | Waters tab of the journal: one row per area (subzones under their zone, dungeons last, places without reference data), base and no-getaway skill, fish count, own casts and catches, color band for the effective skill, fishable filter, sort (pure) |
+| `JournalTabs.lua` | Build and draw of the journal tabs: Fish (list and detail pane) and Waters (waters list, the selected water's fish); Recipes and Gear are placeholders |
 | `FailureTabs.lua` | Build and draw of the Failures, Bite times, and Sessions tabs |
 | `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
-| `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click stats window, right click settings, session tooltip, hide setting |
+| `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click stats window, Shift + left click journal, right click settings, session tooltip, hide setting |
 | `SettingsPanel.lua` | Settings panel (Settings API): one checkbox or slider per setting, `/fm settings`, `/fm minimap` |
 | `ItemTooltip.lua` | Item tooltip post-call: adds the line for items this character caught, one lookup per tooltip, tooltip setting |
-| `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; opens or closes the stats window |
+| `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; opens or closes the stats window, with Shift the journal |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
 
 ### Saved Data
@@ -155,7 +163,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
   | `zones`    | `[map].on / .off` (lure or not) `= { casts, outcomes, items = { [itemID] = quantity }, bites = { [tenths] = catches }, clicks = { [tenths] = early clicks } }` |
   | `hours`    | `[UTC hour 0-23] = { casts, outcomes }` (shifted to the realm or local hour when shown) |
   | `skills`   | `[map][band] = { hooked, getaways }`, band = lower bound of 5 points of rank + modifier |
-  | `items`    | `[itemID] = { n (catches with it), qty, first, last (server time), best (map with the most), hours = { [UTC hour] = catches }, fair (fair casts counted at its last catch) }` |
+  | `items`    | `[itemID] = { n (catches with it), qty, first, last (server time), best (map with the most), fm, fs (map and subzone index of the first catch), hours = { [UTC hour] = catches }, fair (fair casts counted at its last catch) }` |
   | `active`   | `[map] = seconds`: Σ min(gap to the next cast, 60 s), 60 s for the latest cast |
   | `subs`     | `[map][sub] = { casts, outcomes, items = { [itemID] = catches with it }, active }`, sub = subzone index or 0 (none); the same active time split per subzone |
   | `subskills` | `[map][sub][band] = { hooked, getaways }`: the `skills` bands per subzone, so the getaway rate can be split by resolved area |
@@ -163,8 +171,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 
   Hooked = catch + getaway. `/fm rebuild` counts everything again and says whether the result
   equals the live totals. Totals of another version (after the schema 2 update, a new totals
-  version such as 3 for the early-click times, 4 for subzones and item hours, or 5 for the
-  skill bands per subzone, or a restored old snapshot) are counted again after login, in the same steps as the load check (one decode for
+  version such as 3 for the early-click times, 4 for subzones and item hours, 5 for the
+  skill bands per subzone, or 6 for the first catch place, or a restored old snapshot) are counted again after login, in the same steps as the load check (one decode for
   both); `/fm status` says "Counting your history" until it is done, and casts during the count
   are counted once. 200,000 synthetic casts give about 86 KB of totals in the saved file (8 maps, 12 items;
   version 4 adds about 20 % for subzones and item hours: the spec estimate goes from 76,076 to 91,269
@@ -210,6 +218,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm summary`              | Summary of the open session, or of the last one (also shown when a session ends after 15 minutes without a cast) |
 | `/fm summary window\|chat` | Where summaries appear: a small window (default) or your chat frame |
 | `/fm stats`                | Statistics window, see below (also the minimap button's left click and the addon compartment entry) |
+| `/fm journal`              | Journal window, see below (also Shift + left click on the minimap button or the compartment entry) |
 | `/fm settings`             | Settings panel (also the minimap button's right click); lists any control the client could not show |
 | `/fm minimap show\|hide`   | Shows or hides the minimap button |
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
@@ -291,9 +300,26 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   appear only when the client has `Settings.CreateSlider`, else `/fm settings` names them.
 - **Minimap button** (own, no libraries): drag it around the minimap edge (square minimaps
   follow their corners); the angle is saved per character. Left click opens or closes the stats
-  window, right click opens the settings; the tooltip shows the open session's rates. Hide it in
+  window, Shift + left click the journal, right click opens the settings; the tooltip shows the open session's rates. Hide it in
   the settings or with `/fm minimap hide`.
-- **Addon compartment:** the Fishing Mastery entry opens or closes the stats window.
+- **Addon compartment:** the Fishing Mastery entry opens or closes the stats window (with Shift
+  held: the journal).
+- **Journal window** (`/fm journal`): an own window with the tabs Fish, Waters, Recipes, Gear
+  (the last three come in later stories); position and last tab are saved per character. The
+  Fish tab lists every fish, trophy fish, container, and quest fish of the Classic data plus
+  caught items new in Forever, for all characters (scope button: this character). Not-caught
+  fish are marked (dimmed icon, grey row, "not caught") but show all their information. Filters:
+  group, caught or not, and a search box (plain text in the item name). A click on a row shows
+  the details: count, first catch date and place, most caught zone, the skill to catch it and
+  to stop getaways (Classic model), the top 5 places by Classic share with the own share there,
+  the recipes that use it, and the Classic season. The line on top shows the progress per group.
+  The **Waters** tab lists every water of the Classic data (subzones under their zone, dungeons
+  last) and places you fished that have no reference data, with the skill to catch there and to
+  stop getaways, the number of fish, and your casts and catches. Rows are colored for your
+  effective skill (rank and bonuses): red = no catch, orange = some fish get away, green = no
+  getaways. "Fishable now" keeps orange and green waters; the sort button switches between
+  name and skill. A click on a water lists its fish (Classic estimate and own share, as on the
+  stats window's Zones tab); a click on a fish opens it in the Fish tab.
 - **Item tooltip line:** items this character caught show "Fishing Mastery: caught 37x (best:
   Darkspear Strand)" on every item tooltip (bags, vendor, links); one lookup in the item totals,
   never a history scan. Other lines are never changed. Off with the setting "Item tooltip line".
@@ -473,6 +499,32 @@ newer source, change the pinned commits and client build in `tools/zone_sources.
 scripts, review the changed areas, and commit `tools/data/` with the new `Zones.lua`.
 `spec/fm/zones_spec.lua` checks the counts; update them only after reviewing a source change.
 
+### Journal Data
+
+`FishingMastery/Data/Journal.lua` is generated by `tools/build_journal_data.py` (shared rules in
+`tools/journal_sources.py`); never edit it by hand. `ns.Journal` holds (row formats in the file
+header):
+
+- `groups`: every item of the zone data's loot lists (108) by group: `fish`, `trophy`,
+  `container`, `quest` (the journal shows these four), `potion`, `junk`, `other`. Containers are
+  the openable items; trophy fish are an ID list; fish have the fish food type, are reagent class,
+  or are one of three listed IDs. The build fails when an item fits no rule. Forever re-classed
+  these items, so the addon must not group them by `C_Item.GetItemInfoInstant`.
+- `recipes`: Classic recipes with a journal item as reagent that are on a Forever skill line
+  (Cooking 185, Alchemy 171): product, reagents, color ranks from the Forever `SkillLineAbility`,
+  learn skill, source (`vendor`, `drop`, `quest` with the recipe item, or `trainer`). Spells on no
+  Forever line are left out (Copy of Nightfin Soup).
+- `gear`: obtainable items with a fishing skill aura (bonus, required skill and level, race mask
+  from the item or its reward quest, source), plus two Forever items confirmed on live: High Test
+  Eternium Fishing Line (+5, guide value) and the Wide-Brimmed Fishing Hat (`lure`, +25 on use).
+  Copies without any source are left out.
+- `seasons`: Winter Squid and Summer Bass with their Classic game event window (start month, day,
+  hour in server time, length in days).
+
+`python tools/fetch_zone_sources.py` also refreshes the journal inputs (and lists added and
+removed rows per file); then run `python tools/build_journal_data.py`.
+`spec/fm/journal_data_spec.lua` and `tools/test_journal_tools.py` check the counts.
+
 **Getaway model** (`Getaway.lua`, CMaNGOS server rule): catch chance of a hooked fish =
 clamp(effective skill − base + 5, 0, 100) %; below the base no fish is caught (every hooked fish
 gets away), and getaways stop at base + 95. A subzone without its own base uses its zone's. The
@@ -483,10 +535,11 @@ casts); places without a base level show "unknown" and the own rate only.
 ### Data Sources and Credits
 
 - **CMaNGOS classic-db** (https://github.com/cmangos/classic-db, GPL-3.0), commit
-  `37eeeeb1d4`: fishing loot, reference loot, base skill, and season condition rows.
+  `37eeeeb1d4`: fishing loot, reference loot, base skill, and season condition rows; for the
+  journal, item, spell, vendor, trainer, quest reward, loot source, and game event rows.
 - **AllTheThings** Forever client exports (https://github.com/ATTWoWAddon/AllTheThings, MIT,
   copyright (c) 2026 AllTheThings WoW Addon), commit `e15f5d9cee`, client build `1.60.1.70790`:
-  `AreaTable`, `UiMap`, `UiMapAssignment` rows. The MIT notice is in
+  `AreaTable`, `UiMap`, `UiMapAssignment`, and `SkillLineAbility` rows. The MIT notice is in
   `tools/data/LICENSE-AllTheThings.txt`.
 
 Item names, icons, and zone names are read from the game client at runtime.

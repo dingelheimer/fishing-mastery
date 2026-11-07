@@ -1,15 +1,19 @@
-"""Download the pinned zone data sources and keep the rows the build uses in tools/data/.
+"""Download the pinned zone and journal data sources and keep the rows the builds use in
+tools/data/.
 
 Usage (repository root): python tools/fetch_zone_sources.py
 
 Sources (fixed HTTPS URLs, pinned versions):
 - CMaNGOS classic-db (GPL-3.0), Full_DB dump at commit CMANGOS_COMMIT: the tables
-  fishing_loot_template, reference_loot_template, skill_fishing_base_level, conditions.
+  fishing_loot_template, reference_loot_template, skill_fishing_base_level, conditions; for the
+  journal (journal_sources.py) rows of item_template, spell_template, npc_vendor, npc_trainer(_
+  template), quest_template rewards, the loot tables, game_event, game_event_time.
 - AllTheThings Forever client exports (MIT), build CLIENT_BUILD at commit ATT_COMMIT: AreaTable,
-  UiMap, UiMapAssignment.
+  UiMap, UiMapAssignment; SkillLineAbility for the journal.
 
 Downloaded files are parsed as data and never executed. The trimmed copies replace the files in
-tools/data/; before that the script prints which areas changed compared with the committed copies.
+tools/data/; the script prints which areas changed compared with the committed copies, and how
+many journal rows were added or removed per file.
 Python 3 standard library only.
 """
 
@@ -20,6 +24,7 @@ import os
 import sys
 import urllib.request
 
+import journal_sources as journal
 from zone_sources import (
     ATT_COMMIT,
     CLIENT_BUILD,
@@ -169,6 +174,14 @@ def write_csv(path, columns, rows):
         writer.writerows(sort_rows(rows))
 
 
+def old_rows(path):
+    """Rows of a written CSV as a set of tuples (empty when the file does not exist yet)."""
+    if not os.path.exists(path):
+        return set()
+    with open(path, encoding="utf-8", newline="") as handle:
+        return {tuple(row) for row in list(csv.reader(handle))[1:]}
+
+
 def main():
     old = area_signatures(read_sources()) if all(
         os.path.exists(os.path.join(DATA_DIR, name)) for name in FILES.values()
@@ -182,7 +195,7 @@ def main():
     print("Downloading Forever client exports " + CLIENT_BUILD + " ...")
     exports = {
         table: download(ATT_URL.format(table=table))
-        for table in ("AreaTable", "UiMap", "UiMapAssignment")
+        for table in ("AreaTable", "UiMap", "UiMapAssignment", "SkillLineAbility")
     }
     areas, uimaps, assignments = trim_client(
         csv_table(exports["AreaTable"], AREA_COLUMNS),
@@ -203,6 +216,18 @@ def main():
     }
     for key, (columns, rows) in out.items():
         write_csv(os.path.join(DATA_DIR, FILES[key]), columns, rows)
+
+    abilities = list(csv.DictReader(io.StringIO(exports["SkillLineAbility"].decode("utf-8"))))
+    journal_out = journal.trim_journal(
+        text, sql_rows, abilities, journal.fishing_item_ids(fishing, reference)
+    )
+    for key, (columns, rows) in journal_out.items():
+        path = os.path.join(DATA_DIR, journal.FILES[key])
+        before = old_rows(path)
+        write_csv(path, columns, rows)
+        after = old_rows(path)
+        print("Journal %s: %d rows (%d added, %d removed)"
+              % (journal.FILES[key], len(after), len(after - before), len(before - after)))
 
     new = area_signatures(read_sources())
     added = sorted(set(new) - set(old))

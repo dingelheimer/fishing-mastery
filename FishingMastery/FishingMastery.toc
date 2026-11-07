@@ -12,7 +12,9 @@
 
 Locale.lua
 LocaleStats.lua
+LocaleJournal.lua
 Data\Zones.lua
+Data\Journal.lua
 Options.lua
 Guard.lua
 Events.lua
@@ -35,7 +37,10 @@ Getaway.lua
 SummaryModel.lua
 StatsView.lua
 StatsModel.lua
+JournalModel.lua
 StatsTables.lua
+JournalTable.lua
+WatersTable.lua
 ZoneTable.lua
 ZoneRef.lua
 OverviewTable.lua
@@ -78,6 +83,9 @@ Heatmap.lua
 StatsWindow.lua
 StatsFrame.lua
 StatsTabs.lua
+JournalWindow.lua
+JournalFrame.lua
+JournalTabs.lua
 FailureTabs.lua
 SkillTabs.lua
 MinimapButton.lua

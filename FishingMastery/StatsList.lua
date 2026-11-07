@@ -2,7 +2,8 @@
 -- scroll bar (APIs confirmed on live in Story 3.1). Rows come from the table builders
 -- (StatsTables, ZoneTable, OverviewTable): cells per column, grey cells for small samples, and
 -- tooltip lines shown on hover; with onSelect a click on a row selects it (row data .selected
--- draws its first cell in gold). Unnamed, insecure frames only.
+-- draws its first cell in gold). Row data .color ({ r, g, b }) colors every cell that is not
+-- grey. Unnamed, insecure frames only.
 local _, ns = ...
 
 local setmetatable, ipairs, pcall = setmetatable, ipairs, pcall
@@ -100,7 +101,7 @@ local function initRow(self, row, data)
     row.data = data
     for i, cell in ipairs(row.cells) do
         cell:SetText(data.cells[i] or "")
-        local color = data.grey and data.grey[i] and StatsList.GREY or StatsList.WHITE
+        local color = data.grey and data.grey[i] and StatsList.GREY or data.color or StatsList.WHITE
         if data.selected and i == 1 then
             color = StatsList.GOLD
         end

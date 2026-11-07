@@ -57,6 +57,9 @@ end
 function FontString:SetJustifyH(value)
     self.justifyH = value
 end
+function FontString:SetJustifyV(value)
+    self.justifyV = value
+end
 function FontString:SetWordWrap(value)
     self.wordWrap = value
 end
