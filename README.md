@@ -17,6 +17,7 @@ under `projects/wow-fishing-addon`.
 | `tools/`                | Developer scripts: fixture extraction from a probe log, zone and journal data fetch and build |
 | `tools/data/`           | Trimmed, pinned copies of the zone and journal data sources (input of both builds) |
 | `docs/`                 | Longer docs (probe reference)                                    |
+| `.github/workflows/`    | `check.yml`: the quality gates on every push and pull request   |
 | `probe-results/`        | Local copies of probe logs; git-ignored, never committed         |
 
 ## FishingMastery
@@ -502,6 +503,13 @@ On Windows the tools install without admin rights:
 `scoop install luajit stylua luarocks`, then
 `luarocks --lua-version=5.1 --lua-dir=<luajit dir> install busted` and `... install luacheck`
 (run from PowerShell).
+
+**On GitHub:** `.github/workflows/check.yml` runs the same gates on every push and pull request:
+`luacheck .`, `busted`, `stylua --check .` (job `lua`), and
+`python -m unittest discover -s tools -p "test_*.py"` (job `tools`). It uses Lua 5.1.5, the
+game's language version, so code that only LuaJIT accepts fails there. Versions are pinned:
+luacheck 1.2.0, busted 2.3.0, StyLua 2.6.0, Python 3.14, each action at a release tag. Raise them
+together with the local tools.
 
 `.luacheckrc` turns the LuaJIT JIT compiler off for luacheck: with it on, full-tree runs crashed
 with a segfault in most attempts, while the interpreter is stable.

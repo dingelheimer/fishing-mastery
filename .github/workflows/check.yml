@@ -1,0 +1,45 @@
+name: Check
+
+# The local quality gates on every push and pull request: luacheck, busted, StyLua, and the
+# Python tool tests. Lua is 5.1.5, the game's language version (local runs use LuaJIT, which
+# accepts a little more). Versions are pinned to the local setup of 2026-11-07.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lua:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: leafo/gh-actions-lua@v13.1.0
+        with:
+          luaVersion: "5.1.5"
+      - uses: leafo/gh-actions-luarocks@v6.1.1
+      - name: Install luacheck and busted
+        run: |
+          luarocks install luacheck 1.2.0-1
+          luarocks install busted 2.3.0-1
+      - name: luacheck
+        run: luacheck .
+      - name: busted
+        run: busted
+      - name: StyLua
+        uses: JohnnyMorganz/stylua-action@v5.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: "2.6.0"
+          args: --check .
+
+  tools:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.14"
+      - name: Python tool tests
+        run: python -m unittest discover -s tools -p "test_*.py"
