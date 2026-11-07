@@ -277,8 +277,10 @@ describe("FishingMastery journal window boot", function()
                     }
             end,
         }
+        -- Forever puts raw fish, meat, and eggs in one class (7/8): Raw Sagefish and Stringy Wolf
+        -- Meat look the same; only a catch while fishing tells the fish (Story 5.9).
         _G.C_Item.GetItemInfoInstant = function(id)
-            if id == 21071 then
+            if id == 21071 or id == 2672 then
                 return id, "Trade Goods", "Meat", "", 1, 7, 8
             end
         end
@@ -304,10 +306,23 @@ describe("FishingMastery journal window boot", function()
         w.runTimers(w.clock + 1)
         local store = _G.FishingMasteryDB.recipes
         assert.are.same({ s = 185, p = 6290, r = { { 6291, 1 } } }, store[7751])
-        assert.are.same({ s = 185, p = 21072, r = { { 21071, 1 } } }, store[25704])
-        assert.is_nil(store[2538]) -- no fish in it
+        assert.is_nil(store[25704]) -- Raw Sagefish not caught yet: class 7/8 alone is not enough
+        assert.is_nil(store[2538]) -- wolf meat, class 7/8, never caught while fishing
         assert.is_nil(store[18246]) -- not learned
-        assert.truthy(w.output():find("Journal: 2 new recipes that use fish", 1, true))
+        assert.truthy(w.output():find("Journal: 1 new recipes that use fish", 1, true))
+
+        -- One Raw Sagefish caught: the next opening stores Smoked Sagefish.
+        _G.GetLootSlotLink = function()
+            return "|cnIQ1:|Hitem:21071::::::::5:1482:::::::::|h[Raw Sagefish]|h|r"
+        end
+        local t = w.clock + 10
+        w.catch(t, 9)
+        w.runTimers(t + 12)
+        w.fire("TRADE_SKILL_SHOW")
+        w.runTimers(w.clock + 1)
+        w.runTimers(w.clock + 1)
+        assert.are.same({ s = 185, p = 21072, r = { { 21071, 1 } } }, store[25704])
+        assert.is_nil(store[2538])
 
         _G.SlashCmdList.FM("journal")
         local window = journal()

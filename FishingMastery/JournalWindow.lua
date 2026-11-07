@@ -88,16 +88,27 @@ local function classOf(self, id)
     return nil
 end
 
--- Journal item test for the recipe read: a bundled journal item or a Forever fish or container.
+-- Journal item test for the recipe read: a bundled journal item, or a Forever fish or container
+-- that was caught while fishing on this account.
 function JournalWindow:IsJournal(id)
-    return ns.JournalModel.GroupOf(self:Index(), function(item)
-        return classOf(self, item)
-    end, id) ~= nil
+    return ns.JournalModel.GroupOf(
+        self:Index(),
+        function(item)
+            return classOf(self, item)
+        end,
+        id,
+        function(item)
+            return ns.JournalModel.Caught(self.db.chars, item)
+        end
+    ) ~= nil
 end
 
--- The recipe list: bundled recipes merged with the ones read in game (FishingMasteryDB.recipes).
+-- The recipe list: bundled recipes merged with the ones read in game (FishingMasteryDB.recipes);
+-- stored recipes without a journal item as reagent are left out.
 function JournalWindow:Recipes()
-    return ns.RecipeModel.Build(self.journal, self.db.recipes)
+    return ns.RecipeModel.Build(self.journal, self.db.recipes, function(id)
+        return self:IsJournal(id)
+    end)
 end
 
 -- StatsView view of the chosen scope.

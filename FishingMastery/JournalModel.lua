@@ -146,12 +146,28 @@ local function foreverGroup(classOf, id)
     return JournalModel.FOREVER_CLASSES[class .. "/" .. subclass]
 end
 
+-- True when a character of the account caught the item while fishing (chars:
+-- FishingMasteryDB.chars, read from each character's item totals).
+function JournalModel.Caught(chars, id)
+    for _, char in pairs(tbl(chars)) do
+        local entry = tbl(tbl(tbl(char).totals).items)[id]
+        if type(entry) == "table" and (entry.n or 0) > 0 then
+            return true
+        end
+    end
+    return false
+end
+
 -- Journal group of an item: the bundled group when it is a journal group, else the Forever class
--- group (nil while the class is unknown or for anything else).
-function JournalModel.GroupOf(index, classOf, id)
+-- group, but only for an item caught while fishing (caught(id) true): Forever class 7/8 holds raw
+-- meat and eggs as well as fish (Story 5.9). nil while the class is unknown or for anything else.
+function JournalModel.GroupOf(index, classOf, id, caught)
     local group = index.groupOf[id]
     if group then
         return JOURNAL[group] and group or nil
+    end
+    if type(caught) ~= "function" or not caught(id) then
+        return nil
     end
     return foreverGroup(classOf, id)
 end

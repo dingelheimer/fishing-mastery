@@ -179,4 +179,26 @@ describe("FishingMastery journal model", function()
         assert.are.same({ 6365, 19969, 19972 }, JournalModel.GearFor(J, 20, 10, 2))
         assert.are.same({}, JournalModel.GearFor({ gear = {} }, 5, 300))
     end)
+
+    it("groups a Forever item only when it was caught while fishing", function()
+        local accounts = {
+            a = { totals = { items = { [21071] = { n = 2 } } } },
+            b = { totals = { items = { [2672] = { n = 0 } } } },
+            c = "broken",
+        }
+        assert.is_true(JournalModel.Caught(accounts, 21071))
+        assert.is_false(JournalModel.Caught(accounts, 2672)) -- an entry without catches
+        assert.is_false(JournalModel.Caught(nil, 21071))
+        local function foreverClass()
+            return 7, 8 -- raw fish, meat, and eggs share this class on Forever
+        end
+        local function caught(id)
+            return JournalModel.Caught(accounts, id)
+        end
+        assert.are.equal("fish", JournalModel.GroupOf(index, foreverClass, 21071, caught))
+        assert.is_nil(JournalModel.GroupOf(index, foreverClass, 2672, caught))
+        assert.is_nil(JournalModel.GroupOf(index, foreverClass, 21071, nil))
+        assert.are.equal("fish", JournalModel.GroupOf(index, foreverClass, 6291, nil)) -- bundled
+        assert.is_nil(JournalModel.GroupOf(index, foreverClass, 118, caught)) -- a bundled potion
+    end)
 end)

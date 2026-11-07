@@ -136,6 +136,15 @@ describe("FishingMastery recipe model", function()
         assert.is_nil(sage.learn)
         assert.are.equal(25704, list[20].spell) -- after the bundled Cooking recipes
         assert.are.same({ 25704 }, RecipeModel.ByReagent(list)[21071])
+
+        -- A recipe stored before the stricter read (meat, Story 5.9) is left out with a test.
+        store[2538] = { s = 185, p = 2679, r = { { 2672, 1 } } }
+        assert.are.equal(25, #RecipeModel.Build(ns.Journal, store))
+        local strict = RecipeModel.Build(ns.Journal, store, isJournal)
+        assert.are.equal(24, #strict)
+        assert.is_nil(RecipeModel.Find(strict, 2538))
+        assert.is_not_nil(RecipeModel.Find(strict, 25704))
+        assert.is_not_nil(RecipeModel.Find(strict, 7755)) -- bundled recipes always stay
     end)
 
     it("builds rows with stock, known, and buff, and filters by fish and known", function()

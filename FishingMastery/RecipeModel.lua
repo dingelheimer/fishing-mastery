@@ -125,10 +125,24 @@ local function before(a, b)
     return a.spell < b.spell
 end
 
+-- True when one reagent is a journal item (always true without a test).
+local function usesJournalItem(list, isJournal)
+    if type(isJournal) ~= "function" then
+        return true
+    end
+    for _, reagent in ipairs(list) do
+        if isJournal(reagent[1]) == true then
+            return true
+        end
+    end
+    return false
+end
+
 -- Recipe entries: { spell, profession (nil: unknown), product, reagents = { { itemID, count } },
 -- low, high (color ranks), learn, source, item (recipe item), read (seen in game), forever (not
 -- bundled), food = { bonus, level, source } }. Profession order, then learn skill, then spell.
-function RecipeModel.Build(journal, store)
+-- isJournal(itemID): optional; stored recipes without a journal item as reagent are left out.
+function RecipeModel.Build(journal, store, isJournal)
     local list, food = {}, type(journal.food) == "table" and journal.food or {}
     store = type(store) == "table" and store or {}
     local function finish(entry)
@@ -158,6 +172,9 @@ function RecipeModel.Build(journal, store)
         local read = isId(spell)
             and not (journal.recipes and journal.recipes[spell])
             and stored(row)
+        if read and not usesJournalItem(read, isJournal) then
+            read = nil -- stored before the read became stricter (Story 5.9: meat and eggs)
+        end
         if read then
             finish({
                 spell = spell,
