@@ -10,18 +10,19 @@ import journal_sources as js
 import zone_sources as zs
 
 
-def item(entry, cls, sub=0, food=0, openable=False, spell=0, skill=0, level=0, races=-1, name="x"):
+def item(entry, cls, sub=0, food=0, openable=False, spell=0, skill=0, level=0, races=-1, name="x",
+         slot=17):
     row = {c: "0" for c in js.ITEM_COLUMNS}
     row.update({
         "entry": str(entry), "class": str(cls), "subclass": str(sub), "FoodType": str(food),
         "openable": "1" if openable else "0", "spellid_1": str(spell),
         "RequiredSkillRank": str(skill), "RequiredLevel": str(level), "AllowableRace": str(races),
-        "name": name,
+        "name": name, "InventoryType": str(slot),
     })
     return row
 
 
-def spell(sid, name="s", reagents=(), create=0, aura=None, learn=0):
+def spell(sid, name="s", reagents=(), create=0, aura=None, learn=0, lure=0):
     row = {c: "0" for c in js.SPELL_COLUMNS}
     row.update({"Id": str(sid), "SpellName": name})
     for i, (reagent, count) in enumerate(reagents, 1):
@@ -33,6 +34,8 @@ def spell(sid, name="s", reagents=(), create=0, aura=None, learn=0):
         row["EffectBasePoints1"] = str(aura - 1)
     if learn:
         row["Effect1"], row["EffectTriggerSpell1"] = str(js.EFFECT_LEARN_SPELL), str(learn)
+    if lure:
+        row["Effect1"], row["EffectMiscValue1"] = str(js.EFFECT_ENCHANT_TEMPORARY), str(lure)
     return row
 
 
@@ -141,6 +144,46 @@ class Gear(unittest.TestCase):
         self.assertEqual(gear[6366]["source"], "fishing")
         self.assertEqual(gear[6367]["source"], "drop")
         self.assertEqual((gear[19022]["quest"], gear[19022]["races"]), (7815, 178))
+        self.assertEqual(gear[6365]["slot"], "pole")
+
+    def test_unknown_slot_fails(self):
+        data = sources(items=[item(19969, 4, 1, spell=1, slot=5)], spells=[spell(1, aura=5)],
+                       vendors=[19969])
+        with self.assertRaises(zs.DataError):
+            js.gear(data, set())
+
+    def test_lures_ranks_and_enchants(self):
+        data = sources(
+            items=[
+                item(6529, 0, spell=8087),
+                item(6811, 0, spell=8532, races=255),
+                item(7307, 0, spell=9092, skill=100),
+                item(16083, 9, 9, skill=125, level=20),
+                item(16082, 9, 9, skill=200, level=35),
+                item(11152, 9, 8, skill=145),
+            ],
+            spells=[spell(8087, lure=263), spell(8532, lure=264), spell(9092, lure=265)],
+            vendors=[6529, 16083],
+            trainers=[(7733, 0), (7734, 50), (7734, 75)],
+            quests=[(1580, 6811, 77)],
+            drops=[("creature", 7307), ("creature", 11152)],
+        )
+        lures = js.lures(data)
+        self.assertEqual((lures[6529]["bonus"], lures[6529]["skill"], lures[6529]["source"]),
+                         (25, 1, "vendor"))
+        self.assertEqual((lures[6811]["races"], lures[6811]["quest"]), (77, 1580))
+        self.assertEqual((lures[7307]["bonus"], lures[7307]["source"]), (75, "drop"))
+        ranks = js.ranks(data)
+        self.assertEqual([(r["key"], r["skill"], r["source"]) for r in ranks],
+                         [("apprentice", 1, "trainer"), ("journeyman", 50, "trainer"),
+                          ("expert", 125, "vendor"), ("artisan", 200, "quest")])
+        self.assertEqual(ranks[3]["level"], 35)
+        self.assertEqual(js.enchants(data)[13620],
+                         {"bonus": 2, "formula": 11152, "name": "Enchant Gloves - Fishing",
+                          "skill": 145, "source": "drop"})
+        data["vendors"] = []
+        with self.assertRaises(zs.DataError):
+            js.lures(data)
 
 
 class Seasons(unittest.TestCase):
@@ -183,9 +226,12 @@ class Pinned(unittest.TestCase):
                                              "potion": 11, "junk": 6, "other": 3})
         self.assertEqual((summary["recipes"], summary["bySkill"]), (23, {185: 19, 171: 4}))
         self.assertEqual(summary["dropped"], [25662])
-        self.assertEqual((summary["gear"], sorted(summary["unused"])), (8, [7996, 12221, 12222]))
+        self.assertEqual((summary["gear"], sorted(summary["unused"])), (9, [7996, 12221, 12222]))
         self.assertEqual(summary["seasons"], 2)
+        self.assertEqual(summary["times"], 2)
+        self.assertIn('    times = { [13759] = "night", [13760] = "day" },', text.splitlines())
         self.assertEqual(summary["food"], 4)
+        self.assertEqual((summary["lures"], summary["ranks"], summary["enchants"]), (6, 4, 1))
         self.assertIn("        [4593] = { 8, 15, \"guide\" },", text.splitlines())
         self.assertLess(len(text.encode("utf-8")), build.MAX_BYTES)
         self.assertTrue(all(len(line) <= build.MAX_COLUMNS for line in text.splitlines()))

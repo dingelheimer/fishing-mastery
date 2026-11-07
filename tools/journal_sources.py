@@ -26,7 +26,7 @@ FILES = {
 
 ITEM_COLUMNS = ["entry", "class", "subclass", "name", "Quality", "RequiredSkill",
                 "RequiredSkillRank", "RequiredLevel", "AllowableRace", "FoodType", "openable",
-                "spellid_1", "spellid_2", "spellid_3", "spellid_4", "spellid_5"]
+                "spellid_1", "spellid_2", "spellid_3", "spellid_4", "spellid_5", "InventoryType"]
 SPELL_COLUMNS = (["Id", "SpellName"] + ["Reagent%d" % i for i in range(1, 9)]
                  + ["ReagentCount%d" % i for i in range(1, 9)]
                  + [f % i for f in ("Effect%d", "EffectItemType%d", "EffectApplyAuraName%d",
@@ -45,6 +45,23 @@ FISHING_SKILL = 356
 SKILL_AURAS = {30, 98}  # SPELL_AURA_MOD_SKILL, MOD_SKILL_TALENT
 EFFECT_CREATE_ITEM = 24
 EFFECT_LEARN_SPELL = 36
+EFFECT_ENCHANT_TEMPORARY = 54  # a lure: a temporary enchant on the pole
+ALL_RACES = 255  # item_template.AllowableRace bits of the eight Classic races
+FISHING_POLE = (2, 20)  # item class and subclass of a fishing pole
+ITEM_SLOTS = {1: "head", 8: "feet", 10: "hands", 17: "pole"}  # item_template.InventoryType
+# Lure enchant -> fishing bonus. The value is in the client's SpellItemEnchantment table, not in the
+# dump; these are the guide values (Fishing Mechanics, "Skill Bonuses"), one per enchant.
+LURE_ENCHANTS = {263: 25, 264: 50, 265: 75, 266: 100}
+# Fishing ranks: (key, rank cap, trainer spell or 0, book item or 0). Apprentice and Journeyman are
+# trained, Expert and Artisan learned from a book (Journal research, "Gear Guide").
+RANKS = (("apprentice", 75, 7733, 0), ("journeyman", 150, 7734, 0), ("expert", 225, 0, 16083),
+         ("artisan", 300, 0, 16082))
+# The Artisan book has no reward row in the dump; the guides name a quest.
+RANK_SOURCE = {16082: "quest"}
+# Enchant Gloves - Fishing: spell -> bonus (guide value; the enchant table is not in the dump) and
+# the formula item.
+ENCHANTS = {13620: {"bonus": 2, "formula": 11152, "name": "Enchant Gloves - Fishing"}}
+EXTRA_ITEMS = frozenset([16082, 16083, 11152])  # rank books and the enchant formula
 ITEM_CLASS_RECIPE = 9
 DROP_TABLES = ("creature_loot_template", "gameobject_loot_template", "item_loot_template",
                "fishing_loot_template", "reference_loot_template")
@@ -115,6 +132,9 @@ def trim_journal(text, sql_rows, abilities, fishing_items):
     auras = {sid for sid, s in spells_all.items()
              if any(int(s["EffectApplyAuraName%d" % e]) in SKILL_AURAS
                     and int(s["EffectMiscValue%d" % e]) == FISHING_SKILL for e in (1, 2, 3))}
+    lure_spells = {sid for sid, s in spells_all.items()
+                   if any(int(s["Effect%d" % e]) == EFFECT_ENCHANT_TEMPORARY
+                          and int(s["EffectMiscValue%d" % e]) in LURE_ENCHANTS for e in (1, 2, 3))}
     learn = {sid for sid, s in spells_all.items()
              if any(int(s["Effect%d" % e]) == EFFECT_LEARN_SPELL
                     and int(s["EffectTriggerSpell%d" % e]) in create for e in (1, 2, 3))}
@@ -125,22 +145,26 @@ def trim_journal(text, sql_rows, abilities, fishing_items):
     def spells_of(item):
         return {int(item["spellid_%d" % k]) for k in range(1, 6)}
 
-    gear = {i for i, it in items_all.items() if spells_of(it) & auras}
+    gear = {i for i, it in items_all.items()
+            if spells_of(it) & auras or (int(it["class"]), int(it["subclass"])) == FISHING_POLE}
     recipe_items = {i for i, it in items_all.items()
                     if int(it["class"]) == ITEM_CLASS_RECIPE and spells_of(it) & (create | learn)}
-    keep_items = fishing_items | gear | recipe_items
+    lures = {i for i, it in items_all.items() if spells_of(it) & lure_spells}
+    keep_items = fishing_items | gear | recipe_items | lures | EXTRA_ITEMS
     missing = sorted(fishing_items - set(items_all))
     if missing:
         raise SystemExit("fishing items missing in item_template: %s" % missing)
     items = [[items_all[i][c] if c != "openable" else ("1" if i in openable else "0")
               for c in ITEM_COLUMNS] for i in sorted(keep_items)]
-    spells = [[spells_all[s][c] for c in SPELL_COLUMNS] for s in sorted(create | auras | learn)]
+    spells = [[spells_all[s][c] for c in SPELL_COLUMNS]
+              for s in sorted(create | auras | learn | lure_spells)]
 
-    sourced = gear | recipe_items
+    sourced = gear | recipe_items | lures | EXTRA_ITEMS
+    rank_spells = {r[2] for r in RANKS if r[2]}
     vendors = sorted({(r["entry"], r["item"]) for r in rows("npc_vendor") if int(r["item"]) in sourced})
     trainers = sorted({(r["spell"], r["reqskillvalue"])
                        for t in ("npc_trainer", "npc_trainer_template") for r in rows(t)
-                       if int(r["spell"]) in create | learn})
+                       if int(r["spell"]) in create | learn | rank_spells})
     quests = set()
     for q in rows("quest_template"):
         for col in ["RewChoiceItemId%d" % n for n in range(1, 7)] + ["RewItemId%d" % n for n in range(1, 5)]:
@@ -283,17 +307,7 @@ def recipes(sources, journal_items):
     return out, dropped
 
 
-def gear(sources, fishing_items):
-    """Item -> dict for every obtainable item with a fishing skill aura; items without any source
-    are unused copies and returned as the second value. `races` is the item's race mask, or the
-    reward quest's when the item allows every race (0 = all)."""
-    spells = _spells(sources)
-    bonus = {}
-    for sid, s in spells.items():
-        for e in (1, 2, 3):
-            if (_int(s, "EffectApplyAuraName%d" % e) in SKILL_AURAS
-                    and _int(s, "EffectMiscValue%d" % e) == FISHING_SKILL):
-                bonus[sid] = _int(s, "EffectBasePoints%d" % e) + 1
+def _source_index(sources):
     vendors = {_int(v, "item") for v in sources["vendors"]}
     quests = defaultdict(list)
     quest_races = {}
@@ -303,30 +317,132 @@ def gear(sources, fishing_items):
     drops = defaultdict(set)
     for d in sources["drops"]:
         drops[_int(d, "item")].add(d["source"])
-    out, unused = {}, []
+    return vendors, quests, quest_races, drops
+
+
+def _sourced(row, entry, index, fishing_items=frozenset()):
+    """Adds source (quest, vendor, fishing, drop) and quest to `row`; False without a source.
+    An item that allows every race takes its reward quest's race mask."""
+    vendors, quests, quest_races, drops = index
+    if entry in quests:
+        row["source"], row["quest"] = "quest", min(quests[entry])
+        if not row.get("races"):
+            row["races"] = quest_races[row["quest"]]
+    elif entry in vendors:
+        row["source"] = "vendor"
+    elif entry in fishing_items:
+        row["source"] = "fishing"
+    elif drops[entry]:
+        row["source"] = "drop"
+    else:
+        return False
+    return True
+
+
+def _races(item):
+    """Race mask of an item; 0 when it allows every race (-1, or all eight Classic races)."""
+    races = _int(item, "AllowableRace")
+    return 0 if races == -1 or races & ALL_RACES == ALL_RACES else races
+
+
+def lures(sources):
+    """Item -> {bonus, skill, races, source, quest, name} for every obtainable lure (a use spell
+    with a lure enchant). Fails on a lure without any source."""
+    enchant = {}
+    for sid, s in _spells(sources).items():
+        for e in (1, 2, 3):
+            if (_int(s, "Effect%d" % e) == EFFECT_ENCHANT_TEMPORARY
+                    and _int(s, "EffectMiscValue%d" % e) in LURE_ENCHANTS):
+                enchant[sid] = _int(s, "EffectMiscValue%d" % e)
+    index, out = _source_index(sources), {}
+    for item in sources["items"]:
+        entry = _int(item, "entry")
+        found = [enchant[_int(item, "spellid_%d" % k)] for k in range(1, 6)
+                 if _int(item, "spellid_%d" % k) in enchant]
+        if not found:
+            continue
+        row = {"bonus": LURE_ENCHANTS[found[0]], "skill": max(1, _int(item, "RequiredSkillRank")),
+               "races": _races(item), "name": item["name"]}
+        if not _sourced(row, entry, index):
+            raise DataError("lure %d has no source" % entry)
+        out[entry] = row
+    return out
+
+
+def ranks(sources):
+    """The four fishing ranks in order: {key, cap, skill, level, source, spell, item}. Trained ranks
+    take the trainer's skill, book ranks the book's skill, level, and source."""
+    items = {_int(i, "entry"): i for i in sources["items"]}
+    trainer = {}
+    for t in sources["trainers"]:
+        spell = _int(t, "spell")
+        trainer[spell] = min(trainer.get(spell, 10 ** 6), _int(t, "reqskillvalue"))
+    index, out = _source_index(sources), []
+    for key, cap, spell, book in RANKS:
+        row = {"key": key, "cap": cap, "spell": spell, "item": book, "level": 0}
+        if spell:
+            if spell not in trainer:
+                raise DataError("rank spell %d has no trainer" % spell)
+            row["skill"], row["source"] = max(1, trainer[spell]), "trainer"
+        else:
+            if book not in items:
+                raise DataError("rank book %d missing in the trimmed item table" % book)
+            row["skill"] = _int(items[book], "RequiredSkillRank")
+            row["level"] = _int(items[book], "RequiredLevel")
+            if book in RANK_SOURCE:
+                row["source"] = RANK_SOURCE[book]
+            elif not _sourced(row, book, index):
+                raise DataError("rank book %d has no source" % book)
+        out.append(row)
+    return out
+
+
+def enchants(sources):
+    """Enchant spell -> {bonus, skill (Enchanting to learn the formula), formula, source}."""
+    items = {_int(i, "entry"): i for i in sources["items"]}
+    index, out = _source_index(sources), {}
+    for spell, e in ENCHANTS.items():
+        formula = e["formula"]
+        if formula not in items:
+            raise DataError("formula %d missing in the trimmed item table" % formula)
+        row = {"bonus": e["bonus"], "formula": formula, "name": e["name"],
+               "skill": _int(items[formula], "RequiredSkillRank")}
+        if not _sourced(row, formula, index):
+            raise DataError("formula %d has no source" % formula)
+        out[spell] = row
+    return out
+
+
+def gear(sources, fishing_items):
+    """Item -> dict for every obtainable item with a fishing skill aura, and every fishing pole
+    (bonus 0 without one); items without any source are unused copies and returned as the second
+    value. `races` is the item's race mask, or the reward quest's when the item allows every race
+    (0 = all); `slot` comes from InventoryType."""
+    spells = _spells(sources)
+    bonus = {}
+    for sid, s in spells.items():
+        for e in (1, 2, 3):
+            if (_int(s, "EffectApplyAuraName%d" % e) in SKILL_AURAS
+                    and _int(s, "EffectMiscValue%d" % e) == FISHING_SKILL):
+                bonus[sid] = _int(s, "EffectBasePoints%d" % e) + 1
+    index, out, unused = _source_index(sources), {}, []
     for item in sources["items"]:
         entry = _int(item, "entry")
         found = [bonus[_int(item, "spellid_%d" % k)] for k in range(1, 6)
                  if _int(item, "spellid_%d" % k) in bonus]
+        if (_int(item, "class"), _int(item, "subclass")) == FISHING_POLE:
+            found.append(0)  # every pole is listed, a pole without a bonus at +0
         if not found:
             continue
-        races = _int(item, "AllowableRace")
         g = {"bonus": max(found), "skill": _int(item, "RequiredSkillRank"),
-             "level": _int(item, "RequiredLevel"), "races": 0 if races == -1 else races,
-             "name": item["name"]}
-        if entry in quests:
-            g["source"], g["quest"] = "quest", min(quests[entry])
-            if not g["races"]:
-                g["races"] = quest_races[g["quest"]]
-        elif entry in vendors:
-            g["source"] = "vendor"
-        elif entry in fishing_items:
-            g["source"] = "fishing"
-        elif drops[entry]:
-            g["source"] = "drop"
-        else:
+             "level": _int(item, "RequiredLevel"), "races": _races(item), "name": item["name"]}
+        if not _sourced(g, entry, index, fishing_items):
             unused.append(entry)
             continue
+        slot = ITEM_SLOTS.get(_int(item, "InventoryType"))
+        if not slot:
+            raise DataError("gear %d has no known slot" % entry)
+        g["slot"] = slot
         out[entry] = g
     return out, unused
 

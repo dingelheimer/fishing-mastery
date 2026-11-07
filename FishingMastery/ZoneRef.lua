@@ -216,20 +216,24 @@ local function pct(x)
     return floor(x * 100 + 0.5)
 end
 
--- The HUD zone line: input = { name, risk (Getaway.Risk), rows (list or nil), items (own items
--- here) }. The risk details ("differs from Classic") go to the tooltip (Getaway.Lines).
+-- The two HUD zone lines: input = { name, risk (Getaway.Risk), rows (list or nil), items (own
+-- items here) }. Returns the area line ("Durotar: getaway 13 % (you 20 %)", or "Wetlands: no
+-- catch below skill 55") and the fish line ("Fish: 1 of 2 not caught here"). The risk details
+-- ("differs from Classic") go to the tooltip (Getaway.Lines).
 function ZoneRef.HudLine(input)
     local risk, model = input.risk, input.risk and input.risk.model
-    local getaway
+    local name = input.name or L.HUD_ZONE_UNNAMED
+    local area
     if not model then
-        getaway = L.HUD_ZONE_RISK_UNKNOWN
+        area = format(L.HUD_ZONE, name, L.HUD_ZONE_RISK_UNKNOWN)
     elseif model.below then
-        getaway = format(L.HUD_ZONE_RISK_BELOW, model.stopsAt - ns.Getaway.SPAN)
+        area = format(L.HUD_ZONE_BELOW, name, model.stopsAt - ns.Getaway.SPAN)
     else
-        getaway = format(L.HUD_ZONE_RISK, pct(model.getaway))
-    end
-    if risk and risk.shown then
-        getaway = getaway .. " " .. format(L.HUD_ZONE_RISK_OWN, HudModel.Percent(risk.own))
+        local getaway = format(L.HUD_ZONE_RISK, pct(model.getaway))
+        if risk.shown then
+            getaway = getaway .. " " .. format(L.HUD_ZONE_RISK_OWN, HudModel.Percent(risk.own))
+        end
+        area = format(L.HUD_ZONE, name, getaway)
     end
     local fish
     if not input.rows then
@@ -239,5 +243,5 @@ function ZoneRef.HudLine(input)
         fish = missing > 0 and format(L.HUD_ZONE_MISSING, missing, total)
             or format(L.HUD_ZONE_ALL, total)
     end
-    return format(L.HUD_ZONE, input.name or L.HUD_ZONE_UNNAMED, getaway, fish)
+    return area, fish
 end

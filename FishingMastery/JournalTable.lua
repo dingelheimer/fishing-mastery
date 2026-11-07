@@ -1,7 +1,9 @@
 -- Pure logic: the Fish tab of the journal window from a JournalModel model: the filtered list rows
 -- (group, caught or not, plain-text search on the item name), the progress line, and the detail
--- lines of the selected fish. Not-caught rows are marked (dimmed icon, grey cells, "not caught")
--- but keep every column filled (owner decision 2, 2026-11-06). No frame or API calls.
+-- lines of the selected fish (with the season and whether it is on now, own catches by month, and
+-- the day/night tag with own catches by server hour). Not-caught rows are marked (dimmed icon,
+-- grey cells, "not caught") but keep every column filled (owner decision 2, 2026-11-06). No frame
+-- or API calls.
 local _, ns = ...
 
 local format, ipairs, find, lower, min, concat, type, tostring =
@@ -145,6 +147,41 @@ end
 -- ownShare(area, id) -> k, n (own catches of the item and all catches in that area) or nil,
 -- recipe(spell) -> the RecipeModel entry, known(spell) -> true when known (optional),
 -- formatMonthDay(month, day).
+-- Own catches by month (every caught fish) and, for the day/night fish, the guides' claim with
+-- the own catches by realm hour; "unconfirmed" below the grey threshold (Statistics Methods).
+local function timeLines(entry, input, add)
+    local months = {}
+    for month = 1, 12 do
+        local n = entry.months and entry.months[month]
+        if type(n) == "number" and n > 0 then
+            months[#months + 1] = format(L.JOURNAL_D_MONTH, input.monthName(month), n)
+        end
+    end
+    if #months > 0 then
+        add(L.JOURNAL_D_MONTHS, concat(months, ", "))
+    end
+    if not entry.time then
+        return
+    end
+    local byHour, total = ns.Season.Hours(entry.hours, input.hourOffset)
+    local need = input.thresholds.greyBelow
+    add(
+        L.JOURNAL_D_TIME,
+        L["JOURNAL_TIME_" .. entry.time],
+        total < need and format(L.JOURNAL_D_TIME_UNCONFIRMED, total, need)
+            or format(L.JOURNAL_D_TIME_OWN, total)
+    )
+    local hours = {}
+    for hour = 0, 23 do
+        if byHour[hour] > 0 then
+            hours[#hours + 1] = format(L.JOURNAL_D_HOUR, hour, byHour[hour])
+        end
+    end
+    if #hours > 0 then
+        add(L.JOURNAL_D_HOURS, concat(hours, ", "))
+    end
+end
+
 function JournalTable.Detail(entry, input)
     if not entry then
         return { L.JOURNAL_SELECT }
@@ -218,6 +255,11 @@ function JournalTable.Detail(entry, input)
     if season then
         local start = input.formatMonthDay(season.month, season.day)
         add(L.JOURNAL_D_SEASON, L["JOURNAL_SEASON_" .. season.season], start, season.days)
+        local now = input.inSeason and input.inSeason(season)
+        if now ~= nil then
+            add("%s", now and L.JOURNAL_D_SEASON_IN or L.JOURNAL_D_SEASON_OUT)
+        end
     end
+    timeLines(entry, input, add)
     return lines
 end

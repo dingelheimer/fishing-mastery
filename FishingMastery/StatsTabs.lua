@@ -86,7 +86,12 @@ StatsTabs.zones = {
         self.zoneNote:SetPoint("TOPLEFT", panel, "TOPLEFT", 2, -StatsTabs.ZONE_LIST - 6)
         self.zoneNote:SetWidth(StatsFrame.PANEL_WIDTH - 4)
         self.zoneNote:SetJustifyH("LEFT")
-        local detail = StatsFrame.Area(self, panel, 0, StatsTabs.ZONE_LIST + 26)
+        -- Hovering does not select a row (Epic 4 review): say that a click does.
+        self.zoneHint = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+        self.zoneHint:SetPoint("TOPLEFT", panel, "TOPLEFT", 2, -StatsTabs.ZONE_LIST - 20)
+        self.zoneHint:SetJustifyH("LEFT")
+        self.zoneHint:SetText(L.ZONE_HINT)
+        local detail = StatsFrame.Area(self, panel, 0, StatsTabs.ZONE_LIST + 40)
         self.zoneDetail = ns.StatsList.Create(self.env, detail, ns.ZoneRef.COLUMNS)
     end,
     draw = function(self, input, keepScroll)

@@ -1,15 +1,28 @@
 -- Journal window boot tests through every TOC file: /fm journal, Shift-click on the minimap button
 -- and on the addon compartment open it; the Fish tab draws with empty and full data, filters,
 -- search, and the detail pane; Waters; Recipes with the profession window read and the link from
--- the Fish tab; the last tab and the position are saved per character; the scope button switches
--- to one character. No Lua errors.
+-- the Fish tab; Gear with owned items, a tooltip bonus, and the best setup (also as the Waters
+-- colors); the last tab and the position are saved per character; the scope button switches to
+-- one character. No Lua errors.
 local fmboot = require("spec.helpers.fmboot")
 local fakeui = require("spec.helpers.fakeui")
 local statsui = require("spec.helpers.statsui")
 local texts = statsui.texts
 
-local STUBS =
-    { "Minimap", "IsShiftKeyDown", "C_Spell", "GetMinimapShape", "C_TradeSkillUI", "IsPlayerSpell" }
+local STUBS = {
+    "Minimap",
+    "IsShiftKeyDown",
+    "C_Spell",
+    "GetMinimapShape",
+    "C_TradeSkillUI",
+    "IsPlayerSpell",
+    "GetInventoryItemID",
+    "UnitRace",
+    "UnitLevel",
+    "C_TooltipInfo",
+    "C_QuestLog",
+    "ITEM_SPELL_TRIGGER_ONEQUIP",
+}
 local NAMES = { [6303] = "Raw Slitherskin Mackerel", [6291] = "Raw Brilliant Smallfish" }
 
 describe("FishingMastery journal window boot", function()
@@ -344,6 +357,102 @@ describe("FishingMastery journal window boot", function()
         journal().frame.Tabs[3]:Click()
         assert.are.equal(23, #journal().recipeList.rows)
         assert.are.equal("?", texts(journal().recipeList)[1][7])
+        assert.are.equal(0, w.ns.Guard.errors)
+    end)
+
+    -- A Human at level 10 with the Strong Fishing Pole equipped and Nightcrawlers in the bags.
+    local function gearClient()
+        local slots = { [16] = 6365 }
+        _G.GetInventoryItemID = function(_, slot)
+            return slots[slot]
+        end
+        _G.UnitRace = function()
+            return "Human", "Human", 1
+        end
+        _G.UnitLevel = function()
+            return 10
+        end
+        _G.ITEM_SPELL_TRIGGER_ONEQUIP = "Equip:"
+        _G.C_Item.GetItemCount = function(id, bank)
+            local bags = id == 6365 and 1 or id == 6530 and 3 or 0
+            return bags + ((bank and id == 6529) and 2 or 0)
+        end
+        _G.C_TooltipInfo = {
+            GetItemByID = function(id)
+                local bonus = id == 6365 and 5 or 20
+                return {
+                    lines = {
+                        { leftText = "Item " .. id },
+                        { leftText = "Equip: Increased Fishing +" .. bonus .. "." },
+                    },
+                }
+            end,
+        }
+        _G.C_QuestLog = {
+            GetTitleForQuestID = function(quest)
+                return "Quest " .. quest
+            end,
+        }
+    end
+
+    it("lists the gear with what the player has and feeds the best setup to Waters", function()
+        gearClient()
+        w.game.modifier = 5
+        _G.SlashCmdList.FM("journal")
+        local window = journal()
+        window.frame.Tabs[4]:Click()
+        assert.is_false(window.groupButton:IsShown())
+        local rows = texts(window.gearList)
+        assert.are.equal(32, #rows)
+        assert.are.equal("Fishing poles", rows[1][1])
+        local byName = {}
+        for i, row in ipairs(window.gearList.rows) do
+            if row.id then
+                byName["Item " .. row.id] = rows[i]
+            end
+        end
+        local strong = byName["Item 6365"]
+        assert.are.same({ "+5 (tooltip)", "Fishing 10, level 5", "vendor", "equipped" }, {
+            strong[2],
+            strong[3],
+            strong[4],
+            strong[5],
+        })
+        assert.are.equal("bags 3", byName["Item 6530"][5])
+        assert.are.equal("bank 2", byName["Item 6529"][5])
+        assert.are.equal("Horde only", byName["Item 19022"][5])
+        assert.are.equal("derby: Quest 8193", byName["Item 19970"][4])
+        local rank = w.game.rank
+        -- Nightcrawlers need skill 50, the Shiny Bauble is in the bank: no lure counts yet.
+        assert.are.equal(
+            string.format(
+                "Best setup: Fishing %d + pole 5 = %d (now %d).",
+                rank,
+                rank + 5,
+                rank + 5
+            ),
+            window.progress:GetText()
+        )
+        assert.truthy(window.gearMeasure:GetText():find("the game applies the same", 1, true))
+
+        window.frame.Tabs[2]:Click()
+        assert.are.equal("Colors: skill now", window.bestButton:GetText())
+        w.game.rank = 60 -- Nightcrawlers (+50) now count
+        window.bestButton:Click()
+        assert.are.equal("Colors: best setup", window.bestButton:GetText())
+        assert.truthy(window.progress:GetText():find("best setup 115", 1, true))
+        assert.are.equal(0, w.ns.Guard.errors)
+    end)
+
+    it("shows the gear without the item, tooltip, and unit APIs, without Lua errors", function()
+        _G.SlashCmdList.FM("journal")
+        journal().frame.Tabs[4]:Click()
+        local rows = texts(journal().gearList)
+        assert.are.equal(32, #rows)
+        assert.are.equal("?", rows[2][5])
+        assert.truthy(journal().gearMeasure:GetText() ~= "")
+        journal().frame.Tabs[2]:Click()
+        journal().bestButton:Click()
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 end)

@@ -24,8 +24,8 @@ local function mapName(env, map)
 end
 
 -- { area, name, rows (Classic list or nil), items (own catches there), risk (nil without a
--- fishing rank), text (the HUD line), tips (risk lines for the tooltip) }. char: the character
--- entry; areas: the Area resolver (nil: no zone data loaded).
+-- fishing rank), text and fish (the two HUD lines), tips (risk lines for the tooltip) }. char:
+-- the character entry; areas: the Area resolver (nil: no zone data loaded).
 function HudZone.Read(env, areas, char, t)
     local map = Context.CurrentMap(env)
     local area = Context.CurrentArea(env, areas)
@@ -48,7 +48,7 @@ function HudZone.Read(env, areas, char, t)
         items = own.items,
         risk = risk,
     }
-    zone.text = ZoneRef.HudLine(zone)
+    zone.text, zone.fish = ZoneRef.HudLine(zone)
     zone.tips = risk and Getaway.Lines(risk) or {}
     return zone
 end

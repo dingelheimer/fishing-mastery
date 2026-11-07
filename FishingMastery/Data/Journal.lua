@@ -172,28 +172,63 @@ ns.Journal = {
         [20916] = { 185, 8364, { { 8365, 1 } }, 215, 255, 175, "vendor", 17062, 0 },
     },
     -- Fishing gear -> { bonus, fishing skill to use, character level (0: any), race mask
-    -- (0: all), source, quest (0: none), kind (lure: a Use effect) }. Forever: Story 5.1.
+    -- (0: all), source, quest (0: none), kind (lure: a Use effect), slot }. Forever:
+    -- Story 5.1.
     gear = {
+        -- Fishing Pole
+        [6256] = { 0, 0, 0, 0, "vendor", 0, "gear", "pole" },
         -- Strong Fishing Pole
-        [6365] = { 5, 10, 5, 0, "vendor", 0, "gear" },
+        [6365] = { 5, 10, 5, 0, "vendor", 0, "gear", "pole" },
         -- Darkwood Fishing Pole
-        [6366] = { 15, 50, 15, 0, "fishing", 0, "gear" },
+        [6366] = { 15, 50, 15, 0, "fishing", 0, "gear", "pole" },
         -- Big Iron Fishing Pole
-        [6367] = { 20, 100, 25, 0, "drop", 0, "gear" },
+        [6367] = { 20, 100, 25, 0, "drop", 0, "gear", "pole" },
         -- Blump Family Fishing Pole
-        [12225] = { 3, 1, 0, 77, "quest", 1141, "gear" },
+        [12225] = { 3, 1, 0, 77, "quest", 1141, "gear", "pole" },
         -- Nat Pagle's Extreme Angler FC-5000
-        [19022] = { 25, 100, 0, 178, "quest", 7815, "gear" },
+        [19022] = { 25, 100, 0, 178, "quest", 7815, "gear", "pole" },
         -- Nat Pagle's Extreme Anglin' Boots
-        [19969] = { 5, 1, 0, 0, "quest", 8225, "gear" },
+        [19969] = { 5, 1, 0, 0, "quest", 8225, "gear", "feet" },
         -- Arcanite Fishing Pole
-        [19970] = { 35, 300, 0, 0, "quest", 8193, "gear" },
+        [19970] = { 35, 300, 0, 0, "quest", 8193, "gear", "pole" },
         -- High Test Eternium Fishing Line
-        [19971] = { 5, 150, 0, 0, "guide", 0, "gear" },
+        [19971] = { 5, 150, 0, 0, "guide", 0, "gear", "line" },
         -- Lucky Fishing Hat
-        [19972] = { 5, 1, 0, 0, "quest", 8221, "gear" },
+        [19972] = { 5, 1, 0, 0, "quest", 8221, "gear", "head" },
         -- Wide-Brimmed Fishing Hat
-        [259846] = { 25, 1, 0, 0, "guide", 0, "lure" },
+        [259846] = { 25, 1, 0, 0, "guide", 0, "lure", "head" },
+    },
+    -- Lure -> { bonus (guide value per enchant), fishing skill to use, race mask (0: all),
+    -- source, quest (0: none) }
+    lures = {
+        -- Shiny Bauble
+        [6529] = { 25, 1, 0, "vendor", 0 },
+        -- Nightcrawlers
+        [6530] = { 50, 50, 0, "vendor", 0 },
+        -- Bright Baubles
+        [6532] = { 75, 100, 0, "vendor", 0 },
+        -- Aquadynamic Fish Attractor
+        [6533] = { 100, 100, 0, "vendor", 0 },
+        -- Aquadynamic Fish Lens
+        [6811] = { 50, 1, 77, "quest", 1580 },
+        -- Flesh Eating Worm
+        [7307] = { 75, 100, 0, "drop", 0 },
+    },
+    -- Lure enchant on the pole (GetWeaponEnchantInfo) -> fishing bonus (guide values).
+    lureEnchants = { [263] = 25, [264] = 50, [265] = 75, [266] = 100 },
+    -- Fishing ranks in order: { key, rank cap, fishing skill and character level (0: any)
+    -- to learn, source, trainer spell (0: a book), book item (0: trained) }
+    ranks = {
+        { "apprentice", 75, 1, 0, "trainer", 7733, 0 },
+        { "journeyman", 150, 50, 0, "trainer", 7734, 0 },
+        { "expert", 225, 125, 20, "vendor", 0, 16083 },
+        { "artisan", 300, 200, 35, "quest", 0, 16082 },
+    },
+    -- Fishing enchant spell -> { bonus (guide value), Enchanting skill to learn, formula
+    -- item, the formula's source }
+    enchants = {
+        -- Enchant Gloves - Fishing
+        [13620] = { 2, 145, 11152, "drop" },
     },
     -- Fishing buff food -> { fishing bonus, character level, source }. Guide values
     -- until the aura is read in game.
@@ -207,6 +242,8 @@ ns.Journal = {
         -- Filet of Redgill
         [13930] = { 18, 35, "guide" },
     },
+    -- Day/night fish -> the window the guides claim (unconfirmed; not in CMaNGOS).
+    times = { [13759] = "night", [13760] = "day" },
     -- Seasonal fish (Classic game events): starts every year on month/day at hour
     -- (server time) and lasts days.
     seasons = {

@@ -75,7 +75,7 @@ describe("FishingMastery Totals", function()
                 assert.are.equal(1411, totals.items[6303].best)
             end
         end
-        assert.are.equal(6, totals.version)
+        assert.are.equal(7, totals.version)
         assert.are.same({
             [1411] = {
                 on = {
@@ -142,6 +142,7 @@ describe("FishingMastery Totals", function()
                 fm = 1411,
                 fs = 1,
                 hours = { [5] = 2, [6] = 3 },
+                months = { [11] = 5 }, -- day 20763 is 2026-11-06
                 fair = 6,
             },
             [6358] = {
@@ -153,6 +154,7 @@ describe("FishingMastery Totals", function()
                 fm = 1411,
                 fs = 1,
                 hours = { [5] = 1 },
+                months = { [11] = 1 },
                 fair = 1,
             },
         }, totals.items)

@@ -31,6 +31,7 @@ Session.lua
 Codec.lua
 History.lua
 Totals.lua
+Season.lua
 Stats.lua
 HudModel.lua
 Getaway.lua
@@ -39,9 +40,11 @@ StatsView.lua
 StatsModel.lua
 JournalModel.lua
 RecipeModel.lua
+GearModel.lua
 StatsTables.lua
 JournalTable.lua
 RecipeTable.lua
+GearTable.lua
 WatersTable.lua
 ZoneTable.lua
 ZoneRef.lua
@@ -74,6 +77,7 @@ JournalCheck.lua
 JournalTrade.lua
 JournalTradeUI.lua
 RecipeRead.lua
+GearInputs.lua
 Commands.lua
 DataCommands.lua
 HudZone.lua

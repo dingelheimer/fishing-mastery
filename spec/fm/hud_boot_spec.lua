@@ -215,7 +215,9 @@ describe("FishingMastery HUD boot", function()
         -- Durotar (base -70, list 6303 and 6356) at skill 11: catch 86 %.
         w.catch(5000, 9)
         assert.is_true(hud().lines.zone:IsShown())
-        assert.are.equal("Durotar: getaway 14 %, 1 of 2 fish not caught here", text("zone"))
+        assert.are.equal("Durotar: getaway 14 %", text("zone"))
+        assert.are.equal("Fish: 1 of 2 not caught here", text("fish"))
+        assert.are.equal(10 + 7 * 14, hud().frame.height)
         local frame = hud().frame
         frame:GetScript("OnEnter")(frame)
         local tip = table.concat(_G.GameTooltip.lines, " / ")
@@ -224,11 +226,15 @@ describe("FishingMastery HUD boot", function()
 
         w.game.map = 9999 -- a Forever zone without Classic data
         w.fire("ZONE_CHANGED_NEW_AREA")
-        assert.are.equal("Here: getaway ?, no Classic data", text("zone"))
+        assert.are.same(
+            { "Here: getaway ?", "Fish: no Classic data" },
+            { text("zone"), text("fish") }
+        )
 
         _G.FishingMasteryDB.settings.hud.zoneLine = false
         hud():Refresh()
         assert.is_false(hud().lines.zone:IsShown())
+        assert.is_false(hud().lines.fish:IsShown())
         assert.are.equal(10 + 5 * 14, frame.height)
         assert.are.equal(0, w.ns.Guard.errors)
     end)

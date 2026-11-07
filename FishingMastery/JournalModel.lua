@@ -122,11 +122,13 @@ local function newEntry(index, id, group, own, recipesOf)
         safe = base and base + JournalModel.SAFE or nil,
         recipes = (recipesOf or index.recipes)[id] or {},
         season = tbl(index.journal.seasons)[id],
+        time = tbl(index.journal.times)[id],
         questOnly = questOnly or nil,
     }
     if own then
         entry.n, entry.qty, entry.best = own.n, own.qty, own.best
         entry.first, entry.firstMap, entry.firstSub = own.first, own.firstMap, own.firstSub
+        entry.hours, entry.months = own.hours, own.months
     end
     return entry
 end
@@ -202,7 +204,7 @@ end
 
 -- Gear that closes a skill gap: { itemID } of journal gear (kind gear, usable at skill) with a
 -- bonus of at least gap, smallest bonus first; when none is enough, every usable item with the
--- highest bonus (they may sit in different slots; Story 5.7 combines slots). raceBit: the
+-- highest bonus (they may sit in different slots; GearModel.Best combines slots). raceBit: the
 -- player's race bit (nil: any race).
 function JournalModel.GearFor(journal, gap, skill, raceBit)
     local usable = {}

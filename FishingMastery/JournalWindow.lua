@@ -1,8 +1,8 @@
 -- The journal window (/fm journal, Shift-click on the minimap button or the addon compartment):
 -- an own movable window (owner decision 1, 2026-11-06) with the tabs Fish, Waters, Recipes, Gear.
 -- Position and last tab are saved per character. The Fish tab lists the JournalModel entries of
--- the chosen scope (account-wide by default) with filters and a detail pane; Waters and Recipes
--- follow (JournalTabs.lua), Gear is a placeholder until its story. Built on first open
+-- the chosen scope (account-wide by default) with filters and a detail pane; Waters, Recipes, and
+-- Gear follow (JournalTabs.lua). Built on first open
 -- (JournalFrame.lua); item names that load later redraw once per frame. Unnamed, insecure frames
 -- only.
 local _, ns = ...
@@ -38,7 +38,7 @@ function JournalWindow.Start(deps)
         tab = type(tab) == "number" and JournalWindow.TABS[tab] and tab or 1,
         scope = "account", -- owner decision 5
         filters = { group = "all", show = "all", search = "" },
-        waters = { fishable = false, sort = "name" },
+        waters = { fishable = false, sort = "name", best = false },
         recipeFilters = { show = "all" },
         waiting = {},
     }, JournalWindow)
@@ -146,7 +146,21 @@ end
 function JournalWindow:Inputs(view, recipes)
     local env, names, spells, known, stock = self.env, {}, {}, {}, {}
     recipes = recipes or self:Recipes()
+    local now = Context.Call(env, "GetServerTime")
+    local offset = ns.Season.Offset(Context.Call(env, "GetGameTime"), now)
     return {
+        hourOffset = offset,
+        inSeason = function(season)
+            if type(now) ~= "number" then
+                return nil -- no server time
+            end
+            return ns.Season.InSeason(season, now, offset)
+        end,
+        monthName = function(month)
+            local date = env.date
+            local days = JournalWindow.DAYS_BEFORE[month]
+            return type(date) == "function" and date("!%b", days * 86400) or tostring(month)
+        end,
         info = function(id)
             return itemInfo(self, id)
         end,
@@ -214,16 +228,12 @@ function JournalWindow:Render(keepScroll)
     self.scopeButton:SetText(L["JOURNAL_SCOPE_" .. self.scope])
     local name = JournalWindow.TABS[self.tab]
     local tab = ns.JournalTabs[name]
-    local filters = tab and tab.filters == true
+    local filters = tab.filters == true
     self.groupButton:SetShown(filters)
     self.showButton:SetShown(filters)
     self.searchBox:SetShown(filters)
     self.searchLabel:SetShown(filters)
-    if tab then
-        tab.draw(self, keepScroll)
-    else
-        self.progress:SetText("")
-    end
+    tab.draw(self, keepScroll)
 end
 
 -- Redraws once per frame after item data arrived, keeping the scroll position.

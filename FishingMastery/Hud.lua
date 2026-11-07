@@ -18,8 +18,12 @@ Hud.STYLES = { full = true, text = true }
 Hud.MIN_SCALE, Hud.MAX_SCALE = 0.5, 2
 Hud.POSITION_KEY = "hud"
 Hud.FALLBACK = { point = "TOP", x = 0, y = -140 }
-Hud.WIDTH, Hud.TEXT_WIDTH, Hud.LINE = 280, 420, 14
-Hud.LINES = { "session", "rates", "skill", "lure", "last", "zone" }
+-- WIDTH fits the longest zone line (HudLine with the longest area name in the data) at LETTER
+-- pixels per letter of GameFontHighlightSmall, an upper bound: on live 47 letters and "..." filled
+-- the 268-pixel line (Epic 4 review). Checked in spec/fm/season_spec.lua.
+Hud.WIDTH, Hud.TEXT_WIDTH, Hud.LINE, Hud.LETTER = 340, 420, 14, 6
+Hud.LINES = { "session", "rates", "skill", "lure", "last", "zone", "fish" }
+Hud.ZONE_LINES = { zone = true, fish = true }
 Hud.ZONE_EVENTS = { "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA" }
 Hud.GREY, Hud.WHITE = { 0.55, 0.55, 0.55 }, { 1, 1, 1 }
 Hud.TICK = 1 -- seconds between updates while a lure is shown
@@ -156,9 +160,10 @@ local function draw(self, model)
     local texts = HudModel.Lines(model)
     local zone = full and self.settings.zoneLine and self.zone ~= nil
     texts.zone = zone and self.zone.text or nil
+    texts.fish = zone and self.zone.fish or nil
     for i, name in ipairs(Hud.LINES) do
         local line = self.lines[name]
-        line:SetShown(full and (name ~= "zone" or zone) or i == 1)
+        line:SetShown(full and (not Hud.ZONE_LINES[name] or zone) or i == 1)
         line:SetText(full and texts[name] or nil)
     end
     if full then
@@ -169,7 +174,7 @@ local function draw(self, model)
         last:SetPoint("TOPLEFT", frame, "TOPLEFT", texts.icon and 22 or 6, -5 - 4 * Hud.LINE)
         self.icon:SetTexture(texts.icon)
         self.icon:SetShown(texts.icon ~= nil)
-        frame:SetSize(Hud.WIDTH, 10 + (#Hud.LINES - (zone and 0 or 1)) * Hud.LINE)
+        frame:SetSize(Hud.WIDTH, 10 + (#Hud.LINES - (zone and 0 or 2)) * Hud.LINE)
     else
         self.lines.session:SetText(HudModel.Short(model))
         self.icon:SetShown(false)

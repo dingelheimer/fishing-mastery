@@ -54,6 +54,13 @@ function Context.Fishing(env)
     return number(info[Context.RANK]), number(info[Context.MODIFIER]), number(info[Context.MAX])
 end
 
+-- Client name of the Fishing skill (GetProfessionInfo name), or nil when Fishing is not learned.
+function Context.FishingName(env)
+    local index = number(select(Context.FISHING_INDEX, Context.Call(env, "GetProfessions")))
+    local name = index and plain((Context.Call(env, "GetProfessionInfo", index)))
+    return type(name) == "string" and name ~= "" and name or nil
+end
+
 -- Lure enchant ID on the main hand, or nil without a lure.
 function Context.Lure(env)
     local info = { Context.Call(env, "GetWeaponEnchantInfo") }

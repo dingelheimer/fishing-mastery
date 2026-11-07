@@ -203,9 +203,9 @@ function WatersTable.Rows(input, filters)
 end
 
 -- The line above the list: the skill the colors use, or that it is unknown.
-function WatersTable.Legend(skill)
+function WatersTable.Legend(skill, best)
     if type(skill) ~= "number" then
         return L.WATERS_LEGEND_UNKNOWN
     end
-    return format(L.WATERS_LEGEND, skill)
+    return format(best and L.WATERS_LEGEND_BEST or L.WATERS_LEGEND, skill)
 end

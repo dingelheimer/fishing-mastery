@@ -2,13 +2,14 @@
 -- frames, draw(window, keepScroll) fills them; filters = true shows the fish filter row. This
 -- file: Fish (the filtered list on the left, the selected fish's details on the right) and Waters
 -- (every water colored for the effective skill, the selected water's fish below; a click on a fish
--- opens it in the Fish tab), and Recipes (bundled and read-in-game recipes, filtered by known or
--- by one fish from the Fish tab). Gear follows in Story 5.7.
+-- opens it in the Fish tab; colors for the skill now or the best setup), Recipes (bundled and
+-- read-in-game recipes, filtered by known or by one fish from the Fish tab), and Gear (every
+-- fishing item, rank, and enchant with what the player has, and the best setup).
 local _, ns = ...
 
 local concat, ipairs, tonumber = table.concat, ipairs, tonumber
-local L, StatsFrame, JournalTable, WatersTable, RecipeTable =
-    ns.L, ns.StatsFrame, ns.JournalTable, ns.WatersTable, ns.RecipeTable
+local L, StatsFrame, JournalTable, WatersTable, RecipeTable, GearTable =
+    ns.L, ns.StatsFrame, ns.JournalTable, ns.WatersTable, ns.RecipeTable, ns.GearTable
 
 local JournalTabs = {}
 ns.JournalTabs = JournalTabs
@@ -94,6 +95,10 @@ JournalTabs.waters = {
             state.sort = ns.JournalFrame.Next(WatersTable.SORTS, state.sort)
         end)
         self.sortButton:SetPoint("LEFT", self.fishableButton, "RIGHT", 6, 0)
+        self.bestButton = StatsFrame.Button(self, panel, 140, function()
+            state.best = not state.best
+        end)
+        self.bestButton:SetPoint("LEFT", self.sortButton, "RIGHT", 6, 0)
         local list = StatsFrame.Area(self, panel, 0, 28, JournalTabs.WATERS_LIST)
         self.watersList = ns.StatsList.Create(
             self.env,
@@ -124,6 +129,10 @@ JournalTabs.waters = {
         local view = self:View()
         local input = self:Inputs(view)
         input.zones, input.view, input.skill = self.zones, view, self:Skill()
+        if state.best then
+            local best = ns.GearInputs.Model(self).best
+            input.skill = best and best.total or nil
+        end
         input.groupOf = self:Index().groupOf
         local rows = WatersTable.Rows(input, state)
         self.watersList:SetRows(rows, keepScroll)
@@ -141,11 +150,12 @@ JournalTabs.waters = {
             self.watersNote:SetText(L.WATERS_SELECT)
             self.watersFish:SetRows({}, keepScroll)
         end
-        self.progress:SetText(WatersTable.Legend(input.skill))
+        self.progress:SetText(WatersTable.Legend(input.skill, state.best))
         self.fishableButton:SetText(
             state.fishable and L.WATERS_FISHABLE_ON or L.WATERS_FISHABLE_OFF
         )
         self.sortButton:SetText(L["WATERS_SORT_" .. state.sort])
+        self.bestButton:SetText(state.best and L.WATERS_BEST_ON or L.WATERS_BEST_OFF)
     end,
 }
 
@@ -177,5 +187,22 @@ JournalTabs.recipes = {
         self.progress:SetText(RecipeTable.Progress(recipes, input, filters))
         self.recipeShowButton:SetText(L["RECIPES_SHOW_" .. filters.show])
         self.recipeAllButton:SetShown(filters.fish ~= nil)
+    end,
+}
+
+JournalTabs.gear = {
+    build = function(self, panel)
+        local list = StatsFrame.Area(self, panel, 0, 0)
+        list:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", 0, 20)
+        self.gearList = ns.StatsList.Create(self.env, list, GearTable.COLUMNS)
+        self.gearMeasure = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        self.gearMeasure:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 2, 2)
+        self.gearMeasure:SetJustifyH("LEFT")
+    end,
+    draw = function(self, keepScroll)
+        local model, input = ns.GearInputs.Model(self)
+        self.gearList:SetRows(GearTable.Rows(model, input), keepScroll)
+        self.gearMeasure:SetText(GearTable.Measure(model))
+        self.progress:SetText(GearTable.Best(model, self:Skill()))
     end,
 }

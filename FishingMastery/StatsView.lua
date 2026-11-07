@@ -1,7 +1,7 @@
 -- Pure logic: a view of the totals for the stats window: one character, or several characters
 -- merged in memory (subzones keyed by their text, since every character numbers its own; items by
--- first and last catch, the first catch place (map and subzone text), and summed hours, the best
--- zone recomputed from the merged maps). No frame or API calls.
+-- first and last catch, the first catch place (map and subzone text), and summed hours and
+-- months, the best zone recomputed from the merged maps). No frame or API calls.
 local _, ns = ...
 
 local type, pairs, ipairs = type, pairs, ipairs
@@ -38,7 +38,7 @@ end
 local function mergeItem(view, id, entry, subzones)
     local item = view.items[id]
     if not item then
-        item = { n = 0, qty = 0, hours = {} }
+        item = { n = 0, qty = 0, hours = {}, months = {} }
         view.items[id] = item
     end
     item.n, item.qty = item.n + (entry.n or 0), item.qty + (entry.qty or 0)
@@ -54,6 +54,7 @@ local function mergeItem(view, id, entry, subzones)
         item.last = entry.last
     end
     addCounts(item.hours, entry.hours)
+    addCounts(item.months, entry.months)
     item.fair = entry.fair -- used only for a single character
 end
 

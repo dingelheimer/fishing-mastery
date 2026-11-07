@@ -14,8 +14,9 @@
 --              so the own getaway rate can be split by resolved area (Getaway.lua),
 --   items    = { [itemID] = { n (catches with it), qty, first, last (server time), best (map),
 --                fm, fs (map and subzone index of the first catch, as in subs),
---                hours = { [UTC hour] = catches with it }, fair (fair casts counted at its last
---                catch, for the dry streak) } },
+--                hours = { [UTC hour] = catches with it }, months = { [UTC month 1-12] =
+--                catches with it }, fair (fair casts counted at its last catch, for the dry
+--                streak) } },
 --   active   = { [map] = seconds }: Σ min(gap to the next cast, ACTIVE_CAP), and ACTIVE_CAP
 --              for the latest cast,
 --   subs     = { [map] = { [sub] = { casts, outcomes, items = { [itemID] = catches with it },
@@ -33,8 +34,9 @@ local Codec, History = ns.Codec, ns.History
 local Totals = {}
 ns.Totals = Totals
 
-Totals.VERSION = 6 -- 3: early-click times (Story 3.4); 4: subzones, item hours (Story 3.7);
--- 5: hooked casts per subzone and skill band (Story 4.4); 6: first catch place (Story 5.3)
+Totals.VERSION = 7 -- 3: early-click times (Story 3.4); 4: subzones, item hours (Story 3.7);
+-- 5: hooked casts per subzone and skill band (Story 4.4); 6: first catch place (Story 5.3);
+-- 7: item months (Story 5.8)
 Totals.ACTIVE_CAP = ns.Options.DEFAULTS.thresholds.activeCap -- seconds; default T
 -- T of this login (settings.thresholds.activeCap, set by Core before the cast log starts). Totals
 -- counted with another T are not current, so the next login counts them again.
@@ -110,6 +112,18 @@ end
 local function newTable()
     return {}
 end
+
+-- Year, month (1-12), and day of a day number (days since 1970-01-01), proleptic Gregorian.
+function Totals.Civil(days)
+    local z = days + 719468
+    local era = floor(z / 146097)
+    local doe = z - era * 146097
+    local yoe = floor((doe - floor(doe / 1460) + floor(doe / 36524) - floor(doe / 146096)) / 365)
+    local doy = doe - (365 * yoe + floor(yoe / 4) - floor(yoe / 100))
+    local mp = floor((5 * doy + 2) / 153)
+    local month = mp < 10 and mp + 3 or mp - 9
+    return yoe + era * 400 + (month <= 2 and 1 or 0), month, doy - floor((153 * mp + 2) / 5) + 1
+end
 local function newCounter()
     return { casts = 0, catches = 0 }
 end
@@ -159,6 +173,8 @@ local function addItems(totals, cast, map, group, sub, subKey, hour)
             entry.n, entry.qty, entry.last = entry.n + 1, entry.qty + qty, cast.t
             entry.fair = fair
             bump(get(entry, "hours", newTable), hour)
+            local _, month = Totals.Civil(Codec.Day(cast.t or 0))
+            bump(get(entry, "months", newTable), month)
             local best = totals.maps[entry.best]
             if (best.items[id] or 0) < mapItems[id] then
                 entry.best = map

@@ -27,6 +27,7 @@ describe("FishingMastery journal table", function()
             "History.lua",
             "Options.lua",
             "Totals.lua",
+            "Season.lua",
             "Stats.lua",
             "HudModel.lua",
             "StatsTables.lua",
@@ -88,6 +89,14 @@ describe("FishingMastery journal table", function()
             formatMonthDay = function(month, day)
                 return day .. "/" .. month
             end,
+            monthName = function(month)
+                return "M" .. month
+            end,
+            inSeason = function(season)
+                return season.season == "winter"
+            end,
+            hourOffset = -1,
+            thresholds = ns.Stats.Thresholds(),
         }
     end
 
@@ -198,4 +207,46 @@ describe("FishingMastery journal table", function()
         assert.truthy(sagefish:find("Where it bites: no Classic data", 1, true))
         assert.are.same({ "Click a fish to see its details." }, JournalTable.Detail(nil, input()))
     end)
+
+    it(
+        "tags the season now, own catches by month, and the day/night fish by server hour",
+        function()
+            local entries = {}
+            for _, e in
+                ipairs(model({
+                    [13755] = { n = 3, qty = 3, first = 100, months = { [10] = 1, [1] = 2 } },
+                    [13759] = { n = 4, qty = 4, first = 100, hours = { [0] = 1, [19] = 3 } },
+                }).entries)
+            do
+                entries[e.id] = e
+            end
+            local squid = table.concat(JournalTable.Detail(entries[13755], input()), "\n")
+            assert.truthy(squid:find("In season now (Classic window, server time).", 1, true))
+            assert.truthy(squid:find("Your catches by month: M1 2, M10 1", 1, true))
+            local bass = table.concat(JournalTable.Detail(entries[13756], input()), "\n")
+            assert.truthy(bass:find("Not in season now", 1, true))
+            assert.falsy(bass:find("by month", 1, true))
+            local snapper = table.concat(JournalTable.Detail(entries[13759], input()), "\n")
+            assert.truthy(
+                snapper:find(
+                    "Time of day: the guides say it bites at night; unconfirmed (4 of 30",
+                    1,
+                    true
+                )
+            )
+            assert.truthy(snapper:find("Your catches by server hour: 18:00 3, 23:00 1", 1, true))
+            local salmon = table.concat(JournalTable.Detail(entries[13760], input()), "\n")
+            assert.truthy(salmon:find("bites by day; unconfirmed (0 of 30 catches)", 1, true))
+            assert.falsy(salmon:find("by server hour", 1, true))
+
+            entries[13759].hours = { [20] = 30 }
+            snapper = table.concat(JournalTable.Detail(entries[13759], input()), "\n")
+            assert.truthy(snapper:find("check it against your 30 catches", 1, true))
+            local plain = input()
+            plain.inSeason = function() end -- no server time
+            assert.falsy(
+                table.concat(JournalTable.Detail(entries[13755], plain), "\n"):find("season now")
+            )
+        end
+    )
 end)

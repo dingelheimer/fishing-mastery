@@ -31,13 +31,13 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `LocaleStats.lua` | User-facing strings of the stats window                              |
 | `LocaleJournal.lua` | User-facing strings of the journal window |
 | `Data/Zones.lua` | Generated zone data `ns.Zones`: Classic loot lists, base skills, area placement (see Zone Data) |
-| `Data/Journal.lua` | Generated journal data `ns.Journal`: item groups, Classic recipes that use fish, fishing gear, buff food, season rules (see Journal Data) |
+| `Data/Journal.lua` | Generated journal data `ns.Journal`: item groups, Classic recipes that use fish, fishing gear, lures, buff food, fishing ranks, the glove enchant, season rules (see Journal Data) |
 | `Guard.lua`     | Runs every handler and slash command through `xpcall`; counts errors   |
 | `Events.lua`    | Event bus: one frame, dispatch table, player-only unit events; events the client cannot register are skipped and listed |
 | `Db.lua`        | Schema version, migration walk, repair of missing fields, migration snapshot (pure) |
 | `Character.lua` | Character key `UnitGUID("player")` and the character entry           |
 | `Attempt.lua`   | Attempt classifier: cast, message, and loot events to one outcome per attempt (pure) |
-| `Context.lua`   | Cast context: server time, map, subzone text, fishing rank and modifier, lure enchant; area name, instance ID, current area |
+| `Context.lua`   | Cast context: server time, map, subzone text, fishing rank and modifier, lure enchant; area name, instance ID, current area; the client name of Fishing |
 | `Area.lua`      | Area lookup: instance ID, UI map, and subzone text to an area of the zone data; subzone names from `C_Map.GetAreaInfo`, cached per zone (pure) |
 | `Loot.lua`      | Loot slots (item ID, quantity, quality) and loot source type and object ID |
 | `Items.lua`     | Item cache: quality the loot window did not give, and name, icon, quality, sell price for the UI; uncached items requested once and filled in after `ITEM_DATA_LOAD_RESULT` |
@@ -46,16 +46,18 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Session.lua`   | Sessions: start, 15-minute idle end, logout, `/reload` resume, skill before and after, active time, last catch (pure) |
 | `Codec.lua`     | Day chunk format: packs casts into `<day>\|<cast>;<cast>;…` strings and parses them back (pure) |
 | `History.lua`   | Packing the open day, load check with quarantine, on-demand history iterator (pure) |
-| `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
+| `Season.lua`    | Classic season windows (in season now, realm time), the realm hour offset, catches per realm hour; date helpers (pure) |
+| `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours, months, and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
 | `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
 | `Getaway.lua`   | Getaway risk: Classic model at an effective skill and base, own rate per resolved area and skill band with its range, the comparison, and its text lines (pure) |
 | `HudModel.lua`  | HUD numbers and texts from the session, rank, lure, and item; count/grey rules and tooltip ranges (pure) |
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Overview model: per-character and account numbers, favorite zone, session records (pure) |
 | `JournalModel.lua` | Journal model: entries of the four journal groups with own catches (account-wide or one character), places, base and no-getaway skill, recipes, season, quest-only flag, new-in-Forever items by Forever class, progress per group, gear for a skill gap (pure) |
+| `GearModel.lua` | Gear tab model: poles, other gear, lures, buff food, fishing ranks, enchants with bundled and tooltip bonus, needs, source, and where the player has them; the equipped bonus against the skill modifier; the best setup per slot plus the best lure in the bags; the tooltip number parser (pure) |
 | `RecipeModel.lua` | Journal recipes: the bundled recipes merged with the ones read in game, the account store of read recipes (journal items only, capped), buff food, recipes per fish (pure) |
 | `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
-| `ZoneRef.lua`   | Classic reference next to own catches: own group per area, comparison rows (Classic estimate, season or quest flag, own share, fish not in the Classic data), note, HUD zone line text (pure) |
+| `ZoneRef.lua`   | Classic reference next to own catches: own group per area, comparison rows (Classic estimate, season or quest flag, own share, fish not in the Classic data), note, the two HUD zone lines (pure) |
 | `ZoneTable.lua` | Zones table: zones with their subzones (one row per resolved subzone area, else per text), casts, catches per hour, species, top items with shares; rows carry the area ID (pure) |
 | `OverviewTable.lua` | Overview lines (account totals, rates with ranges, favorite zone, records) and the character rows (pure) |
 | `ChartModel.lua` | Chart math: nice axis scales, histogram bins, bar layout, x label step, line chart range and placement (pure) |
@@ -87,10 +89,11 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `JournalTrade.lua` | Trade skill read on `TRADE_SKILL_SHOW` for the journal check, repeated 1 s later: Classic API part (line, recipe count, first 3 recipes with spell, product, and reagent IDs) plus the `C_TradeSkillUI` part (dev flag only) |
 | `JournalTradeUI.lua` | `C_TradeSkillUI` part of the trade read: function names, base profession, recipe IDs with learned flag, learned recipes with product and reagents (dev flag only); its one-recipe reader is shared with `RecipeRead.lua` |
 | `RecipeRead.lua` | Recipe read for every player: on `TRADE_SKILL_SHOW`, once `C_TradeSkillUI` reports the list ready, stores the learned recipes that use a journal item in `FishingMasteryDB.recipes` |
+| `GearInputs.lua` | Gear tab reads: item counts with and without the bank, the equipped slots, the fishing bonus on item tooltips and on the equipped gloves, race, level, rank, cap, skill modifier, active lure, quest names (all protected; missing APIs give "?") |
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
-| `HudZone.lua`   | HUD zone line data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; dev area readout |
-| `Hud.lua`       | HUD frame: shown from the first cast to the session end, zone line, lure tick, tooltip (risk lines; dev flag: resolved area line), `/fm hud` |
+| `HudZone.lua`   | HUD zone lines' data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; dev area readout |
+| `Hud.lua`       | HUD frame: shown from the first cast to the session end, two zone lines, lure tick, tooltip (risk lines; dev flag: resolved area line), `/fm hud` |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
 | `StatsList.lua` | Table widget of the stats window: sort buttons or header labels over a ScrollBox list, grey cells, row tooltips |
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
@@ -98,13 +101,14 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |
 | `StatsWindow.lua` | Stats window `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
 | `StatsFrame.lua` | Stats window layout: movable frame, status line, scope button, one panel per tab, 8 tab buttons |
-| `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs |
+| `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs (with the click hint) |
 | `JournalTable.lua` | Fish tab of the journal: filtered rows (group, caught or not, plain-text search), dimmed not-caught rows, progress line, detail lines (pure) |
 | `JournalWindow.lua` | Journal window `/fm journal`: tab (saved per character), scope (account-wide by default), filters, selection; builds the model and the table inputs (own share per area) |
 | `JournalFrame.lua` | Layout of the journal window: movable frame, progress line, filter row with search box, scope button, panels, tabs |
 | `WatersTable.lua` | Waters tab of the journal: one row per area (subzones under their zone, dungeons last, places without reference data), base and no-getaway skill, fish count, own casts and catches, color band for the effective skill, fishable filter, sort (pure) |
 | `RecipeTable.lua` | Recipes tab of the journal: rows (product, profession, reagents with own stock, color ranks, learn skill and source, fishing buff, known), hover lines, known and per-fish filters, progress line (pure) |
-| `JournalTabs.lua` | Build and draw of the journal tabs: Fish (list, detail pane, link to its recipes), Waters (waters list, the selected water's fish), and Recipes; Gear is a placeholder |
+| `GearTable.lua` | Gear tab of the journal: a heading row per section, rows (item, bonus with tooltip and game value, needs, source with the quest name, what you have), hover lines, the best setup line, the equipped-bonus line (pure) |
+| `JournalTabs.lua` | Build and draw of the journal tabs: Fish (list, detail pane, link to its recipes), Waters (waters list, the selected water's fish, colors for the skill now or the best setup), Recipes, and Gear |
 | `FailureTabs.lua` | Build and draw of the Failures, Bite times, and Sessions tabs |
 | `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
@@ -169,7 +173,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
   | `zones`    | `[map].on / .off` (lure or not) `= { casts, outcomes, items = { [itemID] = quantity }, bites = { [tenths] = catches }, clicks = { [tenths] = early clicks } }` |
   | `hours`    | `[UTC hour 0-23] = { casts, outcomes }` (shifted to the realm or local hour when shown) |
   | `skills`   | `[map][band] = { hooked, getaways }`, band = lower bound of 5 points of rank + modifier |
-  | `items`    | `[itemID] = { n (catches with it), qty, first, last (server time), best (map with the most), fm, fs (map and subzone index of the first catch), hours = { [UTC hour] = catches }, fair (fair casts counted at its last catch) }` |
+  | `items`    | `[itemID] = { n (catches with it), qty, first, last (server time), best (map with the most), fm, fs (map and subzone index of the first catch), hours = { [UTC hour] = catches }, months = { [UTC month] = catches }, fair (fair casts counted at its last catch) }` |
   | `active`   | `[map] = seconds`: Σ min(gap to the next cast, 60 s), 60 s for the latest cast |
   | `subs`     | `[map][sub] = { casts, outcomes, items = { [itemID] = catches with it }, active }`, sub = subzone index or 0 (none); the same active time split per subzone |
   | `subskills` | `[map][sub][band] = { hooked, getaways }`: the `skills` bands per subzone, so the getaway rate can be split by resolved area |
@@ -178,7 +182,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
   Hooked = catch + getaway. `/fm rebuild` counts everything again and says whether the result
   equals the live totals. Totals of another version (after the schema 2 update, a new totals
   version such as 3 for the early-click times, 4 for subzones and item hours, 5 for the
-  skill bands per subzone, or 6 for the first catch place, or a restored old snapshot) are counted again after login, in the same steps as the load check (one decode for
+  skill bands per subzone, 6 for the first catch place, or 7 for the item months, or a restored
+  old snapshot) are counted again after login, in the same steps as the load check (one decode for
   both); `/fm status` says "Counting your history" until it is done, and casts during the count
   are counted once. 200,000 synthetic casts give about 86 KB of totals in the saved file (8 maps, 12 items;
   version 4 adds about 20 % for subzones and item hours: the spec estimate goes from 76,076 to 91,269
@@ -230,12 +235,14 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
 | `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch, click time for an early click or getaway) |
 
-### HUD Zone Line
+### HUD Zone Lines
 
-The last HUD line (full style only) names the water you stand in (resolved area, else the map
-name), its getaway risk at your effective skill from the Classic model ("?" without a base
-level; "(you N %)" once your own rate there is shown), and how many of its expected fish (quest
-rows left out) you have not caught there yet. It updates on `ZONE_CHANGED`,
+The last two HUD lines (full style only) name the water you stand in (resolved area, else the
+map name) with its getaway risk at your effective skill from the Classic model ("?" without a
+base level; "(you N %)" once your own rate there is shown; "no catch below skill N" under the
+base), and how many of its expected fish (quest rows left out) you have not caught there yet
+("Fish: 1 of 2 not caught here"). The HUD is 340 pixels wide, so the longest area name in the
+data fits with the longest risk text (checked in `spec/fm/season_spec.lua`). It updates on `ZONE_CHANGED`,
 `ZONE_CHANGED_INDOORS`, `ZONE_CHANGED_NEW_AREA`, skill changes, and attempt ends (the lure tick
 keeps it). The HUD tooltip adds the risk lines ("Differs from Classic" when your range excludes
 the model). The setting "HUD zone line" hides it.
@@ -259,7 +266,8 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
 - **Zones:** every zone (most casts first) and its subzones: casts, catches per hour, species,
   the top 3 items with their shares; all items with ranges in the tooltip. Subzones with their
   own zone data get one row per area; other subzone texts keep their own row. A click on a row
-  selects it (gold name; the first row by default) and fills the comparison below: the
+  selects it (gold name; the first row by default; a hint line says so) and fills the
+  comparison below: the
   water's expected fish with their "Classic estimate" chance, season (winter, summer) or quest
   flag, and your share with its range, then fish caught there that are "not in Classic data".
   A subzone without its own list shows its zone's list and the zone's catches where that list
@@ -310,21 +318,25 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   the settings or with `/fm minimap hide`.
 - **Addon compartment:** the Fishing Mastery entry opens or closes the stats window (with Shift
   held: the journal).
-- **Journal window** (`/fm journal`): an own window with the tabs Fish, Waters, Recipes, Gear
-  (Gear comes in a later story); position and last tab are saved per character. The
+- **Journal window** (`/fm journal`): an own window with the tabs Fish, Waters, Recipes, Gear;
+  position and last tab are saved per character. The
   Fish tab lists every fish, trophy fish, container, and quest fish of the Classic data plus
   caught items new in Forever, for all characters (scope button: this character). Not-caught
   fish are marked (dimmed icon, grey row, "not caught") but show all their information. Filters:
   group, caught or not, and a search box (plain text in the item name). A click on a row shows
   the details: count, first catch date and place, most caught zone, the skill to catch it and
   to stop getaways (Classic model), the top 5 places by Classic share with the own share there,
-  the recipes that use it, and the Classic season. The line on top shows the progress per group.
+  the recipes that use it, and the Classic season with "in season now" or not (Classic
+  window in server time). Caught fish list your catches by month (UTC). Raw Nightfin Snapper
+  and Raw Sunscale Salmon carry the guides' day or night claim, "unconfirmed" below 30 catches,
+  with your catches by server hour. The line on top shows the progress per group.
   The **Waters** tab lists every water of the Classic data (subzones under their zone, dungeons
   last) and places you fished that have no reference data, with the skill to catch there and to
   stop getaways, the number of fish, and your casts and catches. Rows are colored for your
   effective skill (rank and bonuses): red = no catch, orange = some fish get away, green = no
   getaways. "Fishable now" keeps orange and green waters; the sort button switches between
-  name and skill. A click on a water lists its fish (Classic estimate and own share, as on the
+  name and skill; "Colors: best setup" colors for the best setup of the Gear tab instead. A
+  click on a water lists its fish (Classic estimate and own share, as on the
   stats window's Zones tab); a click on a fish opens it in the Fish tab.
   The **Recipes** tab lists the 23 Classic recipes that use fish (Cooking and Alchemy) and the
   recipes read in game: product, profession, reagents with counts and how many you have (bags
@@ -335,6 +347,17 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   has loaded); recipes not in the Classic data show as "read in game". The filter button picks
   known or not known; "Show its recipes" in the Fish tab detail opens the tab filtered to that
   fish ("All recipes" clears it).
+  The **Gear** tab lists fishing poles, other gear, lures, buff food, the four fishing ranks,
+  and Enchant Gloves - Fishing: the bonus, what it needs (Fishing skill, level, Alliance or
+  Horde only), the source (vendor, quest with its client name, derby, drop, trainer, book,
+  formula), and where you have it (equipped, bags, bank; ranks learned or not; the enchant on
+  your gloves). Grey rows are items you do not have or cannot use. For gear the bonus is read
+  from the item tooltip ("+20 (tooltip)"); a tooltip that differs from the data shows both. With
+  one bonus item equipped, the bonus the game applies (skill modifier minus the active lure) is
+  shown next to it when it differs; the line below the list compares all equipped items with
+  it. The line on top is the best setup: your rank plus the highest bonus you have per slot
+  (pole, line, head, feet, hands, glove enchant) and the best lure in your bags, each usable at
+  your skill, level, and race. Lure, food, and enchant values are guide values.
 - **Item tooltip line:** items this character caught show "Fishing Mastery: caught 37x (best:
   Darkspear Strand)" on every item tooltip (bags, vendor, links); one lookup in the item totals,
   never a history scan. Other lines are never changed. Off with the setting "Item tooltip line".
@@ -529,13 +552,24 @@ header):
   (Cooking 185, Alchemy 171): product, reagents, color ranks from the Forever `SkillLineAbility`,
   learn skill, source (`vendor`, `drop`, `quest` with the recipe item, or `trainer`). Spells on no
   Forever line are left out (Copy of Nightfin Soup).
-- `gear`: obtainable items with a fishing skill aura (bonus, required skill and level, race mask
+- `gear`: obtainable items with a fishing skill aura and every fishing pole (the plain Fishing
+  Pole at +0) (bonus, required skill and level, race mask
   from the item or its reward quest, source), plus two Forever items confirmed on live: High Test
   Eternium Fishing Line (+5, guide value) and the Wide-Brimmed Fishing Hat (`lure`, +25 on use).
-  Copies without any source are left out.
+  Copies without any source are left out. Each item has its slot (`pole`, `line`, `head`,
+  `feet`, `hands`; from `InventoryType`).
+- `lures`: obtainable items whose use spell puts a lure enchant on the pole (bonus per enchant,
+  guide values; required skill, race mask, source). `lureEnchants`: lure enchant ID → bonus,
+  for the active lure.
+- `ranks`: the four fishing ranks with their rank cap, the skill and level to learn them, and
+  the source (trainer, or the Expert and Artisan books; the Artisan book's quest is not in the
+  dump). `enchants`: Enchant Gloves - Fishing (+2, guide value) with the formula's Enchanting
+  skill and source.
 - `food`: fishing buff food made by a bundled recipe (Loch Frenzy Delight, Bristle Whisker
   Catfish, Rockscale Cod, Filet of Redgill): bonus and character level, guide values. The build
   fails when a listed food is no bundled recipe's product.
+- `times`: Raw Nightfin Snapper (night) and Raw Sunscale Salmon (day), the window the guides
+  claim; CMaNGOS has no condition for them, so the addon shows it as unconfirmed.
 - `seasons`: Winter Squid and Summer Bass with their Classic game event window (start month, day,
   hour in server time, length in days).
 

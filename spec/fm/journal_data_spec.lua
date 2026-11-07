@@ -109,14 +109,16 @@ describe("FishingMastery journal data", function()
 
     it("has typed gear rows", function()
         for id, g in pairs(Journal.gear) do
-            local bonus, skill, level, races, source, quest, kind = unpack(g)
-            assert.is_true(isId(id) and isId(bonus) and bonus <= 35, "gear " .. id)
+            local bonus, skill, level, races, source, quest, kind, slot = unpack(g)
+            -- A pole without a bonus (the plain Fishing Pole) is listed at 0.
+            local poleOk = bonus == 0 and slot == "pole"
+            assert.is_true(isId(id) and (isId(bonus) or poleOk) and bonus <= 35, "gear " .. id)
             assert.is_true(skill >= 0 and level >= 0 and races >= 0)
             assert.is_true(SOURCES[source], "source " .. id)
             assert.are.equal(source == "quest", quest ~= 0)
             assert.is_true(kind == "gear" or kind == "lure")
         end
-        assert.are.equal(10, count(Journal.gear))
+        assert.are.equal(11, count(Journal.gear))
         for _, unused in ipairs({ 7996, 12221, 12222 }) do
             assert.is_nil(Journal.gear[unused])
         end
@@ -138,10 +140,18 @@ describe("FishingMastery journal data", function()
             { unpack(J.recipes[18246], 1, 7) }
         )
         assert.are.equal("trainer", J.recipes[7836][7]) -- Blackmouth Oil
-        assert.are.same({ 35, 300, 0, 0, "quest", 8193, "gear" }, J.gear[19970]) -- Arcanite
-        assert.are.same({ 25, 100, 0, 178, "quest", 7815, "gear" }, J.gear[19022]) -- FC-5000
-        assert.are.same({ 20, 100, 25, 0, "drop", 0, "gear" }, J.gear[6367]) -- Big Iron
-        assert.are.same({ 25, 1, 0, 0, "guide", 0, "lure" }, J.gear[259846]) -- Wide-Brimmed Hat
+        assert.are.same({ 35, 300, 0, 0, "quest", 8193, "gear", "pole" }, J.gear[19970]) -- Arcanite
+        assert.are.same({ 25, 100, 0, 178, "quest", 7815, "gear", "pole" }, J.gear[19022]) -- Pagle
+        assert.are.same({ 20, 100, 25, 0, "drop", 0, "gear", "pole" }, J.gear[6367]) -- Big Iron
+        assert.are.same({ 5, 1, 0, 0, "quest", 8221, "gear", "head" }, J.gear[19972]) -- Lucky Hat
+        assert.are.same({ 25, 1, 0, 0, "guide", 0, "lure", "head" }, J.gear[259846]) -- Wide-Brimmed
+        assert.are.same({ 25, 1, 0, "vendor", 0 }, J.lures[6529]) -- Shiny Bauble
+        assert.are.same({ 50, 1, 77, "quest", 1580 }, J.lures[6811]) -- Aquadynamic Fish Lens
+        assert.are.same({ 75, 100, 0, "drop", 0 }, J.lures[7307]) -- Flesh Eating Worm
+        assert.are.equal(100, J.lureEnchants[266])
+        assert.are.same({ "journeyman", 150, 50, 0, "trainer", 7734, 0 }, J.ranks[2])
+        assert.are.same({ "expert", 225, 125, 20, "vendor", 0, 16083 }, J.ranks[3])
+        assert.are.same({ 2, 145, 11152, "drop" }, J.enchants[13620])
         assert.are.same(
             { season = "winter", event = 35, month = 9, day = 23, hour = 1, days = 178 },
             J.seasons[13755]

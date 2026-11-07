@@ -1,6 +1,6 @@
 -- Layout of the journal window: the movable frame (position saved per character), title,
 -- progress line, the filter row (group, caught or not, search box, scope), one panel per tab
--- (built by its JournalTabs entry, else "coming in a later story"), and the tab buttons run by
+-- (built by its JournalTabs entry), and the tab buttons run by
 -- PanelTemplates on frame.Tabs (the frames are unnamed). Unnamed, insecure frames only.
 local _, ns = ...
 
@@ -38,14 +38,7 @@ local function buildPanels(self)
     for i, name in ipairs(ns.JournalWindow.TABS) do
         local frame = panel(self)
         self.panels[i] = frame
-        local tab = ns.JournalTabs[name]
-        if tab then
-            tab.build(self, frame)
-        else
-            local text = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            text:SetPoint("TOP", frame, "TOP", 0, -60)
-            text:SetText(L.JOURNAL_SOON)
-        end
+        ns.JournalTabs[name].build(self, frame)
     end
 end
 
