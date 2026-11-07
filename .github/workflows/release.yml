@@ -1,0 +1,29 @@
+name: Release
+
+# Builds the package (.pkgmeta) for a version tag such as v0.9.0-beta or v1.0.0 and uploads it to
+# CurseForge (project from "## X-Curse-Project-ID" in the TOC) and to GitHub Releases. Tags with
+# -beta or -alpha upload as beta or alpha files. Runs only for tags pushed to this repository;
+# pushes, pull requests, and forks never trigger it. Needs the repository secret CF_API_KEY (the
+# CurseForge author API token).
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # the GitHub release
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    env:
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
+      GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Package and upload
+        uses: BigWigsMods/packager@v2.7.0
+        with:
+          pandoc: "false"

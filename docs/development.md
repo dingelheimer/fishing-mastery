@@ -19,7 +19,7 @@ under `projects/wow-fishing-addon`.
 | `tools/`                | Developer scripts: fixture extraction from a probe log, zone and journal data fetch and build, privacy scan |
 | `tools/data/`           | Trimmed, pinned copies of the zone and journal data sources (input of both builds) |
 | `docs/`                 | This development reference, the probe reference, the CurseForge page text, the logo (`images/`, drawn by `tools/draw_logo.py`, needs Pillow) |
-| `.github/workflows/`    | `check.yml`: the quality gates on every push and pull request; `package.yml`: a dry run of the release zip (started by hand) |
+| `.github/workflows/`    | `check.yml`: the quality gates on every push and pull request; `package.yml`: a dry run of the release zip (started by hand); `release.yml`: upload on a version tag |
 | `.pkgmeta`, `CHANGELOG.md` | Packager configuration (only `FishingMastery/`, `LICENSE`, and the changelog go into the zip) and the release notes |
 | `probe-results/`        | Local copies of probe logs; git-ignored, never committed         |
 
@@ -517,6 +517,17 @@ together with the local tools.
 **Package dry run:** Actions → Package → Run workflow builds the release zip with the BigWigs
 packager (v2.7.0, `.pkgmeta`) without uploading, lists its files in the log, and keeps the zip
 as the workflow artifact `package` for 7 days.
+
+**Cutting a release:**
+1. `CHANGELOG.md`: a new top entry `## <version>` with the changes since the last release.
+2. Run the package dry run (above) and the privacy scan (below); `main` must be green.
+3. Tag and push: `git tag v<version>` and `git push origin v<version>`. Tags with `-beta` or
+   `-alpha` (for example `v0.9.0-beta`) upload as beta or alpha files.
+4. `release.yml` builds the zip with the packager, writes the version from the tag into the TOC,
+   and uploads it to CurseForge ("Fishing Mastery Forever", project 1789368 from
+   `## X-Curse-Project-ID`) and to GitHub Releases. It needs the repository secret `CF_API_KEY`
+   (CurseForge author API token, https://www.curseforge.com/account/api-tokens).
+5. Check the file on CurseForge and the GitHub release, then install it with the CurseForge app.
 
 **Privacy scan:** before the repository is made public, and before each release,
 `python tools/privacy_scan.py <WTF/Account/<account>/SavedVariables/FishingMastery.lua> . ../kb`

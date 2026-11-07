@@ -10,6 +10,7 @@
 ## SavedVariablesPerCharacter: FishingMasteryCharDB
 ## X-License: GPL-3.0
 ## X-Website: https://github.com/dingelheimer/fishing-mastery
+## X-Curse-Project-ID: 1789368
 
 Locale.lua
 LocaleStats.lua
