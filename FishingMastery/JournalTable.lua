@@ -143,7 +143,8 @@ end
 
 -- Detail lines of one entry. input as for Rows plus formatDate(t), spellName(id),
 -- ownShare(area, id) -> k, n (own catches of the item and all catches in that area) or nil,
--- recipe(spell) -> the journal recipe row, formatMonthDay(month, day).
+-- recipe(spell) -> the RecipeModel entry, known(spell) -> true when known (optional),
+-- formatMonthDay(month, day).
 function JournalTable.Detail(entry, input)
     if not entry then
         return { L.JOURNAL_SELECT }
@@ -204,10 +205,12 @@ function JournalTable.Detail(entry, input)
         for i = 1, min(#entry.recipes, 6) do
             local spell = entry.recipes[i]
             local recipe = input.recipe(spell)
+            local skill = recipe and recipe.profession and L["JOURNAL_SKILL_" .. recipe.profession]
             add(
-                L.JOURNAL_D_RECIPE,
+                input.known and input.known(spell) and L.JOURNAL_D_RECIPE_KNOWN
+                    or L.JOURNAL_D_RECIPE,
                 input.spellName(spell) or format(L.JOURNAL_SPELL_LOADING, spell),
-                L["JOURNAL_SKILL_" .. recipe[1]] or ""
+                skill or L.JOURNAL_NO_PLACE
             )
         end
     end

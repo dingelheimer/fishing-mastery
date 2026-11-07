@@ -195,6 +195,18 @@ ns.Journal = {
         -- Wide-Brimmed Fishing Hat
         [259846] = { 25, 1, 0, 0, "guide", 0, "lure" },
     },
+    -- Fishing buff food -> { fishing bonus, character level, source }. Guide values
+    -- until the aura is read in game.
+    food = {
+        -- Bristle Whisker Catfish
+        [4593] = { 8, 15, "guide" },
+        -- Rockscale Cod
+        [4594] = { 12, 25, "guide" },
+        -- Loch Frenzy Delight
+        [6316] = { 3, 5, "guide" },
+        -- Filet of Redgill
+        [13930] = { 18, 35, "guide" },
+    },
     -- Seasonal fish (Classic game events): starts every year on month/day at hour
     -- (server time) and lasts days.
     seasons = {

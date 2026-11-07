@@ -181,6 +181,18 @@ local function startTracker()
         journal = ns.Journal,
         after = timer("timer:journal"),
     })
+    ns.recipeRead = ns.RecipeRead.Start({
+        env = _G,
+        bus = bus,
+        db = ns.db,
+        isJournal = function(id)
+            return ns.journalWindow:IsJournal(id)
+        end,
+        after = timer("timer:recipes"),
+        onStored = function()
+            ns.journalWindow:Redraw()
+        end,
+    })
     startSettings()
     if ns.char then
         ns.ItemTooltip.Start({ env = _G, settings = ns.db.settings, char = ns.char })

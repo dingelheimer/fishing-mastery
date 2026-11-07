@@ -1,9 +1,10 @@
 -- The journal window (/fm journal, Shift-click on the minimap button or the addon compartment):
 -- an own movable window (owner decision 1, 2026-11-06) with the tabs Fish, Waters, Recipes, Gear.
 -- Position and last tab are saved per character. The Fish tab lists the JournalModel entries of
--- the chosen scope (account-wide by default) with filters and a detail pane; the other tabs are
--- placeholders until their stories. Built on first open (JournalFrame.lua); item names that load
--- later redraw once per frame. Unnamed, insecure frames only.
+-- the chosen scope (account-wide by default) with filters and a detail pane; Waters and Recipes
+-- follow (JournalTabs.lua), Gear is a placeholder until its story. Built on first open
+-- (JournalFrame.lua); item names that load later redraw once per frame. Unnamed, insecure frames
+-- only.
 local _, ns = ...
 
 local setmetatable, type, pairs, ipairs, select, tostring =
@@ -38,6 +39,7 @@ function JournalWindow.Start(deps)
         scope = "account", -- owner decision 5
         filters = { group = "all", show = "all", search = "" },
         waters = { fishable = false, sort = "name" },
+        recipeFilters = { show = "all" },
         waiting = {},
     }, JournalWindow)
 end
@@ -86,6 +88,18 @@ local function classOf(self, id)
     return nil
 end
 
+-- Journal item test for the recipe read: a bundled journal item or a Forever fish or container.
+function JournalWindow:IsJournal(id)
+    return ns.JournalModel.GroupOf(self:Index(), function(item)
+        return classOf(self, item)
+    end, id) ~= nil
+end
+
+-- The recipe list: bundled recipes merged with the ones read in game (FishingMasteryDB.recipes).
+function JournalWindow:Recipes()
+    return ns.RecipeModel.Build(self.journal, self.db.recipes)
+end
+
 -- StatsView view of the chosen scope.
 function JournalWindow:View()
     return ns.StatsView.Build(ns.JournalModel.Chars(self.db.chars, self.scope, self.charKey))
@@ -100,17 +114,18 @@ function JournalWindow:Skill()
     return rank + (type(modifier) == "number" and modifier or 0)
 end
 
--- The model of the chosen scope, and the view it was built from.
+-- The model of the chosen scope, the view it was built from, and the recipe list.
 function JournalWindow:Model()
-    local view = self:View()
+    local view, recipes = self:View(), self:Recipes()
     local model = ns.JournalModel.Build({
         index = self:Index(),
         view = view,
         classOf = function(id)
             return classOf(self, id)
         end,
+        recipesOf = ns.RecipeModel.ByReagent(recipes),
     })
-    return model, view
+    return model, view, recipes
 end
 
 -- Own catches of an item and all catches in an area's water (ZoneRef.Own over its zone's map).
@@ -126,9 +141,11 @@ local function ownShare(self, view, area, id)
     return group.items[id] or 0, catches
 end
 
--- Inputs of the table builders (JournalTable).
-function JournalWindow:Inputs(view)
-    local env, names, spells = self.env, {}, {}
+-- Inputs of the table builders (JournalTable, RecipeTable). recipes: the recipe list (built when
+-- not given).
+function JournalWindow:Inputs(view, recipes)
+    local env, names, spells, known, stock = self.env, {}, {}, {}, {}
+    recipes = recipes or self:Recipes()
     return {
         info = function(id)
             return itemInfo(self, id)
@@ -153,7 +170,22 @@ function JournalWindow:Inputs(view)
             return spells[spell] or nil
         end,
         recipe = function(spell)
-            return self.journal.recipes[spell]
+            return ns.RecipeModel.Find(recipes, spell)
+        end,
+        known = function(spell)
+            if known[spell] == nil then
+                -- Story 5.1: IsSpellKnown is false for known recipes on Forever.
+                local value = Context.Call(env, "IsPlayerSpell", spell)
+                known[spell] = type(value) == "boolean" and { value } or {}
+            end
+            return known[spell][1]
+        end,
+        stock = function(id)
+            if stock[id] == nil then
+                local value = Context.Call(env, "C_Item.GetItemCount", id, true)
+                stock[id] = type(value) == "number" and value or false
+            end
+            return stock[id] or nil
         end,
         ownShare = function(area, id)
             return ownShare(self, view, area, id)

@@ -5,8 +5,9 @@ Usage (repository root): python tools/build_journal_data.py
 Writes the journal group of every item a fishing roll can give, the Classic recipes that use a
 journal item (profession, product, reagents, color ranks, learn skill, source), the obtainable
 fishing gear (bonus, required skill and level, race mask, source), the Forever-only fishing items
-confirmed in Story 5.1, and the season rule of the seasonal fish. Fails loudly when an item fits
-no group or a recipe or gear item has no source. Only numbers, fixed keys, values from fixed
+confirmed in Story 5.1, the fishing bonus of buff food made by a bundled recipe (guide values), and
+the season rule of the seasonal fish. Fails loudly when an item fits no group, a recipe or gear
+item has no source, or a buff food is not a bundled recipe's product. Only numbers, fixed keys, values from fixed
 sets, and sanitized English names in comments are written. Python 3 standard library only.
 """
 
@@ -32,6 +33,16 @@ FOREVER_GEAR = {
             "name": "High Test Eternium Fishing Line"},
     259846: {"bonus": 25, "skill": 1, "source": "guide", "kind": "lure",
              "name": "Wide-Brimmed Fishing Hat"},
+}
+
+# Fishing buff food (new in Forever): product item -> fishing bonus and character level, from the
+# beta guides and Wowhead (Fishing Mechanics, "Skill Bonuses"). Only food made by a bundled recipe
+# is listed; Fillet of Frenzy and Spinefin Halibut have no known recipe or item ID yet.
+FOOD = {
+    6316: {"bonus": 3, "level": 5, "name": "Loch Frenzy Delight"},
+    4593: {"bonus": 8, "level": 15, "name": "Bristle Whisker Catfish"},
+    4594: {"bonus": 12, "level": 25, "name": "Rockscale Cod"},
+    13930: {"bonus": 18, "level": 35, "name": "Filet of Redgill"},
 }
 
 
@@ -73,6 +84,10 @@ def build(zone_sources, sources):
     for item in FOREVER_GEAR:
         if item in gear:
             raise zs.DataError("Forever item %d is already in the Classic gear" % item)
+    products = {r["product"] for r in recipes.values()}
+    for item in FOOD:
+        if item not in products:
+            raise zs.DataError("buff food %d is no bundled recipe's product" % item)
     seasons = js.seasons(sources, lists)
 
     out = [
@@ -140,6 +155,13 @@ def build(zone_sources, sources):
         ]
         out.extend(entry(item, values, g["name"]))
     out.append("    },")
+    out.append("    -- Fishing buff food -> { fishing bonus, character level, source }. Guide values")
+    out.append("    -- until the aura is read in game.")
+    out.append("    food = {")
+    for item, f in sorted(FOOD.items()):
+        values = [number(f["bonus"]), number(f["level"]), word("guide", SOURCES)]
+        out.extend(entry(item, values, f["name"]))
+    out.append("    },")
     out.append("    -- Seasonal fish (Classic game events): starts every year on month/day at hour")
     out.append("    -- (server time) and lasts days.")
     out.append("    seasons = {")
@@ -168,6 +190,7 @@ def build(zone_sources, sources):
         "gear": len(gear),
         "unused": unused,
         "forever": len(FOREVER_GEAR),
+        "food": len(FOOD),
         "seasons": len(seasons),
     }
     return text, summary
@@ -189,7 +212,7 @@ def main():
     print(
         "Wrote %s: %d bytes; %d items (%s); %d recipes (%d Cooking, %d Alchemy; left out, not on a "
         "Forever skill line: %s); %d Classic gear items (unused, no source: %s) + %d Forever; "
-        "%d seasonal fish"
+        "%d buff foods; %d seasonal fish"
         % (
             os.path.relpath(OUTPUT, ROOT),
             size,
@@ -202,6 +225,7 @@ def main():
             summary["gear"],
             ", ".join(str(u) for u in summary["unused"]) or "none",
             summary["forever"],
+            summary["food"],
             summary["seasons"],
         )
     )

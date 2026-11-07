@@ -31,7 +31,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `LocaleStats.lua` | User-facing strings of the stats window                              |
 | `LocaleJournal.lua` | User-facing strings of the journal window |
 | `Data/Zones.lua` | Generated zone data `ns.Zones`: Classic loot lists, base skills, area placement (see Zone Data) |
-| `Data/Journal.lua` | Generated journal data `ns.Journal`: item groups, Classic recipes that use fish, fishing gear, season rules (see Journal Data) |
+| `Data/Journal.lua` | Generated journal data `ns.Journal`: item groups, Classic recipes that use fish, fishing gear, buff food, season rules (see Journal Data) |
 | `Guard.lua`     | Runs every handler and slash command through `xpcall`; counts errors   |
 | `Events.lua`    | Event bus: one frame, dispatch table, player-only unit events; events the client cannot register are skipped and listed |
 | `Db.lua`        | Schema version, migration walk, repair of missing fields, migration snapshot (pure) |
@@ -53,6 +53,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Overview model: per-character and account numbers, favorite zone, session records (pure) |
 | `JournalModel.lua` | Journal model: entries of the four journal groups with own catches (account-wide or one character), places, base and no-getaway skill, recipes, season, quest-only flag, new-in-Forever items by Forever class, progress per group, gear for a skill gap (pure) |
+| `RecipeModel.lua` | Journal recipes: the bundled recipes merged with the ones read in game, the account store of read recipes (journal items only, capped), buff food, recipes per fish (pure) |
 | `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
 | `ZoneRef.lua`   | Classic reference next to own catches: own group per area, comparison rows (Classic estimate, season or quest flag, own share, fish not in the Classic data), note, HUD zone line text (pure) |
 | `ZoneTable.lua` | Zones table: zones with their subzones (one row per resolved subzone area, else per text), casts, catches per hour, species, top items with shares; rows carry the area ID (pure) |
@@ -84,7 +85,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `AreaCheck.lua` | Area API check: map, zone and subzone texts, instance, area IDs at the position, test area names with byte-exact match flags; runs in `dev.area` (dev flag only) |
 | `JournalCheck.lua` | Journal API check: recipe spells known, new Forever spell names, gear tooltips and counts, item classes, fishing modifier and main-hand tooltip; runs in `dev.journal` (dev flag only) |
 | `JournalTrade.lua` | Trade skill read on `TRADE_SKILL_SHOW` for the journal check, repeated 1 s later: Classic API part (line, recipe count, first 3 recipes with spell, product, and reagent IDs) plus the `C_TradeSkillUI` part (dev flag only) |
-| `JournalTradeUI.lua` | `C_TradeSkillUI` part of the trade read: function names, base profession, recipe IDs with learned flag, learned recipes with product and reagents (dev flag only) |
+| `JournalTradeUI.lua` | `C_TradeSkillUI` part of the trade read: function names, base profession, recipe IDs with learned flag, learned recipes with product and reagents (dev flag only); its one-recipe reader is shared with `RecipeRead.lua` |
+| `RecipeRead.lua` | Recipe read for every player: on `TRADE_SKILL_SHOW`, once `C_TradeSkillUI` reports the list ready, stores the learned recipes that use a journal item in `FishingMasteryDB.recipes` |
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
 | `HudZone.lua`   | HUD zone line data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; dev area readout |
@@ -101,7 +103,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `JournalWindow.lua` | Journal window `/fm journal`: tab (saved per character), scope (account-wide by default), filters, selection; builds the model and the table inputs (own share per area) |
 | `JournalFrame.lua` | Layout of the journal window: movable frame, progress line, filter row with search box, scope button, panels, tabs |
 | `WatersTable.lua` | Waters tab of the journal: one row per area (subzones under their zone, dungeons last, places without reference data), base and no-getaway skill, fish count, own casts and catches, color band for the effective skill, fishable filter, sort (pure) |
-| `JournalTabs.lua` | Build and draw of the journal tabs: Fish (list and detail pane) and Waters (waters list, the selected water's fish); Recipes and Gear are placeholders |
+| `RecipeTable.lua` | Recipes tab of the journal: rows (product, profession, reagents with own stock, color ranks, learn skill and source, fishing buff, known), hover lines, known and per-fish filters, progress line (pure) |
+| `JournalTabs.lua` | Build and draw of the journal tabs: Fish (list, detail pane, link to its recipes), Waters (waters list, the selected water's fish), and Recipes; Gear is a placeholder |
 | `FailureTabs.lua` | Build and draw of the Failures, Bite times, and Sessions tabs |
 | `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
@@ -116,6 +119,9 @@ copied and adapted, and the probe folder is never loaded or referenced.
 - `FishingMasteryDB` (account-wide): `schemaVersion`, `chars[UnitGUID("player")]` with
   `name` and `part` (the two name parts, display only), `firstSeen`, `lastSeen` (server time),
   and `settings`. `GetRealmName()` is never part of the key.
+- `FishingMasteryDB.recipes` (account-wide): recipes read from profession windows that use a
+  journal item, `[spellID] = { s = skill line (0: unknown), p = product item (0: none), r =
+  { { itemID, count } } }`; at most 300 recipes and 8 reagents each. IDs and counts only.
 - Per character entry, history: `days` (packed day chunks, oldest first, append-only), `casts`
   (the open day's records, packed at logout and when a cast of a later day arrives),
   `quarantine` (chunks that failed the load check, kept unchanged), `totals`, `subzones`
@@ -305,7 +311,7 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
 - **Addon compartment:** the Fishing Mastery entry opens or closes the stats window (with Shift
   held: the journal).
 - **Journal window** (`/fm journal`): an own window with the tabs Fish, Waters, Recipes, Gear
-  (the last three come in later stories); position and last tab are saved per character. The
+  (Gear comes in a later story); position and last tab are saved per character. The
   Fish tab lists every fish, trophy fish, container, and quest fish of the Classic data plus
   caught items new in Forever, for all characters (scope button: this character). Not-caught
   fish are marked (dimmed icon, grey row, "not caught") but show all their information. Filters:
@@ -320,6 +326,15 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   getaways. "Fishable now" keeps orange and green waters; the sort button switches between
   name and skill. A click on a water lists its fish (Classic estimate and own share, as on the
   stats window's Zones tab); a click on a fish opens it in the Fish tab.
+  The **Recipes** tab lists the 23 Classic recipes that use fish (Cooking and Alchemy) and the
+  recipes read in game: product, profession, reagents with counts and how many you have (bags
+  and bank), the yellow and green skill ranks, the learn skill and source, the fishing buff of
+  buff food (guide values), and whether this character knows it (`IsPlayerSpell`; grey when
+  not). Hover a row for the details. Opening any profession window stores every learned recipe
+  that uses a journal item once per account (about 1 s after the window opens, once the list
+  has loaded); recipes not in the Classic data show as "read in game". The filter button picks
+  known or not known; "Show its recipes" in the Fish tab detail opens the tab filtered to that
+  fish ("All recipes" clears it).
 - **Item tooltip line:** items this character caught show "Fishing Mastery: caught 37x (best:
   Darkspear Strand)" on every item tooltip (bags, vendor, links); one lookup in the item totals,
   never a history scan. Other lines are never changed. Off with the setting "Item tooltip line".
@@ -518,6 +533,9 @@ header):
   from the item or its reward quest, source), plus two Forever items confirmed on live: High Test
   Eternium Fishing Line (+5, guide value) and the Wide-Brimmed Fishing Hat (`lure`, +25 on use).
   Copies without any source are left out.
+- `food`: fishing buff food made by a bundled recipe (Loch Frenzy Delight, Bristle Whisker
+  Catfish, Rockscale Cod, Filet of Redgill): bonus and character level, guide values. The build
+  fails when a listed food is no bundled recipe's product.
 - `seasons`: Winter Squid and Summer Bass with their Classic game event window (start month, day,
   hour in server time, length in days).
 

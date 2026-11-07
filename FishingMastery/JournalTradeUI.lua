@@ -3,7 +3,8 @@
 -- C_TradeSkillUI function names that exist, the base profession, every recipe ID with its learned
 -- flag, and for learned recipes (capped) the product and reagent item IDs with counts, from
 -- GetRecipeSchematic or, if missing, the older GetRecipeReagentInfo family. Recipe names are
--- returned separately for printing and never saved.
+-- returned separately for printing and never saved. JournalTradeUI.Recipe (one recipe's product and
+-- reagents) is also used by the journal's recipe read for every player (RecipeRead.lua).
 local _, ns = ...
 
 local type, pairs, ipairs, sort, tostring = type, pairs, ipairs, table.sort, tostring
@@ -72,6 +73,15 @@ local function fromReagentInfo(env, id, recipe)
     end
 end
 
+-- One recipe: { id, via, product, reagents = { { id, count } } } (via nil when no API answered).
+function JournalTradeUI.Recipe(env, id)
+    local recipe = { id = id, reagents = {} }
+    if not fromSchematic(env, id, recipe) then
+        fromReagentInfo(env, id, recipe)
+    end
+    return recipe
+end
+
 -- Returns the saved part and the recipe names (index matches read.recipes) for printing.
 function JournalTradeUI.Read(env)
     local read = { api = apiNames(env), recipes = {} }
@@ -94,11 +104,7 @@ function JournalTradeUI.Read(env)
         if type(info) == "table" and info.learned == true then
             read.learned = read.learned + 1
             if #read.recipes < JournalTradeUI.LEARNED_CAP then
-                local recipe = { id = id, reagents = {} }
-                if not fromSchematic(env, id, recipe) then
-                    fromReagentInfo(env, id, recipe)
-                end
-                read.recipes[#read.recipes + 1] = recipe
+                read.recipes[#read.recipes + 1] = JournalTradeUI.Recipe(env, id)
                 names[#read.recipes] = text(info.name) or tostring(id)
             end
         end

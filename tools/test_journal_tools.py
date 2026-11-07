@@ -185,6 +185,8 @@ class Pinned(unittest.TestCase):
         self.assertEqual(summary["dropped"], [25662])
         self.assertEqual((summary["gear"], sorted(summary["unused"])), (8, [7996, 12221, 12222]))
         self.assertEqual(summary["seasons"], 2)
+        self.assertEqual(summary["food"], 4)
+        self.assertIn("        [4593] = { 8, 15, \"guide\" },", text.splitlines())
         self.assertLess(len(text.encode("utf-8")), build.MAX_BYTES)
         self.assertTrue(all(len(line) <= build.MAX_COLUMNS for line in text.splitlines()))
 

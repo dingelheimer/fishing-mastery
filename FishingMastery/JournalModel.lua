@@ -101,7 +101,7 @@ local function lowestBase(places)
     return low
 end
 
-local function newEntry(index, id, group, own)
+local function newEntry(index, id, group, own, recipesOf)
     local places = index.places[id] or {}
     local top = {}
     for i = 1, min(#places, JournalModel.PLACES) do
@@ -120,7 +120,7 @@ local function newEntry(index, id, group, own)
         placeCount = #places,
         base = base,
         safe = base and base + JournalModel.SAFE or nil,
-        recipes = index.recipes[id] or {},
+        recipes = (recipesOf or index.recipes)[id] or {},
         season = tbl(index.journal.seasons)[id],
         questOnly = questOnly or nil,
     }
@@ -144,7 +144,18 @@ local function foreverGroup(classOf, id)
     return JournalModel.FOREVER_CLASSES[class .. "/" .. subclass]
 end
 
--- input: { index (JournalModel.Index), view (StatsView view of the chosen scope), classOf }.
+-- Journal group of an item: the bundled group when it is a journal group, else the Forever class
+-- group (nil while the class is unknown or for anything else).
+function JournalModel.GroupOf(index, classOf, id)
+    local group = index.groupOf[id]
+    if group then
+        return JOURNAL[group] and group or nil
+    end
+    return foreverGroup(classOf, id)
+end
+
+-- input: { index (JournalModel.Index), view (StatsView view of the chosen scope), classOf,
+-- recipesOf (item ID -> recipe spells, RecipeModel.ByReagent; default: the bundled recipes) }.
 -- Returns { entries (group order, then caught first, then ID), progress = { [group] = { caught,
 -- total (Classic), new (caught new in Forever) } }, pending (caught items with an unknown class) }.
 function JournalModel.Build(input)
@@ -156,7 +167,7 @@ function JournalModel.Build(input)
     end
     for id, group in pairs(index.groupOf) do
         if JOURNAL[group] then
-            local entry = newEntry(index, id, group, items[id])
+            local entry = newEntry(index, id, group, items[id], input.recipesOf)
             local progress = model.progress[group]
             progress.total = progress.total + 1
             progress.caught = progress.caught + (entry.caught and 1 or 0)
@@ -168,7 +179,7 @@ function JournalModel.Build(input)
             local group = foreverGroup(input.classOf, id)
             local known = type(input.classOf) == "function" and input.classOf(id) ~= nil
             if group then
-                local entry = newEntry(index, id, group, own)
+                local entry = newEntry(index, id, group, own, input.recipesOf)
                 entry.new = true
                 model.progress[group].new = model.progress[group].new + 1
                 model.entries[#model.entries + 1] = entry

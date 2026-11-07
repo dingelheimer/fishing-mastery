@@ -38,8 +38,10 @@ SummaryModel.lua
 StatsView.lua
 StatsModel.lua
 JournalModel.lua
+RecipeModel.lua
 StatsTables.lua
 JournalTable.lua
+RecipeTable.lua
 WatersTable.lua
 ZoneTable.lua
 ZoneRef.lua
@@ -71,6 +73,7 @@ AreaCheck.lua
 JournalCheck.lua
 JournalTrade.lua
 JournalTradeUI.lua
+RecipeRead.lua
 Commands.lua
 DataCommands.lua
 HudZone.lua

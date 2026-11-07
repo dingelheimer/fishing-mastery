@@ -2,18 +2,20 @@
 -- frames, draw(window, keepScroll) fills them; filters = true shows the fish filter row. This
 -- file: Fish (the filtered list on the left, the selected fish's details on the right) and Waters
 -- (every water colored for the effective skill, the selected water's fish below; a click on a fish
--- opens it in the Fish tab). Recipes and Gear follow in Stories 5.6-5.7.
+-- opens it in the Fish tab), and Recipes (bundled and read-in-game recipes, filtered by known or
+-- by one fish from the Fish tab). Gear follows in Story 5.7.
 local _, ns = ...
 
 local concat, ipairs, tonumber = table.concat, ipairs, tonumber
-local L, StatsFrame, JournalTable, WatersTable =
-    ns.L, ns.StatsFrame, ns.JournalTable, ns.WatersTable
+local L, StatsFrame, JournalTable, WatersTable, RecipeTable =
+    ns.L, ns.StatsFrame, ns.JournalTable, ns.WatersTable, ns.RecipeTable
 
 local JournalTabs = {}
 ns.JournalTabs = JournalTabs
 
 JournalTabs.LIST_WIDTH = 530 -- the fish list; the details fill the rest of the panel
 JournalTabs.WATERS_LIST = 200 -- height of the waters list above the selected water's fish
+JournalTabs.RECIPES_TAB = 3
 
 local function findEntry(model, id)
     for _, entry in ipairs(model.entries) do
@@ -36,21 +38,35 @@ JournalTabs.fish = {
         self.fishEmpty:SetPoint("TOP", list, "TOP", 0, -60)
         local detail = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         detail:SetPoint("TOPLEFT", panel, "TOPLEFT", JournalTabs.LIST_WIDTH + 12, -2)
-        detail:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -4, 4)
+        detail:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -4, 30)
         detail:SetJustifyH("LEFT")
         detail:SetJustifyV("TOP")
         detail:SetWordWrap(true)
         self.fishDetail = detail
+        -- Link to the Recipes tab, filtered to the selected fish.
+        self.fishRecipes = ns.Frames.Button(
+            self.env,
+            panel,
+            L.JOURNAL_RECIPES_BUTTON,
+            140,
+            function()
+                local recipes = self.recipeFilters
+                recipes.fish, recipes.show = self.filters.selected, "all"
+                self:Select(JournalTabs.RECIPES_TAB)
+            end
+        )
+        self.fishRecipes:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", JournalTabs.LIST_WIDTH + 12, 2)
     end,
     draw = function(self, keepScroll)
-        local model, view = self:Model()
-        local input = self:Inputs(view)
+        local model, view, recipes = self:Model()
+        local input = self:Inputs(view, recipes)
         local filters = self.filters
         local rows = JournalTable.Rows(model, input, filters)
         self.fishList:SetRows(rows, keepScroll)
         self.fishEmpty:SetText(#rows == 0 and L.JOURNAL_EMPTY or "")
         local entry = filters.selected and findEntry(model, filters.selected)
         self.fishDetail:SetText(concat(JournalTable.Detail(entry, input), "\n"))
+        self.fishRecipes:SetShown(entry ~= nil and #entry.recipes > 0)
         self.progress:SetText(JournalTable.Progress(model))
         self.groupButton:SetText(L["JOURNAL_GROUP_" .. filters.group])
         self.showButton:SetText(L["JOURNAL_SHOW_" .. filters.show])
@@ -130,5 +146,36 @@ JournalTabs.waters = {
             state.fishable and L.WATERS_FISHABLE_ON or L.WATERS_FISHABLE_OFF
         )
         self.sortButton:SetText(L["WATERS_SORT_" .. state.sort])
+    end,
+}
+
+JournalTabs.recipes = {
+    build = function(self, panel)
+        local filters = self.recipeFilters
+        self.recipeShowButton = StatsFrame.Button(self, panel, 120, function()
+            filters.show = ns.JournalFrame.Next(RecipeTable.SHOWS, filters.show)
+        end)
+        self.recipeShowButton:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
+        self.recipeAllButton = StatsFrame.Button(self, panel, 120, function()
+            filters.fish = nil
+        end)
+        self.recipeAllButton:SetPoint("LEFT", self.recipeShowButton, "RIGHT", 6, 0)
+        self.recipeAllButton:SetText(L.RECIPES_ALL)
+        local list = StatsFrame.Area(self, panel, 0, 28)
+        list:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", 0, 20)
+        self.recipeList = ns.StatsList.Create(self.env, list, RecipeTable.COLUMNS)
+        local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        hint:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 2, 2)
+        hint:SetJustifyH("LEFT")
+        hint:SetText(L.RECIPES_HINT)
+    end,
+    draw = function(self, keepScroll)
+        local filters = self.recipeFilters
+        local recipes = self:Recipes()
+        local input = self:Inputs(self:View(), recipes)
+        self.recipeList:SetRows(RecipeTable.Rows(recipes, input, filters), keepScroll)
+        self.progress:SetText(RecipeTable.Progress(recipes, input, filters))
+        self.recipeShowButton:SetText(L["RECIPES_SHOW_" .. filters.show])
+        self.recipeAllButton:SetShown(filters.fish ~= nil)
     end,
 }

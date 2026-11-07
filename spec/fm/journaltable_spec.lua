@@ -1,7 +1,7 @@
 -- Fish tab builders (JournalTable.lua) on the generated data: list rows with every column filled
 -- for caught and not-caught fish (dimmed icon, grey cells), the group and caught filters, a
 -- plain-text search (pattern characters are literal), the progress line, and the detail lines
--- with own shares, recipes, season, and new-in-Forever and quest-only marks.
+-- with own shares, recipes (known marked), season, and new-in-Forever and quest-only marks.
 local addon = require("spec.helpers.addon")
 
 local AREA_NAMES = {
@@ -32,6 +32,7 @@ describe("FishingMastery journal table", function()
             "StatsTables.lua",
             "Area.lua",
             "JournalModel.lua",
+            "RecipeModel.lua",
             "JournalTable.lua",
         }, nil, "FishingMastery")
         JournalTable = ns.JournalTable
@@ -70,7 +71,10 @@ describe("FishingMastery journal table", function()
                 return ({ [7751] = "Brilliant Smallfish" })[spell]
             end,
             recipe = function(spell)
-                return ns.Journal.recipes[spell]
+                return ns.RecipeModel.Find(ns.RecipeModel.Build(ns.Journal, nil), spell)
+            end,
+            known = function(spell)
+                return spell == 7751
             end,
             ownShare = function(area, id)
                 local s = shares[area]
@@ -172,7 +176,7 @@ describe("FishingMastery journal table", function()
         assert.truthy(text:find("Skill: catchable at any skill", 1, true))
         assert.truthy(text:find("Sen'jin Village, Durotar: %d+ %%, own 40 %% %(4 of 10%)"))
         assert.truthy(text:find("and %d+ more places"))
-        assert.truthy(text:find("Used in:\n  Brilliant Smallfish (Cooking)", 1, true))
+        assert.truthy(text:find("Used in:\n  Brilliant Smallfish (Cooking) - known", 1, true))
         assert.is_nil(text:find("Season", 1, true))
     end)
 

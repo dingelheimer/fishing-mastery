@@ -1,13 +1,15 @@
 -- Journal window boot tests through every TOC file: /fm journal, Shift-click on the minimap button
 -- and on the addon compartment open it; the Fish tab draws with empty and full data, filters,
--- search, and the detail pane; the other tabs are placeholders; the last tab and the position are
--- saved per character; the scope button switches to one character. No Lua errors.
+-- search, and the detail pane; Waters; Recipes with the profession window read and the link from
+-- the Fish tab; the last tab and the position are saved per character; the scope button switches
+-- to one character. No Lua errors.
 local fmboot = require("spec.helpers.fmboot")
 local fakeui = require("spec.helpers.fakeui")
 local statsui = require("spec.helpers.statsui")
 local texts = statsui.texts
 
-local STUBS = { "Minimap", "IsShiftKeyDown", "C_Spell", "GetMinimapShape" }
+local STUBS =
+    { "Minimap", "IsShiftKeyDown", "C_Spell", "GetMinimapShape", "C_TradeSkillUI", "IsPlayerSpell" }
 local NAMES = { [6303] = "Raw Slitherskin Mackerel", [6291] = "Raw Brilliant Smallfish" }
 
 describe("FishingMastery journal window boot", function()
@@ -228,6 +230,120 @@ describe("FishingMastery journal window boot", function()
         local detail = window.fishDetail:GetText()
         assert.truthy(detail:find("Raw Slitherskin Mackerel", 1, true))
         assert.truthy(detail:find("Caught 2 times", 1, true))
+        assert.are.equal(0, w.ns.Guard.errors)
+    end)
+
+    -- C_TradeSkillUI as on live (Story 5.1): the list is ready one check after the first delay.
+    local function tradeSkillUI(ready)
+        local schematics = {
+            [7751] = { 6290, 6291 },
+            [25704] = { 21072, 21071 },
+            [2538] = { 2679, 2672 },
+        }
+        _G.C_TradeSkillUI = {
+            IsTradeSkillReady = function()
+                return ready()
+            end,
+            GetBaseProfessionInfo = function()
+                return { professionID = 185 }
+            end,
+            GetAllRecipeIDs = function()
+                return { 7751, 25704, 2538, 18246 }
+            end,
+            GetRecipeInfo = function(id)
+                return { recipeID = id, name = "Recipe " .. id, learned = id ~= 18246 }
+            end,
+            GetRecipeSchematic = function(id)
+                local s = schematics[id]
+                return s
+                    and {
+                        outputItemID = s[1],
+                        reagentSlotSchematics = {
+                            { reagents = { { itemID = s[2] } }, quantityRequired = 1 },
+                        },
+                    }
+            end,
+        }
+        _G.C_Item.GetItemInfoInstant = function(id)
+            if id == 21071 then
+                return id, "Trade Goods", "Meat", "", 1, 7, 8
+            end
+        end
+        _G.IsPlayerSpell = function(id)
+            return id == 7751 or id == 25704
+        end
+        _G.C_Item.GetItemCount = function(id)
+            return id == 6291 and 4 or 0
+        end
+    end
+
+    it("reads the profession window once ready and lists the recipes", function()
+        local checks = 0
+        tradeSkillUI(function()
+            checks = checks + 1
+            return checks > 1
+        end)
+        w.fire("TRADE_SKILL_SHOW")
+        w.fire("TRADE_SKILL_SHOW") -- one read per opening
+        assert.is_nil(_G.FishingMasteryDB.recipes) -- still loading
+        w.runTimers(w.clock + 1)
+        assert.is_nil(_G.FishingMasteryDB.recipes)
+        w.runTimers(w.clock + 1)
+        local store = _G.FishingMasteryDB.recipes
+        assert.are.same({ s = 185, p = 6290, r = { { 6291, 1 } } }, store[7751])
+        assert.are.same({ s = 185, p = 21072, r = { { 21071, 1 } } }, store[25704])
+        assert.is_nil(store[2538]) -- no fish in it
+        assert.is_nil(store[18246]) -- not learned
+        assert.truthy(w.output():find("Journal: 2 new recipes that use fish", 1, true))
+
+        _G.SlashCmdList.FM("journal")
+        local window = journal()
+        window.frame.Tabs[3]:Click()
+        assert.is_false(window.groupButton:IsShown())
+        assert.are.equal(
+            "23 recipes (19 Cooking, 4 Alchemy) + 1 read in game; this character knows 2.",
+            window.progress:GetText()
+        )
+        local rows = texts(window.recipeList)
+        assert.are.equal(24, #rows)
+        assert.are.same({ "Raw Brilliant Smallfish x1 (4)", "yes" }, { rows[1][3], rows[1][7] })
+        assert.are.equal("read in game", rows[20][5])
+        assert.is_false(window.recipeAllButton:IsShown())
+        window.recipeShowButton:Click()
+        assert.are.equal("Known", window.recipeShowButton:GetText())
+        assert.are.equal(2, #window.recipeList.rows)
+
+        -- Fish tab: the recipes of a fish, and the link to the Recipes tab.
+        window.frame.Tabs[1]:Click()
+        window.searchBox:SetText("smallfish")
+        local row = window.fishList.box.drawn[1]
+        row:GetScript("OnMouseUp")(row)
+        assert.truthy(window.fishDetail:GetText():find("Recipe 7751 (Cooking) - known", 1, true))
+        assert.is_true(window.fishRecipes:IsShown())
+        window.fishRecipes:Click()
+        assert.are.equal(3, window.tab)
+        assert.are.equal(1, #window.recipeList.rows)
+        assert.truthy(window.progress:GetText():find("^Recipes with Raw Brilliant Smallfish: 1%."))
+        assert.is_true(window.recipeAllButton:IsShown())
+        window.recipeAllButton:Click()
+        assert.are.equal(24, #window.recipeList.rows)
+        assert.are.equal(0, w.ns.Guard.errors)
+    end)
+
+    it("reads nothing without the trade skill APIs, without Lua errors", function()
+        w.fire("TRADE_SKILL_SHOW")
+        w.runTimers(w.clock + 10)
+        assert.is_nil(_G.FishingMasteryDB.recipes)
+        _G.C_TradeSkillUI = {} -- the table without its functions
+        w.fire("TRADE_SKILL_SHOW")
+        for i = 1, 6 do
+            w.runTimers(w.clock + i)
+        end
+        assert.are.same({}, _G.FishingMasteryDB.recipes)
+        _G.SlashCmdList.FM("journal")
+        journal().frame.Tabs[3]:Click()
+        assert.are.equal(23, #journal().recipeList.rows)
+        assert.are.equal("?", texts(journal().recipeList)[1][7])
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 end)
