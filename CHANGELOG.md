@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.0.0
+
+First stable release: the tracker, statistics, zones, and journal of the beta, plus the helpers.
+Every helper is off by default, and the casting key has no key until you set one.
 
 - New: casting key. Bind a key to "Cast Fishing" (Key Bindings, AddOns, Fishing Mastery); the
   settings panel has a Helpers section that says where.
@@ -19,6 +22,7 @@
   window without auto loot, or when the pole leaves your hand. Catches show at the top of the
   screen while it is hidden.
 - New: `/fm helpers` shows what the helpers did since login and their settings.
+- Changed: the version in `/fm` no longer shows the tag's leading "v" ("1.0.0").
 - Fixed: the Recipes tab listed cooking recipes with raw meat or eggs as recipes that use fish.
   A Forever item now counts as a fish only once it was caught while fishing.
 

@@ -6,13 +6,14 @@ local CreateFrame, GetServerTime, GetTimePreciseSec, format, tremove, _G =
     CreateFrame, GetServerTime, GetTimePreciseSec, string.format, table.remove, _G
 local L = ns.L
 
--- The version for the chat: the TOC version the packager wrote, or "development build" in a
--- checkout, where the TOC still holds the packager keyword (or without the API).
+-- The version for the chat: the TOC version the packager wrote from the tag, without the tag's
+-- leading "v" ("v1.0.0" -> "1.0.0"), or "development build" in a checkout, where the TOC still
+-- holds the packager keyword (or without the API).
 function ns.VersionText(raw)
     if type(raw) ~= "string" or raw == "" or raw:find("@", 1, true) then
         return L.VERSION_DEV
     end
-    return raw
+    return (raw:gsub("^v(%d)", "%1"))
 end
 
 ns.VERSION = ns.VersionText(C_AddOns and C_AddOns.GetAddOnMetadata(addonName, "Version"))

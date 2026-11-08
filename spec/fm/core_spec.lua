@@ -48,6 +48,9 @@ describe("FishingMastery boot", function()
         assert.truthy(text:find("Version 0.1.0", 1, true))
         -- The packager writes the tag; a checkout still has its keyword.
         assert.are.equal("0.9.0-beta", w.ns.VersionText("0.9.0-beta"))
+        assert.are.equal("1.0.0", w.ns.VersionText("v1.0.0")) -- the tag's "v" is left out
+        assert.are.equal("0.9.0-beta", w.ns.VersionText("v0.9.0-beta"))
+        assert.are.equal("vintage", w.ns.VersionText("vintage"))
         assert.are.equal("development build", w.ns.VersionText("@project-version@"))
         assert.are.equal("development build", w.ns.VersionText(nil))
         assert.truthy(text:find("/fm help", 1, true))
