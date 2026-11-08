@@ -40,16 +40,9 @@ local function showTooltip(self, row)
         ns.Tip.Open(self.env, row, data.tip)
         return
     end
-    local tip = self.env.GameTooltip
-    if not tip or not data.tooltip then
-        return
+    if data.tooltip then
+        ns.Tip.Lines(self.env, row, data.tooltip)
     end
-    tip:SetOwner(row, "ANCHOR_RIGHT")
-    tip:SetText(data.tooltip[1] or "")
-    for i = 2, #data.tooltip do
-        tip:AddLine(data.tooltip[i], 1, 1, 1, true)
-    end
-    tip:Show()
 end
 
 local function buildCell(row, i, column, x)

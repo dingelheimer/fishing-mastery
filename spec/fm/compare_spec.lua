@@ -1,6 +1,7 @@
 -- Compare groups and rows, the calendar heatmap model, and the line chart math of the stats
 -- window.
 local addon = require("spec.helpers.addon")
+local tiplines = require("spec.helpers.tiplines")
 
 local DAY = 20763
 
@@ -10,6 +11,8 @@ describe("FishingMastery compare, calendar, and line chart", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleUI.lua",
+            "Style.lua",
             "LocaleStats.lua",
             "Codec.lua",
             "CodecDecode.lua",
@@ -17,6 +20,7 @@ describe("FishingMastery compare, calendar, and line chart", function()
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",
+            "RowTip.lua",
             "StatsView.lua",
             "ChartModel.lua",
             "FailureTable.lua",
@@ -104,9 +108,9 @@ describe("FishingMastery compare, calendar, and line chart", function()
             )
             local diff = ns.Stats.Difference(60, 100, 30, 100)
             assert.truthy(
-                table.concat(success.tooltip, "\n"):find(
+                tiplines.text(success.tip):find(
                     string.format(
-                        "+30 points (95 %% range %+d to %+d)",
+                        "A - B = +30 pts (%+d - %+d)",
                         math.floor(diff.low * 100 + 0.5),
                         math.floor(diff.high * 100 + 0.5)
                     ),

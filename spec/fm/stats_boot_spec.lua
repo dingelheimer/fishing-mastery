@@ -79,9 +79,9 @@ describe("FishingMastery stats window boot", function()
         window.frame.Tabs[2]:Click()
         local rows = texts(window.fish)
         assert.are.equal(1, #rows)
-        assert.are.equal("|cffffffffRaw Slitherskin Mackerel|r", rows[1][1])
+        assert.are.equal("Raw Slitherskin Mackerel", rows[1][1])
         assert.are.equal("2", rows[1][2])
-        assert.are.equal("Durotar", rows[1][4])
+        assert.are.equal("Durotar", rows[1][6])
         assert.is_true(window.fish.box.drawn[1].cells[3].color[1] < 1) -- 2/2: greyed
         -- Header click: the same column flips the order.
         window.fish.headers[2]:Click()
@@ -95,10 +95,13 @@ describe("FishingMastery stats window boot", function()
         assert.are.equal(0, #window.fish.box.drawn)
         window.qualityButton:Click()
         assert.are.equal(1, #window.fish.box.drawn)
-        -- Tooltip with the range on hover.
+        -- Tip tooltip on hover; the kinds line and the grey legend.
         local row = window.fish.box.drawn[1]
         row:GetScript("OnEnter")(row)
-        assert.truthy(table.concat(_G.GameTooltip.lines, "\n"):find("Caught 2 times", 1, true))
+        local lines = _G.GameTooltip.lines
+        assert.are.same({ "Raw Slitherskin Mackerel", "Caught = 2" }, { lines[1], lines[2] })
+        assert.are.equal("1 kinds, 2 catches", window.fishKinds:GetText())
+        assert.are.equal(w.ns.L.LIST_GREY, window.fish.legendText:GetText())
 
         window.frame.Tabs[3]:Click()
         rows = texts(window.zones)
@@ -219,7 +222,7 @@ describe("FishingMastery stats window boot", function()
         loaded = true
         w.fire("ITEM_DATA_LOAD_RESULT", 6303, true)
         w.runTimers(w.clock + 0.1)
-        assert.are.equal("|cffffffffRaw Slitherskin Mackerel|r", texts(window.fish)[1][1])
+        assert.are.equal("Raw Slitherskin Mackerel", texts(window.fish)[1][1])
         assert.are.equal(0, w.ns.Guard.errors)
     end)
     it("draws the Failures charts, the bite histogram, and the sortable session list", function()

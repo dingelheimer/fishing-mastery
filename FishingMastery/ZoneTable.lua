@@ -8,11 +8,12 @@ local _, ns = ...
 local format, pairs, ipairs, sort, concat = string.format, pairs, ipairs, table.sort, table.concat
 local L, Stats, HudModel, StatsTables = ns.L, ns.Stats, ns.HudModel, ns.StatsTables
 
+local Style, RowTip = ns.Style, ns.RowTip
 local ZoneTable = {}
 ns.ZoneTable = ZoneTable
 
 ZoneTable.TOP_ITEMS = 3 -- items in the row
-ZoneTable.TIP_ITEMS = 10 -- items in the tooltip
+ZoneTable.TIP_ITEMS = 5 -- items in the tooltip
 
 ZoneTable.COLUMNS = {
     { key = "name", label = L.STATS_COL_ZONE, width = 230 },
@@ -37,16 +38,22 @@ local function topItems(group, catches, t)
     return list
 end
 
+-- Share of an item for the tooltip: "15 %", "~1 %" grey for few catches, "3 of 20".
+local function shareText(share)
+    if share.display == "count" or not share.p then
+        return format(L.TIP_OF, Style.Number(share.k), Style.Number(share.n))
+    end
+    local text = RowTip.Percent(share)
+    return share.display == "few" and Style.Paint(Style.Approx(text), Style.GREY) or text
+end
+
 local function zoneRow(key, name, group, input, indent)
     local t = input.thresholds or Stats.DEFAULTS
     local catches = Stats.Count(group.outcomes, "catch")
     local items = topItems(group, catches, t)
     local perHour = Stats.CatchesPerHour(group.outcomes, group.active, t)
     local success = Stats.SuccessRate(group.outcomes, t)
-    local top, tip = {}, { name }
-    for _, line in ipairs(HudModel.Tooltip({ success = success, perHour = perHour })) do
-        tip[#tip + 1] = line
-    end
+    local top, tipItems = {}, {}
     for i, entry in ipairs(items) do
         local info = input.info(entry.id) or {}
         if i <= ZoneTable.TOP_ITEMS then
@@ -54,28 +61,39 @@ local function zoneRow(key, name, group, input, indent)
                     and format("|T%d:%d:%d|t", info.icon, StatsTables.ICON, StatsTables.ICON)
                 or info.name
                 or format(L.HUD_ITEM_LOADING, entry.id)
-            top[#top + 1] = format("%s %s", label, HudModel.Percent(entry.share))
+            top[#top + 1] = format("%s %s", label, RowTip.Percent(entry.share))
         end
         if i <= ZoneTable.TIP_ITEMS then
-            tip[#tip + 1] = format(
-                "%s: %s",
-                StatsTables.ItemText(entry.id, info),
-                StatsTables.ShareLine(entry.share)
-            )
+            tipItems[#tipItems + 1] = { id = entry.id, info = info, share = entry.share }
         end
+    end
+    local function tip(builder)
+        builder:Title(name, Style.GOLD)
+        builder:Pair(L.STATS_COL_CASTS, Style.Number(group.casts))
+        RowTip.Rates(builder, success, perHour)
+        if #tipItems > 0 then
+            builder:Gap()
+            builder:Header(L.ZONE_TIP_TOP)
+            for _, entry in ipairs(tipItems) do
+                local color = Style.FromHex(entry.info.hex)
+                local label = entry.info.name or format(L.HUD_ITEM_LOADING, entry.id)
+                builder:Pair(color and Style.Paint(label, color) or label, shareText(entry.share))
+            end
+        end
+        RowTip.Details(builder, { "range", "fair", success.display == "few" and "grey" })
     end
     return {
         key = key,
         casts = group.casts,
         cells = {
             (indent and "    " or "") .. name,
-            format("%d", group.casts),
+            Style.Number(group.casts),
             HudModel.Rate(perHour),
-            format("%d", #items),
+            Style.Number(#items),
             concat(top, "  "),
         },
         grey = { [3] = perHour.display ~= "full" },
-        tooltip = tip,
+        tip = tip,
     }
 end
 

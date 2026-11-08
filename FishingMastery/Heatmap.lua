@@ -18,22 +18,13 @@ Heatmap.HEIGHT = Heatmap.TOP + 7 * (Heatmap.CELL + Heatmap.GAP)
 Heatmap.DAY_LABELS = { [1] = "HEAT_MON", [4] = "HEAT_THU", [7] = "HEAT_SUN" }
 
 local function onEnter(owner)
-    local tip = owner.env.GameTooltip
-    if tip and owner.tip then
-        tip:SetOwner(owner, "ANCHOR_TOP")
-        tip:SetText(owner.tip[1] or "")
-        for i = 2, #owner.tip do
-            tip:AddLine(owner.tip[i], 1, 1, 1, true)
-        end
-        tip:Show()
+    if owner.tip then
+        ns.Tip.Lines(owner.env, owner, owner.tip, "ANCHOR_TOP")
     end
 end
 
 local function onLeave(owner)
-    local tip = owner.env.GameTooltip
-    if tip then
-        tip:Hide()
-    end
+    ns.Tip.Close(owner.env, owner)
 end
 
 local function cell(self, index)
@@ -62,13 +53,13 @@ function Heatmap.Create(env, parent, width)
     local self = setmetatable({ env = env, cells = {} }, Heatmap)
     self.frame = env.CreateFrame("Frame", nil, parent)
     self.frame:SetSize(width, Heatmap.HEIGHT)
-    self.title = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    self.title = self.frame:CreateFontString(nil, "OVERLAY", ns.Style.FONTS.smallLabel)
     self.title:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, 0)
     self.title:SetWidth(width)
     self.title:SetJustifyH("LEFT")
     local step = Heatmap.CELL + Heatmap.GAP
     for row, key in pairs(Heatmap.DAY_LABELS) do
-        local text = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        local text = self.frame:CreateFontString(nil, "OVERLAY", ns.Style.FONTS.secondary)
         text:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -(Heatmap.TOP + (row - 1) * step))
         text:SetText(L[key])
     end

@@ -48,6 +48,7 @@ StatsModel.lua
 JournalModel.lua
 RecipeModel.lua
 GearModel.lua
+RowTip.lua
 StatsTables.lua
 JournalTable.lua
 RecipeTable.lua
@@ -101,6 +102,7 @@ Controls.lua
 OverviewPage.lua
 MainWindow.lua
 StatsWindow.lua
+StatsScope.lua
 StatsFrame.lua
 StatsTabs.lua
 JournalWindow.lua

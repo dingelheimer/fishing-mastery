@@ -7,8 +7,9 @@ local _, ns = ...
 
 local type, ipairs, pairs, sort, format, floor =
     type, ipairs, pairs, table.sort, string.format, math.floor
-local L, Stats, HudModel, FailureTable = ns.L, ns.Stats, ns.HudModel, ns.FailureTable
+local L, Stats, HudModel = ns.L, ns.Stats, ns.HudModel
 
+local Style, RowTip = ns.Style, ns.RowTip
 local CompareTable = {}
 ns.CompareTable = CompareTable
 
@@ -134,11 +135,6 @@ local function rateRow(measure, a, b, t)
     local row = {
         key = measure.key,
         grey = { [2] = pa.display ~= "full", [3] = pb.display ~= "full" },
-        tooltip = {
-            label,
-            FailureTable.RateLine("A", pa),
-            FailureTable.RateLine("B", pb),
-        },
     }
     local diff, cells = nil, { label, HudModel.Percent(pa), HudModel.Percent(pb), "-", L.CMP_FEW }
     if pa.display ~= "count" and pb.display ~= "count" then
@@ -147,14 +143,25 @@ local function rateRow(measure, a, b, t)
     if diff then
         cells[4] = format(L.CMP_POINTS, points(diff.d))
         cells[5] = diff.clear and L.CMP_CLEAR or L.CMP_UNCLEAR
-        row.tooltip[#row.tooltip + 1] =
-            format(L.CMP_TIP_DIFF, points(diff.d), points(diff.low), points(diff.high))
         row.clear = diff.clear
-    else
-        row.tooltip[#row.tooltip + 1] = L.CMP_TIP_FEW
     end
-    row.tooltip[#row.tooltip + 1] = L.CMP_TIP_RULE
     row.cells = cells
+    row.tip = function(tip)
+        tip:Title(label)
+        RowTip.Rate(tip, "A", pa)
+        RowTip.Rate(tip, "B", pb)
+        if diff then
+            local value = Style.Range(
+                format(L.CMP_POINTS, points(diff.d)),
+                format("%+d", points(diff.low)),
+                format("%+d", points(diff.high))
+            )
+            tip:Pair(L.CMP_COL_DIFF, value, diff.clear and Style.GREEN or nil)
+        else
+            tip:Line(L.CMP_TIP_FEW, Style.GREY)
+        end
+        RowTip.Details(tip, { "range", L.CMP_TIP_RULE })
+    end
     return row
 end
 
@@ -169,8 +176,11 @@ function CompareTable.Rows(a, b, t)
     local rows = {
         {
             key = "casts",
-            cells = { L.CMP_casts, format("%d", a.casts), format("%d", b.casts), "", "" },
-            tooltip = { L.CMP_casts, L.CMP_TIP_CASTS },
+            cells = { L.CMP_casts, Style.Number(a.casts), Style.Number(b.casts), "", "" },
+            tip = function(tip)
+                tip:Title(L.CMP_casts)
+                tip:Text(L.CMP_TIP_CASTS)
+            end,
         },
     }
     for _, measure in ipairs(CompareTable.MEASURES) do
@@ -187,7 +197,10 @@ function CompareTable.Rows(a, b, t)
                 format(L.CMP_SECONDS, ma - mb),
                 L.CMP_NO_RANGE,
             },
-            tooltip = { L.CMP_bite, L.CMP_TIP_BITE },
+            tip = function(tip)
+                tip:Title(L.CMP_bite)
+                tip:Text(L.CMP_TIP_BITE)
+            end,
         }
     end
     return rows

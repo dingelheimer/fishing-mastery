@@ -1,6 +1,7 @@
 -- Chart math (axis scales, bins, bar layout, label step) and the Failures, Bite times, and Sessions
 -- table builders of the stats window.
 local addon = require("spec.helpers.addon")
+local tiplines = require("spec.helpers.tiplines")
 
 local DAY = 20763 * 86400
 
@@ -10,6 +11,8 @@ describe("FishingMastery charts and failure tables", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleUI.lua",
+            "Style.lua",
             "LocaleStats.lua",
             "Codec.lua",
             "CodecDecode.lua",
@@ -19,6 +22,7 @@ describe("FishingMastery charts and failure tables", function()
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",
+            "RowTip.lua",
             "StatsView.lua",
             "StatsTables.lua",
             "ChartModel.lua",
@@ -134,10 +138,12 @@ describe("FishingMastery charts and failure tables", function()
         assert.are.same({ "timeout (bobber not clicked)", "5", "10 %", "-" }, cells[4])
         assert.are.same({ "cancelled", "2", "-", "-" }, cells[5]) -- counts only
         assert.are.same({ "invalid target (no fishable water)", "1", "-", "-" }, cells[6])
-        local tip = table.concat(rows[2].tooltip, "\n")
-        assert.truthy(tip:find("Of fair casts: 20 % (95 % range", 1, true))
-        assert.truthy(tip:find("Of hooked casts: 25 % (95 % range", 1, true))
-        assert.truthy(table.concat(rows[5].tooltip, "\n"):find("Count only", 1, true))
+        local lines = tiplines.lines(rows[2].tip)
+        assert.are.same({ "fish got away", "Count = 10" }, { lines[1], lines[2] })
+        assert.truthy(lines[3]:find("^Of fair casts = 20 %% %(%d+ %- %d+%)$"))
+        assert.truthy(lines[4]:find("^Of hooked casts = 25 %% %(%d+ %- %d+%)$"))
+        assert.truthy(tiplines.text(rows[5].tip):find("Count only", 1, true))
+        assert.truthy(tiplines.text(rows[2].tip, true):find("Of hooked: catches", 1, true))
     end)
 
     it("charts the getaway rate by skill band and early clicks by click time", function()
@@ -203,6 +209,14 @@ describe("FishingMastery charts and failure tables", function()
         assert.are.equal("> Durotar", rows[2].cells[1]) -- the charted group
         assert.are.equal("no lure", rows[2].cells[2])
         assert.are.equal("15.5 s", rows[1].cells[5])
+        assert.are.same({
+            "All zones",
+            "Bites = 30",
+            "Median = 15.5 s",
+            string.format("Half the bites = %.1f - %.1f s", q.q1 / 10, q.q3 / 10),
+            " ",
+            "Hold Shift for how this is counted",
+        }, tiplines.lines(rows[1].tip))
         local chart = ns.BiteTable.Chart(groups[1])
         assert.are.equal(30, #chart.bars)
         assert.are.equal(0, chart.bars[1].value)
@@ -256,10 +270,11 @@ describe("FishingMastery charts and failure tables", function()
             { "T1000", "Alice", "Durotar", "6 min", "12", "11", "+2 (50 -> 52)" },
             rows[3].cells
         )
-        local tip = table.concat(rows[2].tooltip, "\n")
-        assert.truthy(tip:find("Success rate 95 % (95 % range", 1, true))
-        assert.truthy(tip:find("6 min active of 5 min", 1, true))
-        assert.truthy(tip:find("Ended after 15 minutes without a cast", 1, true))
+        local lines = tiplines.lines(rows[2].tip)
+        assert.are.equal("T5000", lines[1])
+        assert.truthy(lines[2]:find("^Success rate = 95 %% %(%d+ %- %d+%)$"))
+        assert.are.equal("Active = 6 min of 5 min", lines[4])
+        assert.are.equal("Ended after 15 minutes without a cast", lines[5])
         input.sort = { key = "casts" }
         rows = ns.SessionTable.Rows(chars, input)
         assert.are.same({ 3, 12, 20 }, { rows[1].casts, rows[2].casts, rows[3].casts })

@@ -9,6 +9,7 @@ local _, ns = ...
 local format, pairs, ipairs, sort, floor, type =
     string.format, pairs, ipairs, table.sort, math.floor, type
 local L, Stats, HudModel, StatsTables = ns.L, ns.Stats, ns.HudModel, ns.StatsTables
+local Style, RowTip = ns.Style, ns.RowTip
 
 local ZoneRef = {}
 ns.ZoneRef = ZoneRef
@@ -90,7 +91,7 @@ local function chanceText(chance)
 end
 
 local function ownCells(share, n)
-    return n > 0 and HudModel.Percent(share) or "-", format("%d", n)
+    return n > 0 and RowTip.Percent(share) or "-", format("%d", n)
 end
 
 -- Comparison rows: input = { info(id), thresholds }, rows = the area's list rows (nil: no
@@ -107,18 +108,25 @@ function ZoneRef.Rows(rows, group, input)
             local n = group.items[id] or 0
             local share = Stats.ItemShare(n, catches, t)
             local own, caught = ownCells(share, n)
-            local tip =
-                { StatsTables.ItemText(id, info), format(L.ZONE_TIP_CLASSIC, chanceText(chance)) }
-            if row[3] == 0 then
-                tip[#tip + 1] = L.ZONE_TIP_EXTRA
-            end
-            if flagText(row) ~= "" then
-                tip[#tip + 1] = flagText(row)
-            end
-            tip[#tip + 1] = StatsTables.ShareLine(share)
+            local flag, extra = flagText(row), row[3] == 0
             local p = chance / 100
-            if share.display ~= "count" and share.low and (p < share.low or p > share.high) then
-                tip[#tip + 1] = L.ZONE_TIP_UNUSUAL
+            local unusual = share.display ~= "count"
+                and share.low
+                and (p < share.low or p > share.high)
+            local function tip(builder)
+                RowTip.Item(builder, id, info)
+                builder:Pair(L.ZONE_COL_CLASSIC, chanceText(chance))
+                RowTip.Rate(builder, L.ZONE_COL_OWN, share)
+                if flag ~= "" then
+                    builder:Pair(L.ZONE_COL_FLAG, flag)
+                end
+                if extra then
+                    builder:Line(L.ZONE_TIP_EXTRA, Style.GREY)
+                end
+                if unusual then
+                    builder:Line(L.ZONE_TIP_UNUSUAL, Style.ORANGE)
+                end
+                RowTip.Details(builder, { "range", L.ZONE_D_CLASSIC })
             end
             result[#result + 1] = {
                 key = format("%d", id),
@@ -132,7 +140,7 @@ function ZoneRef.Rows(rows, group, input)
                     caught,
                 },
                 grey = { [4] = share.display ~= "full" },
-                tooltip = tip,
+                tip = tip,
             }
         end
     end
@@ -159,7 +167,11 @@ function ZoneRef.Rows(rows, group, input)
                     caught,
                 },
                 grey = { [2] = true, [4] = share.display ~= "full" },
-                tooltip = { StatsTables.ItemText(id, info), StatsTables.ShareLine(share) },
+                tip = function(builder)
+                    RowTip.Item(builder, id, info)
+                    RowTip.Rate(builder, L.ZONE_COL_OWN, share)
+                    builder:Line(rows and L.ZONE_NOT_IN_CLASSIC or "-", Style.GREY)
+                end,
             }
         end
     end

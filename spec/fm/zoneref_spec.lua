@@ -3,6 +3,7 @@
 -- quest flags, own share, fish not in the Classic data), the note (partial lists, places without
 -- data), the selected Zones row, and the HUD zone line.
 local addon = require("spec.helpers.addon")
+local tiplines = require("spec.helpers.tiplines")
 
 local NAMES = { [297] = "Jaguero Isle", [367] = "Sen'jin Village", [305] = "North Tide's Run" }
 
@@ -12,6 +13,8 @@ describe("FishingMastery zone reference", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleUI.lua",
+            "Style.lua",
             "LocaleStats.lua",
             "Data\\Zones.lua",
             "Codec.lua",
@@ -21,6 +24,7 @@ describe("FishingMastery zone reference", function()
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",
+            "RowTip.lua",
             "Getaway.lua",
             "StatsView.lua",
             "StatsTables.lua",
@@ -92,7 +96,8 @@ describe("FishingMastery zone reference", function()
         assert.are.same({ "Item 6303", "98 %", "", "92 %", "11" }, rows[1].cells)
         assert.are.same({ "Item 6356", "2 %", "", "-", "0" }, rows[2].cells)
         assert.are.same({ "Item 6358", "not in Classic data", "", "8 %", "1" }, rows[3].cells)
-        assert.truthy(rows[1].tooltip[2]:find("Classic estimate: 98 %", 1, true))
+        assert.are.equal("Classic estimate = 98 %", tiplines.lines(rows[1].tip)[2])
+        assert.are.equal("not in Classic data", tiplines.lines(rows[3].tip)[3])
     end)
 
     it("flags seasons, quest rows, extra rolls, and decimal chances", function()
@@ -103,7 +108,7 @@ describe("FishingMastery zone reference", function()
         end
         assert.are.equal("Winter", byId["13755"].cells[3])
         assert.are.equal("Summer", byId["13756"].cells[3])
-        assert.truthy(table.concat(byId["13755"].tooltip, "/"):find("Rolls on its own", 1, true))
+        assert.truthy(tiplines.text(byId["13755"].tip):find("Rolls on its own", 1, true))
         assert.are.equal("58.4 %", byId["8365"].cells[2])
         assert.are.equal("0.06 %", byId["6311"].cells[2])
         rows = ZoneRef.Rows(Area:List(148), group({}, 0), { info = info }) -- Darkshore
@@ -119,7 +124,7 @@ describe("FishingMastery zone reference", function()
     it("marks an own share whose range excludes the Classic estimate", function()
         local own = group({ [6303] = 10, [6356] = 30 }, 40)
         local rows = ZoneRef.Rows(Area:List(14), own, { info = info })
-        local tip = table.concat(rows[1].tooltip, "/") -- 6303: 25 % own vs 98 %
+        local tip = tiplines.text(rows[1].tip) -- 6303: 25 % own vs 98 %
         assert.truthy(tip:find("differs from the Classic estimate", 1, true))
     end)
 

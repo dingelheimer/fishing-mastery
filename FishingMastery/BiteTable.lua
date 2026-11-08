@@ -7,6 +7,7 @@ local _, ns = ...
 local format, ipairs, pairs, sort = string.format, ipairs, pairs, table.sort
 local L, Stats, ChartModel = ns.L, ns.Stats, ns.ChartModel
 
+local Style = ns.Style
 local BiteTable = {}
 ns.BiteTable = BiteTable
 
@@ -97,12 +98,18 @@ function BiteTable.Rows(groups, mapName, selected)
             cells = {
                 (i == selected and "> " or "") .. zone,
                 lureText(group),
-                format("%d", group.n),
+                Style.Number(group.n),
                 seconds(q.q1),
                 seconds(q.median),
                 seconds(q.q3),
             },
-            tooltip = { BiteTable.Name(group, mapName), BiteTable.Summary(group) },
+            tip = function(tip)
+                tip:Title(BiteTable.Name(group, mapName), Style.GOLD)
+                tip:Pair(L.STATS_COL_BITES, Style.Number(group.n))
+                tip:Pair(L.STATS_COL_MEDIAN, seconds(q.median))
+                tip:Pair(L.BITE_TIP_HALF, format(L.BITE_TIP_RANGE, q.q1 / 10, q.q3 / 10))
+                tip:Details({ L.BITE_D_QUARTILES })
+            end,
         }
     end
     return rows

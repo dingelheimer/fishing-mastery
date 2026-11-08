@@ -15,10 +15,12 @@ ns.BarChart = BarChart
 
 BarChart.LEFT, BarChart.BOTTOM, BarChart.TOP = 40, 16, 30 -- plot margins (title + value labels)
 BarChart.VALUE_MIN_SLOT = 18 -- value labels only for slots at least this wide
-BarChart.BAR = { 0.25, 0.6, 1, 1 } -- one categorical color
-BarChart.BAR_GREY = { 0.45, 0.45, 0.45, 1 } -- small samples
-BarChart.RANGE = { 1, 0.82, 0, 1 }
-BarChart.GRID = { 1, 1, 1, 0.12 }
+-- Colors of the style kit (Style.lua): the skill bar blue, grey small samples, gold ranges.
+local Style = ns.Style
+BarChart.BAR = { Style.SKILL[1], Style.SKILL[2], Style.SKILL[3], 1 }
+BarChart.BAR_GREY = { Style.GREY[1], Style.GREY[2], Style.GREY[3], 1 }
+BarChart.RANGE = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3], 1 }
+BarChart.GRID = Style.GRID
 BarChart.MARK = { 1, 1, 1, 0.9 }
 
 -- parent: the frame the chart is drawn in, width × height in pixels.
@@ -33,7 +35,7 @@ function BarChart.Create(env, parent, width, height)
         hovers = { list = {}, used = 0 },
     }, BarChart)
     self.frame:SetSize(width, height)
-    self.title = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    self.title = self.frame:CreateFontString(nil, "OVERLAY", ns.Style.FONTS.smallLabel)
     self.title:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, 0)
     self.title:SetWidth(width)
     self.title:SetJustifyH("LEFT")
@@ -64,7 +66,7 @@ end
 
 local function label(self, text, point, x, y, width, justify)
     local fs = acquire(self.labels, function()
-        return self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        return self.frame:CreateFontString(nil, "OVERLAY", ns.Style.FONTS.small)
     end)
     fs:SetPoint(point, self.frame, "BOTTOMLEFT", x, y)
     fs:SetWidth(width)
@@ -80,22 +82,13 @@ local function hover(self, bar, x, y, w, h)
         f:SetScript(
             "OnEnter",
             ns.Guard.Wrap("chart:tooltip", function(owner)
-                local tip = self.env.GameTooltip
-                if tip and owner.tip then
-                    tip:SetOwner(owner, "ANCHOR_TOP")
-                    tip:SetText(owner.tip[1] or "")
-                    for i = 2, #owner.tip do
-                        tip:AddLine(owner.tip[i], 1, 1, 1, true)
-                    end
-                    tip:Show()
+                if owner.tip then
+                    ns.Tip.Lines(self.env, owner, owner.tip, "ANCHOR_TOP")
                 end
             end)
         )
-        f:SetScript("OnLeave", function()
-            local tip = self.env.GameTooltip
-            if tip then
-                tip:Hide()
-            end
+        f:SetScript("OnLeave", function(owner)
+            ns.Tip.Close(self.env, owner)
         end)
         return f
     end)

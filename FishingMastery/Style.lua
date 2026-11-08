@@ -2,7 +2,8 @@
 -- window, tooltip, and table takes its colors from here. No frame or API calls.
 local _, ns = ...
 
-local format, floor, type, tostring, abs = string.format, math.floor, type, tostring, math.abs
+local format, floor, type, tostring, tonumber, abs =
+    string.format, math.floor, type, tostring, tonumber, math.abs
 local L = ns.L
 
 local Style = {}
@@ -28,6 +29,7 @@ Style.TAG_NIGHT = { 0.63, 0.47, 1, 0.2 }
 -- Fill of the skill bar (the Professions window's blue) and the empty part of bars.
 Style.SKILL = { 0.2, 0.38, 0.86 }
 Style.TRACK = { 0, 0, 0, 0.5 }
+Style.GRID = { 1, 1, 1, 0.12 } -- chart grid lines
 Style.BAR = "Interface\\TargetingFrame\\UI-StatusBar"
 -- The sort and dropdown arrow (confirmed in game, Story 9.1) and its texture coordinates.
 Style.ARROW = "Interface\\Buttons\\UI-SortArrow"
@@ -69,6 +71,17 @@ function Style.Number(value)
         out = out:sub(#sep + 1)
     end
     return (value < 0 and "-" or "") .. out
+end
+
+-- { r, g, b } of a color escape hex "aarrggbb" (item quality colors), or nil.
+function Style.FromHex(hex)
+    if type(hex) ~= "string" or not hex:find("^%x%x%x%x%x%x%x%x$") then
+        return nil
+    end
+    local function byte(at)
+        return tonumber(hex:sub(at, at + 1), 16) / 255
+    end
+    return { byte(3), byte(5), byte(7) }
 end
 
 -- "66 % (52 - 78)" with the bracket in grey; without a range only the value.

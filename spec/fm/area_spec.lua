@@ -20,6 +20,8 @@ describe("FishingMastery area lookup", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleUI.lua",
+            "Style.lua",
             "LocaleStats.lua",
             "Data\\Zones.lua",
             "Codec.lua",
@@ -30,6 +32,7 @@ describe("FishingMastery area lookup", function()
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",
+            "RowTip.lua",
             "StatsView.lua",
             "StatsTables.lua",
             "ZoneTable.lua",

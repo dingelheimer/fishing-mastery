@@ -14,8 +14,9 @@ ns.LineChart = LineChart
 
 LineChart.LEFT, LineChart.BOTTOM, LineChart.TOP, LineChart.RIGHT = 40, 16, 22, 30
 LineChart.THICKNESS = 2
-LineChart.LINE = { 0.25, 0.6, 1, 1 }
-LineChart.GRID = { 1, 1, 1, 0.12 }
+-- Colors of the style kit (Style.lua): the skill bar blue and the grid.
+LineChart.LINE = { ns.Style.SKILL[1], ns.Style.SKILL[2], ns.Style.SKILL[3], 1 }
+LineChart.GRID = ns.Style.GRID
 LineChart.DOT = 3 -- fallback square size
 LineChart.HOVER = 12 -- hover frame width around a point (at most)
 
@@ -32,7 +33,7 @@ function LineChart.Create(env, parent, width, height)
         hovers = { list = {}, used = 0 },
     }, LineChart)
     self.frame:SetSize(width, height)
-    self.title = self.frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    self.title = self.frame:CreateFontString(nil, "OVERLAY", ns.Style.FONTS.smallLabel)
     self.title:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, 0)
     self.title:SetWidth(width)
     self.title:SetJustifyH("LEFT")
@@ -62,7 +63,7 @@ end
 
 local function label(self, text, point, x, y, width, justify)
     local fs = acquire(self.labels, function()
-        return self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        return self.frame:CreateFontString(nil, "OVERLAY", ns.Style.FONTS.small)
     end)
     fs:ClearAllPoints()
     fs:SetPoint(point, self.frame, "BOTTOMLEFT", x, y)
@@ -94,22 +95,13 @@ local function hover(self, point, x, width, plotH)
         f:SetScript(
             "OnEnter",
             ns.Guard.Wrap("chart:tooltip", function(owner)
-                local tip = self.env.GameTooltip
-                if tip and owner.tip then
-                    tip:SetOwner(owner, "ANCHOR_TOP")
-                    tip:SetText(owner.tip[1] or "")
-                    for i = 2, #owner.tip do
-                        tip:AddLine(owner.tip[i], 1, 1, 1, true)
-                    end
-                    tip:Show()
+                if owner.tip then
+                    ns.Tip.Lines(self.env, owner, owner.tip, "ANCHOR_TOP")
                 end
             end)
         )
-        f:SetScript("OnLeave", function()
-            local tip = self.env.GameTooltip
-            if tip then
-                tip:Hide()
-            end
+        f:SetScript("OnLeave", function(owner)
+            ns.Tip.Close(self.env, owner)
         end)
         return f
     end)

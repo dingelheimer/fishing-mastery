@@ -155,3 +155,19 @@ function Tip:Details(lines)
     end
     return self
 end
+
+-- A longer white sentence, wrapped (white unless a color is given).
+function Tip:Text(text, color)
+    add(self, text, color, true)
+    return self
+end
+
+-- Shows plain lines (charts, older tables): the first as the title, the others wrapped below.
+function Tip.Lines(env, owner, lines, anchor)
+    Tip.Open(env, owner, function(tip)
+        tip:Title(lines[1] or "")
+        for i = 2, #lines do
+            tip:Text(lines[i])
+        end
+    end, anchor)
+end

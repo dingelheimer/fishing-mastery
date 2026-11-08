@@ -63,7 +63,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `JournalModel.lua` | Journal model: entries of the four journal groups with own catches (account-wide or one character), places, base and no-getaway skill, recipes, season, quest-only flag, new-in-Forever items by Forever class, progress per group, gear for a skill gap (pure) |
 | `GearModel.lua` | Gear tab model: poles, other gear, lures, buff food, fishing ranks, enchants with bundled and tooltip bonus, needs, source, and where the player has them; the equipped bonus against the skill modifier; the best setup per slot plus the best lure in the bags; the tooltip number parser (pure) |
 | `RecipeModel.lua` | Journal recipes: the bundled recipes merged with the ones read in game, the account store of read recipes (journal items only, capped), buff food, recipes per fish (pure) |
-| `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
+| `RowTip.lua` | Row tooltip pieces for the tables: item title in its quality color, rates and rates per hour with grey ranges, Shift explanations (pure) |
+| `StatsTables.lua` | Fish table (Draft 2): name with icon, quality color, and season or night tag; caught, share, about every, dry streak, best water; hour and dates in the row tooltip; sorting, quality filter, kinds line; item text helpers (pure) |
 | `ZoneRef.lua`   | Classic reference next to own catches: own group per area, comparison rows (Classic estimate, season or quest flag, own share, fish not in the Classic data), note, the two HUD zone lines (pure) |
 | `ZoneTable.lua` | Zones table: zones with their subzones (one row per resolved subzone area, else per text), casts, catches per hour, species, top items with shares; rows carry the area ID (pure) |
 | `OverviewTable.lua` | Record lines of the Sessions tab (pure) |
@@ -105,7 +106,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `HudZone.lua`   | HUD zone lines' data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; the smart lure tooltip line; dev area readout |
 | `Hud.lua`       | HUD frame: shown from the first cast to the session end, two zone lines, lure tick, tooltip (risk lines; dev flag: resolved area line), `/fm hud` |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
-| `Tip.lua` | Tooltip builder: title, gold label and white value pairs, gaps, headers, green hints, explanations only while Shift is held (redraws on `MODIFIER_STATE_CHANGED`) |
+| `Tip.lua` | Tooltip builder: title, gold label and white value pairs, gaps, headers, lines and wrapped text, green hints, explanations only while Shift is held (redraws on `MODIFIER_STATE_CHANGED`); `Tip.Lines` for plain line lists (charts) |
 | `StatsListHeader.lua` | Table header: gold bar with sort buttons and arrow, or labels |
 | `StatsList.lua` | Table widget: header (`StatsListHeader`) over a ScrollBox list; striped rows, hover highlight, number cells with separators, item icons, cell colors, season and night tags, grey cells, legend line, `Tip` or line tooltips |
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
@@ -114,6 +115,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Controls.lua` | Shared controls of the pages: dropdown-styled button |
 | `MainWindow.lua` | The Fishing Mastery window: page registry (`MainWindow.Register`), portrait frame (template fallbacks), side tabs on the right edge, page name, last page and position per character, Escape |
 | `StatsWindow.lua` | Statistics page `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
+| `StatsScope.lua` | Statistics page helpers: characters of the scope, their overview model, session count, the Fishing skill |
 | `StatsFrame.lua` | Statistics page layout: scope dropdown, status line, one panel per tab, 8 bottom tabs |
 | `OverviewPage.lua` | Overview frames: Fishing panel with the skill bar, headline numbers, where casts end, most caught |
 | `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs (with the click hint) |
@@ -291,10 +293,14 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   where casts end (catch, got away, clicked too early, not clicked: count, bar, share of fair
   casts; cancelled and invalid target grey, counted only); the five most caught items with a bar.
   With all characters the Catches number lists every character in its tooltip.
-- **Fish:** every item with catches, share of catches, best zone, best hour (realm time), first
-  and last catch; for uncommon and better items the dry streak (fair casts since the last one)
-  and the expected casts per item. Click a header to sort, again to flip the order; the quality
-  button filters.
+- **Fish:** every item with catches (icon, quality color, a season or night tag), share of
+  catches, about every (fair casts per catch), dry streak (fair casts since the last one, one
+  character), best water. The row tooltip adds the ranges, the hour with the most catches (realm
+  time), and the first and last catch. Small samples are grey with "~" (legend under the list).
+  Click a header to sort, again to flip the order; the quality dropdown filters, the line next to
+  it counts kinds and catches.
+- Every row tooltip is a title with gold labels and white values; ranges in a grey bracket "66 %
+  (52 - 78)"; explanations only while Shift is held. Charts use the same fonts and colors.
 - **Zones:** every zone (most casts first) and its subzones: casts, catches per hour, species,
   the top 3 items with their shares; all items with ranges in the tooltip. Subzones with their
   own zone data get one row per area; other subzone texts keep their own row. A click on a row

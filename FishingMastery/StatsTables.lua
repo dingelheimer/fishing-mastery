@@ -1,36 +1,30 @@
--- Pure logic: the Fish table of the stats window from a StatsModel view, and the item helpers the
--- other tables share. Each row is
--- { key, cells = { text per column }, grey = { [column] = true }, tooltip = { lines } }; small
--- samples are greyed by the Stats display rule and the 95 % ranges live in the tooltips. Item
--- and zone names come in through input functions. No frame or API calls.
+-- Pure logic: the Fish table of the Statistics page from a StatsModel view (Draft 2: six columns,
+-- item icon, quality color, season or night tag; hour and dates in the row tooltip), and the
+-- item helpers the other tables share. Each row is { key, cells, grey = { [column] = true },
+-- icons, colors, tags, tip(tip) } (StatsList); small samples are grey with "~" by the Stats
+-- display rule and the 95 % ranges live in the tooltips. Item and zone names come in through
+-- input functions. No frame or API calls.
 local _, ns = ...
 
-local format, floor, type, pairs, sort, HUGE =
-    string.format, math.floor, type, pairs, table.sort, math.huge
-local L, Stats, HudModel = ns.L, ns.Stats, ns.HudModel
+local format, floor, type, pairs, ipairs, sort, HUGE =
+    string.format, math.floor, type, pairs, ipairs, table.sort, math.huge
+local L, Stats, Style, RowTip = ns.L, ns.Stats, ns.Style, ns.RowTip
 
 local StatsTables = {}
 ns.StatsTables = StatsTables
 
-StatsTables.RARE_QUALITY = 2 -- uncommon and better get a dry streak and expected casts
 StatsTables.QUALITIES = { 0, 1, 2, 3, 4 } -- quality filter steps after "all"
 StatsTables.ICON = 14
 
 -- Column keys, labels, widths, and alignment (the list widget draws them).
 StatsTables.FISH_COLUMNS = {
-    { key = "name", label = L.STATS_COL_FISH, width = 170 },
-    { key = "n", label = L.STATS_COL_CAUGHT, width = 50, right = true },
-    { key = "share", label = L.STATS_COL_SHARE, width = 55, right = true },
-    { key = "best", label = L.STATS_COL_BEST_ZONE, width = 110 },
-    { key = "hour", label = L.STATS_COL_HOUR, width = 45, right = true },
-    { key = "first", label = L.STATS_COL_FIRST, width = 75, right = true },
-    { key = "last", label = L.STATS_COL_LAST, width = 75, right = true },
-    { key = "dry", label = L.STATS_COL_DRY, width = 65, right = true },
-    { key = "expected", label = L.STATS_COL_EXPECTED, width = 70, right = true },
+    { key = "name", label = L.STATS_COL_FISH, width = 250, icon = true, tags = true },
+    { key = "n", label = L.STATS_COL_CAUGHT, width = 70, right = true },
+    { key = "share", label = L.STATS_COL_SHARE, width = 70, right = true },
+    { key = "expected", label = L.STATS_COL_EVERY, width = 100, right = true },
+    { key = "dry", label = L.STATS_COL_DRY, width = 80, right = true },
+    { key = "best", label = L.STATS_COL_BEST_WATER, width = 200 },
 }
-local function pct(x)
-    return floor(x * 100 + 0.5)
-end
 
 -- Item name with icon and quality color; "Item <id>" while the name is loading.
 function StatsTables.ItemText(id, info)
@@ -42,21 +36,6 @@ function StatsTables.ItemText(id, info)
         name = format("|T%d:%d:%d|t %s", info.icon, StatsTables.ICON, StatsTables.ICON, name)
     end
     return name
-end
-
--- Tooltip line of an item share: the range, or the counts while the sample is small.
-function StatsTables.ShareLine(share)
-    if share.display == "count" or not share.low then
-        return format(L.STATS_TIP_SHARE_FEW, share.k, share.n)
-    end
-    return format(
-        L.STATS_TIP_SHARE,
-        HudModel.Percent(share),
-        pct(share.low),
-        pct(share.high),
-        share.k,
-        share.n
-    )
 end
 
 local function hourOf(hours, offset)
@@ -73,83 +52,110 @@ local function fishRow(id, item, view, input)
     local t = input.thresholds or Stats.DEFAULTS
     local info = input.info(id) or {}
     local catches = Stats.Count(view.outcomes, "catch")
+    local perCast = Stats.Proportion(item.n, Stats.Fair(view.outcomes), t)
     local row = {
         key = id,
         id = id,
         order = id,
+        info = info,
         name = info.name,
         quality = info.quality,
         n = item.n,
         qty = item.qty,
         share = Stats.ItemShare(item.n, catches, t),
+        perCast = perCast,
+        expected = Stats.ExpectedCasts(perCast),
         best = item.best,
         bestName = item.best and input.mapName(item.best) or nil,
         hour = hourOf(item.hours, input.hourOffset),
         first = item.first,
         last = item.last,
     }
-    if (info.quality or -1) >= StatsTables.RARE_QUALITY then
-        local perCast = Stats.Proportion(item.n, Stats.Fair(view.outcomes), t)
-        row.perCast = perCast
-        row.expected = Stats.ExpectedCasts(perCast)
-        if view.fair and type(item.fair) == "number" then
-            row.dry = view.fair - item.fair
-        end
+    if view.fair and type(item.fair) == "number" then
+        row.dry = view.fair - item.fair
     end
-    row.text = StatsTables.ItemText(id, info)
     return row
-end
-
-local function count(value)
-    return type(value) == "number" and format("%d", value) or "-"
 end
 
 local function finite(x)
     return type(x) == "number" and x < HUGE
 end
 
-local function fishCells(row, input)
-    local date = input.formatDate
+-- "7.9" below 10 casts, else a whole number with separators.
+local function casts(x)
+    if x < 10 then
+        return format("%.1f", x)
+    end
+    return Style.Number(floor(x + 0.5))
+end
+
+-- A grey "~" value for small samples, "-" when only counts are shown.
+local function approx(text, display)
+    if display == "count" then
+        return "-"
+    end
+    return display == "few" and Style.Approx(text) or text
+end
+
+local function everyText(row)
+    local mean = row.expected and row.expected.mean
+    if not finite(mean) then
+        return "-"
+    end
+    return approx(format(L.FISH_CASTS, casts(mean)), row.perCast.display)
+end
+
+local function everyPair(tip, row)
     local expected = row.expected
-            and finite(row.expected.mean)
-            and format("%d", floor(row.expected.mean + 0.5))
-        or "-"
+    if not finite(expected.mean) or row.perCast.display == "count" then
+        return
+    end
+    local high = finite(expected.high) and casts(expected.high) or "-"
+    local value = format(L.FISH_CASTS, casts(expected.mean))
+    value = Style.Range(value, casts(expected.low), high)
+    tip:Pair(L.FISH_TIP_EVERY, value, row.perCast.display == "few" and Style.GREY or nil)
+end
+
+local function fishTip(row, input)
+    return function(tip)
+        RowTip.Item(tip, row.id, row.info)
+        local caught = Style.Number(row.n)
+        if row.qty and row.qty ~= row.n then
+            caught = format(L.FISH_TIP_QTY, caught, Style.Number(row.qty))
+        end
+        tip:Pair(L.FISH_TIP_CAUGHT, caught)
+        RowTip.Rate(tip, L.FISH_TIP_SHARE, row.share)
+        everyPair(tip, row)
+        if row.dry then
+            tip:Pair(L.FISH_TIP_DRY, format(L.FISH_CASTS, Style.Number(row.dry)))
+        end
+        if row.hour then
+            tip:Pair(L.FISH_TIP_HOUR, format(L.FISH_HOUR_VALUE, row.hour))
+        end
+        if row.first then
+            local dates = input.formatDate(row.first) .. " / " .. input.formatDate(row.last)
+            tip:Pair(L.FISH_TIP_DATES, dates)
+        end
+        RowTip.Details(tip, { "range", L.FISH_D_EVERY, row.share.display ~= "full" and "grey" })
+    end
+end
+
+local function fishCells(row, input)
+    local info = row.info
+    row.text = StatsTables.ItemText(row.id, info)
     row.cells = {
-        row.text,
-        count(row.n),
-        HudModel.Percent(row.share),
+        info.name or format(L.HUD_ITEM_LOADING, row.id),
+        Style.Number(row.n),
+        approx(RowTip.Percent(row.share), row.share.display),
+        everyText(row),
+        row.dry and Style.Number(row.dry) or "-",
         row.bestName or (row.best and format(L.SUMMARY_ZONE_ID, row.best)) or "-",
-        row.hour and format(L.STATS_HOUR, row.hour) or "-",
-        row.first and date(row.first) or "-",
-        row.last and date(row.last) or "-",
-        count(row.dry),
-        expected,
     }
-    row.grey = { [3] = row.share.display ~= "full" }
-    row.grey[9] = row.perCast ~= nil and row.perCast.display ~= "full"
-    local tip =
-        { row.text, format(L.STATS_TIP_CAUGHT, row.n, row.qty), StatsTables.ShareLine(row.share) }
-    if row.hour then
-        tip[#tip + 1] = format(L.STATS_TIP_HOUR, row.hour)
-    end
-    if row.expected and finite(row.expected.mean) then
-        local high = finite(row.expected.high) and format("%d", floor(row.expected.high + 0.5))
-            or "-"
-        tip[#tip + 1] = format(
-            L.STATS_TIP_EXPECTED,
-            floor(row.expected.mean + 0.5),
-            floor(row.expected.low + 0.5),
-            high,
-            row.perCast.n
-        )
-    end
-    if row.dry then
-        tip[#tip + 1] = format(L.STATS_TIP_DRY, row.dry)
-    end
-    if row.grey[3] then
-        tip[#tip + 1] = L.STATS_TIP_GREY
-    end
-    row.tooltip = tip
+    row.icons = { info.icon }
+    row.colors = { Style.FromHex(info.hex) }
+    row.tags = { input.tag and input.tag(row.id) or nil }
+    row.grey = { [3] = row.share.display ~= "full", [4] = row.perCast.display ~= "full" }
+    row.tip = fishTip(row, input)
     return row
 end
 
@@ -196,8 +202,9 @@ function StatsTables.SortFish(rows, key, descending)
 end
 
 -- input: { info(id) -> { name, icon, quality, hex }, mapName(map), formatDate(t), hourOffset
--- (realm hour minus UTC hour), thresholds, quality (filter; nil = all), sort = { key,
--- descending } }. Returns the rows of the Fish table.
+-- (realm hour minus UTC hour), thresholds, quality (filter; nil = all), tag(id) -> { text, kind }
+-- or nil (season and night fish), sort = { key, descending } }. Returns the rows of the Fish
+-- table.
 function StatsTables.Fish(view, input)
     local rows = {}
     for id, item in pairs(view.items) do
@@ -208,4 +215,13 @@ function StatsTables.Fish(view, input)
     end
     local order = input.sort or { key = "n", descending = true }
     return StatsTables.SortFish(rows, order.key, order.descending)
+end
+
+-- Kinds and catches of Fish rows (the line next to the quality filter).
+function StatsTables.Kinds(rows)
+    local n = 0
+    for _, row in ipairs(rows) do
+        n = n + (row.n or 0)
+    end
+    return format(L.FISH_KINDS, Style.Number(#rows), Style.Number(n))
 end

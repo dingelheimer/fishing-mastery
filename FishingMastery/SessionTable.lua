@@ -7,6 +7,7 @@ local format, ipairs, type = string.format, ipairs, type
 local L, Stats, Session, HudModel, StatsTables =
     ns.L, ns.Stats, ns.Session, ns.HudModel, ns.StatsTables
 
+local Style, RowTip = ns.Style, ns.RowTip
 local SessionTable = {}
 ns.SessionTable = SessionTable
 
@@ -58,19 +59,19 @@ local function row(session, name, index, input)
     local counts = type(session.counts) == "table" and session.counts or {}
     local active = Session.Counted(session, input.now, t.activeCap)
     local zone = zoneText(session, input.mapName)
-    local tip = { input.formatTime(session.start) }
-    for _, line in
-        ipairs(HudModel.Tooltip({
-            success = Stats.SuccessRate(counts, t),
-            perHour = Stats.CatchesPerHour(counts, active, t),
-        }))
-    do
-        tip[#tip + 1] = line
-    end
+    local success = Stats.SuccessRate(counts, t)
+    local perHour = Stats.CatchesPerHour(counts, active, t)
     local total = (session.ended or input.now or session.last) - session.start
-    tip[#tip + 1] =
-        format(L.STATS_SESSION_TIME, HudModel.Duration(active), HudModel.Duration(total))
-    tip[#tip + 1] = endText(session)
+    local function tip(builder)
+        builder:Title(input.formatTime(session.start), Style.GOLD)
+        RowTip.Rates(builder, success, perHour)
+        builder:Pair(
+            L.SESSION_TIP_ACTIVE,
+            format(L.TIP_OF, HudModel.Duration(active), HudModel.Duration(total))
+        )
+        builder:Line(endText(session))
+        RowTip.Details(builder, { "range", "fair", L.SESSION_D_ACTIVE })
+    end
     return {
         key = index,
         order = index,
@@ -86,11 +87,11 @@ local function row(session, name, index, input)
             name or L.STATS_UNNAMED,
             zone or "-",
             HudModel.Duration(active),
-            format("%d", session.casts or 0),
-            format("%d", session.catches or 0),
+            Style.Number(session.casts or 0),
+            Style.Number(session.catches or 0),
             skillText(session),
         },
-        tooltip = tip,
+        tip = tip,
     }
 end
 

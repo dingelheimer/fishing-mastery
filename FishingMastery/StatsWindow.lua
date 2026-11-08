@@ -72,6 +72,17 @@ local function itemInfo(self, id)
     return info
 end
 
+-- Season or night tag of a fish from the bundled journal data, or nil.
+local function tag(id)
+    local journal = ns.Journal or {}
+    local season = (journal.seasons or {})[id]
+    if season then
+        return { text = L["TAG_" .. season.season], kind = "season" }
+    end
+    local time = (journal.times or {})[id]
+    return time and { text = L["TAG_" .. time], kind = "night" } or nil
+end
+
 local function inputs(self)
     local env, names = self.env, {}
     local gameHour = Context.Call(env, "GetGameTime")
@@ -103,6 +114,7 @@ local function inputs(self)
             return type(date) == "function" and date("%Y-%m-%d %H:%M", t) or tostring(t)
         end,
         hourOffset = offset,
+        tag = tag,
         thresholds = self.thresholds,
         quality = StatsTables.QUALITIES[self.quality],
     }
@@ -121,50 +133,6 @@ function StatsWindow:Chars()
         end
     end
     return list
-end
-
--- Characters of the chosen scope by key (StatsModel.Overview input).
-function StatsWindow:CharMap()
-    local chars = type(self.db.chars) == "table" and self.db.chars or {}
-    if self.scope == "char" then
-        return { [self.charKey] = chars[self.charKey] }
-    end
-    return chars
-end
-
--- StatsModel.Overview of the chosen scope (Overview numbers, records, calendar days).
-function StatsWindow:OverviewModel()
-    return ns.StatsModel.Overview({
-        chars = self:CharMap(),
-        current = self.charKey,
-        now = self.serverTime(),
-        thresholds = self.thresholds,
-    })
-end
-
--- Saved sessions of the chosen scope.
-function StatsWindow:SessionCount()
-    local count = 0
-    for _, entry in ipairs(self:Chars()) do
-        if type(entry.sessions) == "table" then
-            count = count + #entry.sessions
-        end
-    end
-    return count
-end
-
--- Fishing skill of the logged-in character: { rank, max, modifier, gained }, live from the
--- client, else the saved rank and cap.
-function StatsWindow:Skill()
-    local char = self.castLog.char or {}
-    local rank, modifier, max = Context.Fishing(self.env)
-    rank = rank or char.fishingRank
-    return {
-        rank = rank,
-        max = max or char.fishingMax,
-        modifier = modifier,
-        gained = ns.SkillModel.Gained(char.sessions, rank),
-    }
 end
 
 local function statusText(self, name, view)

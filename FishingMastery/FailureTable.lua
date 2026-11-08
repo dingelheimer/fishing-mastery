@@ -10,6 +10,7 @@ local format, ipairs, pairs, sort, floor = string.format, ipairs, pairs, table.s
 local L, Stats, HudModel, ChartModel, Getaway =
     ns.L, ns.Stats, ns.HudModel, ns.ChartModel, ns.Getaway
 
+local Style, RowTip = ns.Style, ns.RowTip
 local FailureTable = {}
 ns.FailureTable = FailureTable
 
@@ -52,21 +53,30 @@ function FailureTable.Rows(view, t)
     for i, outcome in ipairs(FailureTable.OUTCOMES) do
         local count = Stats.Count(outcomes, outcome)
         local row = { key = outcome, order = i, grey = {} }
-        local cells = { L["OUTCOME_" .. outcome], format("%d", count), "-", "-" }
-        local tip = { L["OUTCOME_" .. outcome] }
+        local cells = { L["OUTCOME_" .. outcome], Style.Number(count), "-", "-" }
+        local ofFair, ofHooked
         if not Stats.UNFAIR[outcome] then
-            local rate = Stats.Proportion(count, fair, t)
-            cells[3], row.grey[3] = HudModel.Percent(rate), rate.display ~= "full"
-            tip[#tip + 1] = FailureTable.RateLine(L.STATS_OF_FAIR, rate)
-        else
-            tip[#tip + 1] = L.STATS_TIP_COUNT_ONLY
+            ofFair = Stats.Proportion(count, fair, t)
+            cells[3], row.grey[3] = HudModel.Percent(ofFair), ofFair.display ~= "full"
         end
         if outcome == "catch" or outcome == "getaway" then
-            local rate = Stats.Proportion(count, hooked, t)
-            cells[4], row.grey[4] = HudModel.Percent(rate), rate.display ~= "full"
-            tip[#tip + 1] = FailureTable.RateLine(L.STATS_OF_HOOKED, rate)
+            ofHooked = Stats.Proportion(count, hooked, t)
+            cells[4], row.grey[4] = HudModel.Percent(ofHooked), ofHooked.display ~= "full"
         end
-        row.cells, row.tooltip = cells, tip
+        row.cells = cells
+        row.tip = function(tip)
+            tip:Title(L["OUTCOME_" .. outcome])
+            tip:Pair(L.STATS_COL_COUNT, Style.Number(count))
+            if ofFair then
+                RowTip.Rate(tip, L.STATS_OF_FAIR, ofFair)
+            else
+                tip:Line(L.STATS_TIP_COUNT_ONLY, Style.GREY)
+            end
+            if ofHooked then
+                RowTip.Rate(tip, L.STATS_OF_HOOKED, ofHooked)
+            end
+            RowTip.Details(tip, { "range", "fair", ofHooked and "hooked" })
+        end
         rows[#rows + 1] = row
     end
     return rows

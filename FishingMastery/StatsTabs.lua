@@ -40,19 +40,25 @@ StatsTabs.overview = {
 StatsTabs.fish = {
     scoped = true,
     build = function(self, panel)
-        self.qualityButton = StatsFrame.Button(self, panel, 140, function()
+        self.qualityButton = ns.Controls.Dropdown(self.env, panel, 140, function()
             self.quality = (self.quality + 1) % (#StatsTables.QUALITIES + 1)
+            self:Render()
         end)
         self.qualityButton:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
+        self.fishKinds = panel:CreateFontString(nil, "OVERLAY", ns.Style.FONTS.secondary)
+        self.fishKinds:SetPoint("LEFT", self.qualityButton, "RIGHT", 10, 0)
         local area = StatsFrame.Area(self, panel, 0, 28)
         self.fish = ns.StatsList.Create(self.env, area, StatsTables.FISH_COLUMNS, function(key)
             self:SortBy("fish", key)
         end)
+        self.fish:SetLegend(L.LIST_GREY)
     end,
     draw = function(self, input, keepScroll)
         local view = StatsView.Build(self:Chars())
         input.sort = self.sorts.fish
-        self.fish:SetRows(StatsTables.Fish(view, input), keepScroll, input.sort)
+        local rows = StatsTables.Fish(view, input)
+        self.fish:SetRows(rows, keepScroll, input.sort)
+        self.fishKinds:SetText(StatsTables.Kinds(rows))
         local quality = input.quality
         self.qualityButton:SetText(
             quality and format(L.STATS_QUALITY, L["STATS_QUALITY_" .. quality])

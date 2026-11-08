@@ -5,6 +5,9 @@
 - Changed: statistics and journal are pages of one Fishing Mastery window with side tabs on its
   right edge, like the Professions window. It opens on the last page, moves by the title, and
   closes with Escape. Window positions saved before this version are reset once.
+- Changed: the Fish tab has six columns with item icons, quality colors, and season or night
+  tags; the hour and dates moved into the row tooltip. Every table's row tooltip lists short
+  labels and values with the range in grey brackets; explanations appear while Shift is held.
 - Changed: the Statistics Overview shows your Fishing skill bar, four headline numbers with their
   likely range, where your casts end, and your five most caught items, for this character or all
   characters. The records and the fishing days calendar moved to the Sessions tab.

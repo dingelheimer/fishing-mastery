@@ -2,6 +2,7 @@
 -- streak and expected casts, sorting, quality filter), Zones (zones with their subzones), and the
 -- record lines of the Sessions tab.
 local addon = require("spec.helpers.addon")
+local tiplines = require("spec.helpers.tiplines")
 
 local DAY = 20763 * 86400
 local HOUR5 = DAY + 5 * 3600
@@ -12,6 +13,8 @@ describe("FishingMastery stats tables", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleUI.lua",
+            "Style.lua",
             "LocaleStats.lua",
             "Codec.lua",
             "CodecDecode.lua",
@@ -21,6 +24,7 @@ describe("FishingMastery stats tables", function()
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",
+            "RowTip.lua",
             "SummaryModel.lua",
             "StatsView.lua",
             "StatsModel.lua",
@@ -91,44 +95,61 @@ describe("FishingMastery stats tables", function()
         return map
     end
 
-    it("builds the Fish cells with shares, best zone and hour, dates, and dry streaks", function()
-        local rows = ns.StatsTables.Fish(fishView(), input())
+    it("builds the six Fish cells with icon, quality color, tag, and the row tooltip", function()
+        local tags = { [6358] = { text = "night", kind = "night" } }
+        local rows = ns.StatsTables.Fish(
+            fishView(),
+            input({
+                tag = function(id)
+                    return tags[id]
+                end,
+            })
+        )
         assert.are.equal(2, #rows)
         assert.are.equal(6303, rows[1].id) -- most caught first
         local mackerel, oily = byId(rows)[6303], byId(rows)[6358]
-        assert.are.same({
-            "|T133910:14:14|t |cffffffffRaw Slitherskin Mackerel|r",
-            "30",
-            "94 %",
-            "Durotar",
-            "07:00", -- UTC hour 5 shifted by the realm offset of 2
-            os.date("!%Y-%m-%d", HOUR5 + 20),
-            os.date("!%Y-%m-%d", HOUR5 + 32 * 20),
-            "-", -- common items have no dry streak
-            "-",
-        }, mackerel.cells)
-        assert.is_false(mackerel.grey[3])
-        -- Oily Blackmouth (uncommon): 2 of 40 fair casts, expected every 20; 20 casts since.
-        assert.are.equal("6 %", oily.cells[3])
-        assert.are.equal("20", oily.cells[8])
-        assert.are.equal("20", oily.cells[9])
-        local low, high = ns.Stats.Wilson(2, 32)
-        local tip = table.concat(oily.tooltip, "\n")
-        assert.truthy(tip:find("Caught 2 times (2 items)", 1, true))
-        assert.truthy(
-            tip:find(
-                string.format(
-                    "Share 6 %% of catches (95 %% range %d-%d %%), 2 of 32",
-                    math.floor(low * 100 + 0.5),
-                    math.floor(high * 100 + 0.5)
-                ),
-                1,
-                true
-            )
+        -- 30 of 40 fair casts: about every 1.3 casts; 8 fair casts since its last catch (32).
+        assert.are.same(
+            { "Raw Slitherskin Mackerel", "30", "94 %", "1.3 casts", "8", "Durotar" },
+            mackerel.cells
         )
-        assert.truthy(tip:find("Most catches at 07:00 (realm time)", 1, true))
-        assert.truthy(tip:find("Expected about every 20 casts (95 % range", 1, true))
-        assert.truthy(tip:find("Dry streak: 20 fair casts since the last one", 1, true))
+        assert.are.same({ 133910 }, mackerel.icons)
+        assert.are.same({ { 1, 1, 1 } }, mackerel.colors)
+        assert.are.same({}, mackerel.tags)
+        assert.is_false(mackerel.grey[3])
+        assert.is_false(mackerel.grey[4])
+        -- Oily Blackmouth: 2 of 40 fair casts, about every 20; 20 casts since; night tag.
+        assert.are.same({ "Oily Blackmouth", "2", "6 %", "20 casts", "20", "Durotar" }, oily.cells)
+        assert.are.same({ { text = "night", kind = "night" } }, oily.tags)
+        assert.are.same({ 0x1e / 255, 1, 0 }, oily.colors[1])
+        local low, high = ns.Stats.Wilson(2, 32)
+        local lines = tiplines.lines(oily.tip)
+        assert.are.equal("Oily Blackmouth", lines[1])
+        assert.are.equal("Caught = 2", lines[2])
+        assert.are.equal(
+            string.format(
+                "Share of catches = 6 %% (%d - %d)",
+                math.floor(low * 100 + 0.5),
+                math.floor(high * 100 + 0.5)
+            ),
+            lines[3]
+        )
+        assert.truthy(lines[4]:find("^About every = 20 casts %(%d+%.?%d* %- %d+%)$"))
+        assert.are.equal("Dry streak = 20 casts", lines[5])
+        assert.are.equal("Most often at = 07:00 realm time", lines[6]) -- UTC 5 + realm offset 2
+        assert.are.equal(
+            "First / last = "
+                .. os.date("!%Y-%m-%d", HOUR5 + 5 * 20)
+                .. " / "
+                .. os.date("!%Y-%m-%d", HOUR5 + 20 * 20),
+            lines[7]
+        )
+        assert.are.same({ " ", "Hold Shift for how this is counted" }, { lines[8], lines[9] })
+        assert.are.equal(9, #lines) -- at most 8 lines before the Shift hint
+        local shifted = tiplines.text(oily.tip, true)
+        assert.truthy(shifted:find("Brackets: where the true value most likely lies", 1, true))
+        assert.are.equal("1 kinds, 30 catches", ns.StatsTables.Kinds({ mackerel }))
+        assert.are.equal("2 kinds, 32 catches", ns.StatsTables.Kinds(rows))
     end)
 
     it("sorts by any column, filters by quality, and greys small samples", function()
@@ -136,9 +157,11 @@ describe("FishingMastery stats tables", function()
         local rows = ns.StatsTables.Fish(fish, input({ sort = { key = "name" } }))
         assert.are.equal(6358, rows[1].id) -- Oily before Raw
         rows = ns.StatsTables.Fish(fish, input({ sort = { key = "dry", descending = true } }))
-        assert.are.equal(6358, rows[1].id) -- no dry streak sorts last in both orders
+        assert.are.equal(6358, rows[1].id) -- 20 fair casts since its last catch
         rows = ns.StatsTables.Fish(fish, input({ sort = { key = "dry" } }))
-        assert.are.equal(6358, rows[1].id)
+        assert.are.equal(6303, rows[1].id) -- 8
+        rows = ns.StatsTables.Fish(fish, input({ sort = { key = "expected" } }))
+        assert.are.equal(6303, rows[1].id) -- about every 1.3 casts before 20
         rows = ns.StatsTables.Fish(fish, input({ quality = 2 }))
         assert.are.equal(1, #rows)
         assert.are.equal(6358, rows[1].id)
@@ -150,9 +173,9 @@ describe("FishingMastery stats tables", function()
         })
         rows = ns.StatsTables.Fish(small, input())
         local row = byId(rows)[6303]
-        assert.are.equal("2/3", row.cells[3]) -- counts only below 10
+        assert.are.equal("-", row.cells[3]) -- counts only below 10: in the tooltip
         assert.is_true(row.grey[3])
-        assert.truthy(table.concat(row.tooltip, "\n"):find("2 of 3 catches (too few", 1, true))
+        assert.are.equal("Share of catches = 2 of 3", tiplines.lines(row.tip)[3])
         -- An item without cached data shows its ID until the name loads.
         assert.are.equal("Item 6359", byId(rows)[6359].cells[1])
     end)
@@ -186,9 +209,27 @@ describe("FishingMastery stats tables", function()
         assert.are.equal("-", rows[3].cells[3]) -- 3 casts: too few for a rate
         assert.are.equal("0", rows[3].cells[4])
         assert.are.equal("-", rows[4].cells[3])
-        local tip = table.concat(rows[1].tooltip, "\n")
-        assert.truthy(tip:find("Success rate 80 % (95 % range", 1, true))
-        assert.truthy(tip:find("Raw Slitherskin Mackerel|r: Share 100 % of catches", 1, true))
+        local lines = tiplines.lines(rows[1].tip)
+        assert.are.same({ "Durotar", "Casts = 15" }, { lines[1], lines[2] })
+        assert.truthy(lines[3]:find("^Success rate = 80 %% %(%d+ %- %d+%)$"))
+        assert.are.equal("Most caught here", lines[6])
+        assert.are.equal("Raw Slitherskin Mackerel = ~100 %", lines[7]) -- 12 catches: few
+    end)
+
+    it("writes a share above 0 that rounds to 0 as <1 %", function()
+        local casts = {}
+        for i = 1, 300 do
+            casts[i] = {
+                t = DAY + i * 20,
+                map = 1411,
+                out = "catch",
+                loot = { { id = i == 1 and 6358 or 6303 } },
+            }
+        end
+        local rows = byId(ns.StatsTables.Fish(view(casts), input()))
+        assert.are.equal("<1 %", rows[6358].cells[3]) -- 1 of 300
+        assert.are.equal("100 %", rows[6303].cells[3]) -- 299 of 300 rounds up
+        assert.truthy(tiplines.lines(rows[6358].tip)[3]:find("^Share of catches = <1 %% %("))
     end)
 
     it("writes the record lines of a scope", function()
