@@ -9,6 +9,7 @@ describe("FishingMastery settings and minimap math", function()
             "Locale.lua",
             "Options.lua",
             "Codec.lua",
+            "CodecDecode.lua",
             "History.lua",
             "Totals.lua",
             "Stats.lua",

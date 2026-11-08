@@ -35,6 +35,7 @@ Tracker.lua
 Records.lua
 Session.lua
 Codec.lua
+CodecDecode.lua
 History.lua
 Totals.lua
 Season.lua
@@ -90,10 +91,13 @@ DataCommands.lua
 HudZone.lua
 Hud.lua
 Summary.lua
+StatsListHeader.lua
 StatsList.lua
 BarChart.lua
 LineChart.lua
 Heatmap.lua
+Controls.lua
+MainWindow.lua
 StatsWindow.lua
 StatsFrame.lua
 StatsTabs.lua

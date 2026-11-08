@@ -194,16 +194,16 @@ describe("FishingMastery settings and minimap boot", function()
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 
-    it("opens the stats window and the settings from the button and the compartment", function()
+    it("opens the main window and the settings from the button and the compartment", function()
         local button = w.ns.minimap.button
         button:GetScript("OnClick")(button, "LeftButton")
-        assert.is_true(w.ns.stats.frame:IsShown())
+        assert.is_true(w.ns.stats.frame:IsVisible()) -- the first page without a saved one
         button:GetScript("OnClick")(button, "LeftButton")
-        assert.is_false(w.ns.stats.frame:IsShown())
+        assert.is_false(w.ns.stats.frame:IsVisible())
         button:GetScript("OnClick")(button, "RightButton")
         assert.are.same({ 77 }, log.opened)
         _G.FishingMastery_OnAddonCompartmentClick("FishingMastery", "LeftButton")
-        assert.is_true(w.ns.stats.frame:IsShown())
+        assert.is_true(w.ns.stats.frame:IsVisible())
 
         button:GetScript("OnEnter")(button)
         assert.are.equal("Fishing Mastery", _G.GameTooltip.lines[1])

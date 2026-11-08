@@ -12,6 +12,7 @@ describe("FishingMastery compare, calendar, and line chart", function()
             "Locale.lua",
             "LocaleStats.lua",
             "Codec.lua",
+            "CodecDecode.lua",
             "Options.lua",
             "Totals.lua",
             "Stats.lua",

@@ -12,6 +12,7 @@ describe("FishingMastery charts and failure tables", function()
             "Locale.lua",
             "LocaleStats.lua",
             "Codec.lua",
+            "CodecDecode.lua",
             "History.lua",
             "Session.lua",
             "Options.lua",

@@ -43,7 +43,7 @@ StatsTabs.failures = {
         )
         top = top + 28
         local width = (StatsFrame.PANEL_WIDTH - FailureTabs.CHART_GAP) / 2
-        local height = StatsFrame.HEIGHT - 72 - top
+        local height = StatsFrame.PANEL_HEIGHT - top
         self.skillChart = chart(self, panel, 0, top, width, height)
         self.clickChart = chart(self, panel, width + FailureTabs.CHART_GAP, top, width, height)
     end,

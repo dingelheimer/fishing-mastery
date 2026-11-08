@@ -25,6 +25,9 @@ Style.HOVER = { 1, 0.82, 0, 0.12 } -- the row under the mouse
 Style.HEADER = { 0.2, 0.15, 0.08, 0.9 } -- table header bar
 Style.TAG_SEASON = { 0.31, 0.63, 1, 0.18 }
 Style.TAG_NIGHT = { 0.63, 0.47, 1, 0.2 }
+-- The sort and dropdown arrow (confirmed in game, Story 9.1) and its texture coordinates.
+Style.ARROW = "Interface\\Buttons\\UI-SortArrow"
+Style.ARROW_DOWN, Style.ARROW_UP = { 0, 0.5625, 0, 1 }, { 0, 0.5625, 1, 0 }
 
 -- Font objects of the client by role.
 Style.FONTS = {

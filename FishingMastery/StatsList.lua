@@ -1,4 +1,4 @@
--- A table for the windows: a gold header bar (sort buttons with an arrow, or labels) over a
+-- A table for the windows: a gold header bar (StatsListHeader) over a
 -- ScrollBox list with a scroll bar (APIs confirmed on live in Story 3.1), in the table style of
 -- Epic 9 (Draft 2): striped rows, a gold hover highlight, numbers right-aligned with thousands
 -- separators, optional item icons, per-cell colors (quality), small tags (season, night), grey
@@ -11,79 +11,25 @@ local _, ns = ...
 
 local setmetatable, ipairs, pcall, type = setmetatable, ipairs, pcall, type
 local Style = ns.Style
+local Header = ns.StatsListHeader
 
 local StatsList = {}
 StatsList.__index = StatsList
 ns.StatsList = StatsList
 
 StatsList.ROW_HEIGHT = 18
-StatsList.HEADER_HEIGHT = 20
+StatsList.HEADER_HEIGHT = Header.HEIGHT
 StatsList.LEGEND_HEIGHT = 16
 StatsList.ICON = 16
 StatsList.SCROLLBAR_WIDTH = 16
 StatsList.SCROLL_TEMPLATE = "WowScrollBoxList"
 StatsList.SCROLLBAR_TEMPLATE = "MinimalScrollBar"
-StatsList.ARROW = "Interface\\Buttons\\UI-SortArrow"
-StatsList.ARROW_DOWN, StatsList.ARROW_UP = { 0, 0.5625, 0, 1 }, { 0, 0.5625, 1, 0 }
+StatsList.ARROW_DOWN, StatsList.ARROW_UP = Header.ARROW_DOWN, Header.ARROW_UP
 StatsList.TAGS =
     { season = { Style.SEASON, Style.TAG_SEASON }, night = { Style.NIGHT, Style.TAG_NIGHT } }
 StatsList.GREY, StatsList.WHITE, StatsList.GOLD = Style.GREY, Style.WHITE, Style.GOLD
 
-local function tint(texture, color)
-    texture:SetColorTexture(color[1], color[2], color[3], color[4])
-end
-
-local function sortButton(self, parent, column)
-    local env = self.env
-    local key = column.key
-    local button = env.CreateFrame("Button", nil, parent)
-    button:SetSize(column.width - 2, StatsList.HEADER_HEIGHT)
-    local label = button:CreateFontString(nil, "OVERLAY", Style.FONTS.smallLabel)
-    label:SetPoint("LEFT", button, "LEFT", 3, 0)
-    label:SetWidth(column.width - (column.right and 18 or 8))
-    label:SetJustifyH(column.right and "RIGHT" or "LEFT")
-    button:SetFontString(label)
-    button:SetText(column.label)
-    local highlight = button:CreateTexture(nil, "HIGHLIGHT")
-    highlight:SetAllPoints(button)
-    tint(highlight, Style.HOVER)
-    local arrow = button:CreateTexture(nil, "OVERLAY")
-    arrow:SetSize(9, 8)
-    arrow:SetPoint("RIGHT", button, "RIGHT", -4, 0)
-    arrow:SetTexture(StatsList.ARROW)
-    arrow:Hide()
-    button.arrow, button.key = arrow, key
-    button:SetScript(
-        "OnClick",
-        ns.Guard.Wrap("list:sort", function()
-            self.onSort(key)
-        end)
-    )
-    return button
-end
-
-local function header(self, parent)
-    local bar = parent:CreateTexture(nil, "BACKGROUND")
-    bar:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
-    bar:SetPoint("BOTTOMRIGHT", parent, "TOPRIGHT", 0, -StatsList.HEADER_HEIGHT)
-    tint(bar, Style.HEADER)
-    local x = 0
-    self.headers = {}
-    for _, column in ipairs(self.columns) do
-        local cell
-        if self.onSort then
-            cell = sortButton(self, parent, column)
-        else
-            cell = parent:CreateFontString(nil, "OVERLAY", Style.FONTS.smallLabel)
-            cell:SetWidth(column.width - 6)
-            cell:SetJustifyH(column.right and "RIGHT" or "LEFT")
-            cell:SetText(column.label)
-        end
-        cell:SetPoint("TOPLEFT", parent, "TOPLEFT", x + (self.onSort and 0 or 3), -3)
-        self.headers[#self.headers + 1] = cell
-        x = x + column.width
-    end
-end
+local tint = Header.Tint
 
 local function showTooltip(self, row)
     local data = row.data
@@ -254,7 +200,7 @@ function StatsList.Create(env, parent, columns, onSort, onSelect)
         onSelect = onSelect,
         index = {},
     }, StatsList)
-    header(self, parent)
+    Header.Build(self, parent)
     scrollBox(self, parent)
     return self
 end
@@ -274,20 +220,6 @@ function StatsList:SetLegend(text)
     placeBox(self)
 end
 
-local function drawSort(self, sort)
-    if not self.onSort then
-        return
-    end
-    for _, button in ipairs(self.headers) do
-        local sorted = sort ~= nil and button.key == sort.key
-        button.arrow:SetShown(sorted)
-        if sorted then
-            local coords = sort.descending and StatsList.ARROW_DOWN or StatsList.ARROW_UP
-            button.arrow:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
-        end
-    end
-end
-
 -- Shows the rows; keepScroll keeps the scroll position (item names that loaded later); sort
 -- ({ key, descending }) puts the arrow on the sorted column.
 function StatsList:SetRows(rows, keepScroll, sort)
@@ -296,7 +228,7 @@ function StatsList:SetRows(rows, keepScroll, sort)
     for i, data in ipairs(rows) do
         self.index[data] = i
     end
-    drawSort(self, sort)
+    Header.DrawSort(self, sort)
     local provider = env.CreateDataProvider(rows)
     local constants = env.ScrollBoxConstants
     if keepScroll and constants and constants.RetainScrollPosition then

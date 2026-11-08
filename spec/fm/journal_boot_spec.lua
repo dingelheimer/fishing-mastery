@@ -150,10 +150,11 @@ describe("FishingMastery journal window boot", function()
         assert.are.equal(3, tabs.selected)
         assert.is_true(window.panels[3]:IsShown())
         assert.is_false(window.panels[1]:IsShown())
-        window.frame:SetPoint("TOPLEFT", _G.UIParent, "TOPLEFT", 40, -50)
-        window.frame:GetScript("OnDragStop")(window.frame)
+        local main = w.ns.mainWindow
+        main.frame:SetPoint("TOPLEFT", _G.UIParent, "TOPLEFT", 40, -50)
+        main.handle:GetScript("OnDragStop")(main.handle)
         assert.are.equal(3, _G.FishingMasteryCharDB.ui.journalTab)
-        assert.is_not_nil(_G.FishingMasteryCharDB.ui.journal)
+        assert.is_not_nil(_G.FishingMasteryCharDB.ui.main)
 
         boot(_G.FishingMasteryDB, _G.FishingMasteryCharDB) -- /reload
         _G.SlashCmdList.FM("journal")
@@ -168,18 +169,22 @@ describe("FishingMastery journal window boot", function()
             return true
         end
         button:GetScript("OnClick")(button, "LeftButton")
-        assert.is_true(journal().frame:IsShown())
+        assert.is_true(journal().frame:IsVisible())
         button:GetScript("OnClick")(button, "LeftButton")
-        assert.is_false(journal().frame:IsShown())
+        assert.is_false(journal().frame:IsVisible())
         _G.FishingMastery_OnAddonCompartmentClick("FishingMastery", "LeftButton")
-        assert.is_true(journal().frame:IsShown())
+        assert.is_true(journal().frame:IsVisible())
         assert.is_nil(w.ns.stats.frame)
 
+        -- Without Shift a click closes the window and opens it again on the last page.
         _G.IsShiftKeyDown = function()
             return false
         end
         button:GetScript("OnClick")(button, "LeftButton")
-        assert.is_true(w.ns.stats.frame:IsShown())
+        assert.is_false(w.ns.mainWindow:IsShown())
+        button:GetScript("OnClick")(button, "LeftButton")
+        assert.is_true(journal().frame:IsVisible())
+        assert.is_nil(w.ns.stats.frame)
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 

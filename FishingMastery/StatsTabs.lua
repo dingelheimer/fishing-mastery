@@ -22,7 +22,7 @@ StatsTabs.overview = {
         self.overviewText:SetPoint("TOPLEFT", panel, "TOPLEFT", 2, 0)
         self.overviewText:SetWidth(StatsFrame.PANEL_WIDTH - 4)
         self.overviewText:SetJustifyH("LEFT")
-        local heatTop = StatsFrame.HEIGHT - 72 - ns.Heatmap.HEIGHT
+        local heatTop = StatsFrame.PANEL_HEIGHT - ns.Heatmap.HEIGHT
         local area = StatsFrame.Area(
             self,
             panel,

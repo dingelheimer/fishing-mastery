@@ -16,6 +16,7 @@ describe("FishingMastery seasons and day/night", function()
             "Data\\Zones.lua",
             "Data\\Journal.lua",
             "Codec.lua",
+            "CodecDecode.lua",
             "History.lua",
             "Options.lua",
             "Totals.lua",

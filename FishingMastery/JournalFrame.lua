@@ -1,20 +1,21 @@
--- Layout of the journal window: the movable frame (position saved per character), title,
--- progress line, the filter row (group, caught or not, search box, scope), one panel per tab
--- (built by its JournalTabs entry), and the tab buttons run by
+-- Layout of the Journal page of the main window (MainWindow.lua): the scope dropdown at the top
+-- right, the progress line at the top of the body, the filter row (group, caught or not, search
+-- box), one panel per tab (built by its JournalTabs entry), and the bottom tab buttons run by
 -- PanelTemplates on frame.Tabs (the frames are unnamed). Unnamed, insecure frames only.
 local _, ns = ...
 
 local ipairs = ipairs
 local L, Frames, Context, StatsFrame = ns.L, ns.Frames, ns.Context, ns.StatsFrame
+local MainWindow = ns.MainWindow
 
 local JournalFrame = {}
 ns.JournalFrame = JournalFrame
 
-JournalFrame.WIDTH, JournalFrame.HEIGHT = 860, 480
-JournalFrame.POSITION_KEY = "journal"
+JournalFrame.WIDTH, JournalFrame.HEIGHT = MainWindow.WIDTH, MainWindow.HEIGHT
 JournalFrame.SEARCH_TEMPLATE = "InputBoxTemplate"
 JournalFrame.SEARCH_MAX = 40 -- letters in the search box
-JournalFrame.PANEL_TOP = 86
+JournalFrame.PANEL_TOP = 108
+JournalFrame.FILTER_Y = -82 -- the filter row
 
 -- The next value of list after current (wraps around).
 function JournalFrame.Next(list, current)
@@ -67,11 +68,11 @@ end
 
 local function buildSearch(self, frame)
     local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    label:SetPoint("TOPLEFT", frame, "TOPLEFT", 270, -60)
+    label:SetPoint("TOPLEFT", frame, "TOPLEFT", 270, JournalFrame.FILTER_Y - 4)
     label:SetText(L.JOURNAL_SEARCH)
     local box = Frames.Create(self.env, "EditBox", frame, JournalFrame.SEARCH_TEMPLATE)
     box:SetSize(160, 20)
-    box:SetPoint("TOPLEFT", frame, "TOPLEFT", 324, -56)
+    box:SetPoint("TOPLEFT", frame, "TOPLEFT", 324, JournalFrame.FILTER_Y)
     box:SetAutoFocus(false)
     box:SetMaxLetters(JournalFrame.SEARCH_MAX)
     box:SetScript(
@@ -98,36 +99,28 @@ local function buildFilters(self, frame)
     self.groupButton = StatsFrame.Button(self, frame, 120, function()
         self.filters.group = JournalFrame.Next(Table.FILTERS, self.filters.group)
     end)
-    self.groupButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 14, -56)
+    self.groupButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 14, JournalFrame.FILTER_Y)
     self.showButton = StatsFrame.Button(self, frame, 120, function()
         self.filters.show = JournalFrame.Next(Table.SHOWS, self.filters.show)
     end)
     self.showButton:SetPoint("LEFT", self.groupButton, "RIGHT", 6, 0)
     buildSearch(self, frame)
-    self.scopeButton = StatsFrame.Button(self, frame, 130, function()
+    self.scopeButton = ns.Controls.Dropdown(self.env, frame, 130, function()
         self.scope = self.scope == "account" and "character" or "account"
+        self:Render()
     end)
-    self.scopeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -14, -56)
+    self.scopeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -14, MainWindow.CONTROLS_Y)
 end
 
--- Creates the window of a JournalWindow (window.frame, progress, filters, panels, tabs).
-function JournalFrame.Build(self)
-    local env = self.env
-    local frame = Frames.Create(env, "Frame", env.UIParent, Frames.TEMPLATE)
-    self.frame = frame
-    frame:SetSize(JournalFrame.WIDTH, JournalFrame.HEIGHT)
-    frame:SetFrameStrata("HIGH")
-    frame:SetToplevel(true)
-    Frames.RestorePosition(frame, env, self.store, JournalFrame.POSITION_KEY)
-    Frames.MakeMovable(frame, self.store, JournalFrame.POSITION_KEY)
-    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("TOP", frame, "TOP", 0, -6)
-    title:SetText(L.JOURNAL_TITLE)
-    self.progress = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    self.progress:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -34)
+-- Builds the page of a JournalWindow on page (the panel of the main window): window.frame,
+-- progress, filters, panels, tabs.
+function JournalFrame.Build(self, page)
+    self.frame = page
+    self.progress = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    self.progress:SetPoint("TOPLEFT", page, "TOPLEFT", 16, MainWindow.BODY_Y)
     self.progress:SetWidth(JournalFrame.WIDTH - 32)
     self.progress:SetJustifyH("LEFT")
-    buildFilters(self, frame)
+    buildFilters(self, page)
     buildPanels(self)
     buildTabs(self)
 end

@@ -12,7 +12,7 @@ describe("FishingMastery totals rebuild boot", function()
 
     before_each(function()
         pure = addon.load(
-            { "Codec.lua", "History.lua", "Options.lua", "Totals.lua" },
+            { "Codec.lua", "CodecDecode.lua", "History.lua", "Options.lua", "Totals.lua" },
             nil,
             "FishingMastery"
         )

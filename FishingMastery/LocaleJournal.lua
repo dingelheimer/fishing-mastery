@@ -4,8 +4,7 @@ local _, ns = ...
 local L = ns.L
 
 -- Journal window (Story 5.4)
-L.CMD_JOURNAL = "Open the fishing journal"
-L.JOURNAL_TITLE = "Fishing Mastery - Journal"
+L.CMD_JOURNAL = "Open the Journal page of the Fishing Mastery window"
 L.JOURNAL_TAB_fish = "Fish"
 L.JOURNAL_TAB_waters = "Waters"
 L.JOURNAL_TAB_recipes = "Recipes"

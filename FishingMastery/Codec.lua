@@ -1,7 +1,7 @@
 -- Pure logic: packs one day's casts into chunk strings "<day>|<cast>;<cast>;..." and back.
 -- A cast is comma-separated integer fields in the fixed order of Codec.FIELDS; new fields are
 -- only ever appended, so old chunks decode with the new fields empty. Decoding parses the text
--- field by field and never runs loadstring.
+-- field by field and never runs loadstring (CodecDecode.lua).
 --
 -- Field rules (an empty field costs one comma; trailing empty fields are dropped):
 --   dt     seconds since the previous cast in the chunk (the first: seconds into the day)
@@ -14,9 +14,8 @@
 --   extra  further loot slots "id:qty:q/id:qty:q" (catches); empty = none
 local _, ns = ...
 
-local type, tostring, tonumber, floor, concat = type, tostring, tonumber, math.floor, table.concat
-local find, match, gmatch, format = string.find, string.match, string.gmatch, string.format
-local ipairs, pairs, pcall, error = ipairs, pairs, pcall, error
+local type, tostring, floor, concat = type, tostring, math.floor, table.concat
+local format, ipairs, pairs = string.format, ipairs, pairs
 
 local Codec = {}
 ns.Codec = Codec
@@ -54,6 +53,7 @@ Codec.OUTCOMES = {
 Codec.SOURCE_TYPES = { GameObject = 1, Creature = 2, Item = 3, Other = 9 }
 
 local OUTCOME_NAMES, SOURCE_NAMES = {}, {}
+Codec.OUTCOME_NAMES, Codec.SOURCE_NAMES = OUTCOME_NAMES, SOURCE_NAMES
 for name, code in pairs(Codec.OUTCOMES) do
     OUTCOME_NAMES[code] = name
 end
@@ -63,6 +63,7 @@ end
 
 -- Position of every field in a cast.
 local POSITION = {}
+Codec.POSITION = POSITION
 for index, name in ipairs(Codec.FIELDS) do
     POSITION[name] = index
 end
@@ -71,6 +72,7 @@ local CONTEXT = { "map", "sub", "rank", "mod", "lure" }
 local CATCH = { "item", "qty", "q", "srcType", "srcId", "auto" }
 -- Outcomes whose time field holds the click time.
 local CLICKED = { [Codec.OUTCOMES.getaway] = true, [Codec.OUTCOMES.early_click] = true }
+Codec.CONTEXT, Codec.CATCH, Codec.CLICKED = CONTEXT, CATCH, CLICKED
 
 function Codec.Day(t)
     return floor(t / Codec.DAY)
@@ -195,110 +197,4 @@ function Codec.Encode(day, casts, cap)
         chunks[#chunks + 1] = day .. "|" .. concat(state.parts, ";")
     end
     return chunks
-end
-
--- Integer field; raises for anything else (caught by Codec.Decode).
-local function parseInt(text)
-    if type(text) ~= "string" or not find(text, "^%-?%d+$") then
-        error("bad number '" .. tostring(text) .. "'", 0)
-    end
-    return tonumber(text)
-end
-
--- Splits a cast into its fields; missing trailing fields are empty.
-local function splitFields(text)
-    local fields, index = {}, 1
-    for value in gmatch(text .. ",", "([^,]*),") do
-        fields[index] = value
-        index = index + 1
-    end
-    return fields
-end
-
-local function decodeRepeat(text, previous)
-    if text == "" or text == nil then
-        return previous
-    end
-    if text == "-" then
-        return nil
-    end
-    return parseInt(text)
-end
-
-local function decodeExtra(text, loot)
-    for slot in gmatch(text, "[^/]+") do
-        local id, qty, q = match(slot, "^(%d*):(%d*):(%d*)$")
-        if not id then
-            error("bad loot slot '" .. slot .. "'", 0)
-        end
-        loot[#loot + 1] = { id = tonumber(id), qty = tonumber(qty), q = tonumber(q) }
-    end
-end
-
-local function decodeChunk(chunk)
-    if type(chunk) ~= "string" then
-        error("chunk is not a string", 0)
-    end
-    local dayText, body = match(chunk, "^(%d+)|(.*)$")
-    if not dayText then
-        error("missing day header", 0)
-    end
-    local day = tonumber(dayText)
-    local casts = {}
-    local t, ctx, catch = day * Codec.DAY, {}, {}
-    for text in gmatch(body .. ";", "([^;]*);") do
-        if text == "" then
-            error("empty cast", 0)
-        end
-        local f = splitFields(text)
-        if #f > #Codec.FIELDS then
-            error("too many fields", 0)
-        end
-        local dt = parseInt(f[POSITION.dt])
-        local code = decodeRepeat(f[POSITION.out], nil)
-        local out = OUTCOME_NAMES[code]
-        if not out then
-            error("bad outcome '" .. tostring(f[POSITION.out]) .. "'", 0)
-        end
-        t = t + dt
-        local cast = { t = t, out = out }
-        for _, name in ipairs(CONTEXT) do
-            ctx[name] = decodeRepeat(f[POSITION[name]], ctx[name])
-            cast[name] = ctx[name]
-        end
-        if CLICKED[code] then
-            cast.click = decodeRepeat(f[POSITION.time], nil)
-        end
-        if out == "catch" then
-            cast.bite = decodeRepeat(f[POSITION.time], nil)
-            for _, name in ipairs(CATCH) do
-                catch[name] = decodeRepeat(f[POSITION[name]], catch[name])
-            end
-            local loot = {}
-            if catch.item then
-                loot[1] = { id = catch.item, qty = catch.qty, q = catch.q }
-            end
-            local extra = f[POSITION.extra]
-            if extra and extra ~= "" then
-                decodeExtra(extra, loot)
-            end
-            cast.loot = loot
-            cast.srcType = catch.srcType and SOURCE_NAMES[catch.srcType] or nil
-            cast.srcId = catch.srcId
-            if catch.auto ~= nil then
-                cast.auto = catch.auto == 1
-            end
-        end
-        casts[#casts + 1] = cast
-    end
-    return day, casts
-end
-
--- Returns day, casts for a chunk, or nil and an error message for a broken chunk.
-function Codec.Decode(chunk)
-    local ok, day, casts = pcall(decodeChunk, chunk)
-    if not ok then
-        return nil, tostring(day)
-    end
-    return day, casts
 end

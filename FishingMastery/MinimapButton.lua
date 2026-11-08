@@ -1,8 +1,8 @@
 -- The own minimap button (no libraries, owner decision 2026-11-05): a round button on the minimap
 -- edge, dragged around it (angle saved per character in FishingMasteryCharDB.ui.minimap), left
--- click toggles the stats window, right click opens the settings, tooltip with the session
--- numbers. Hidden with the minimap setting. OnUpdate runs only while dragging. Unnamed, insecure
--- frame.
+-- click toggles the main window (Shift: its Journal page), right click opens the settings,
+-- tooltip with the session numbers. Hidden with the minimap setting. OnUpdate runs only while
+-- dragging. Unnamed, insecure frame.
 local _, ns = ...
 
 local setmetatable, type, ipairs = setmetatable, type, ipairs
@@ -18,16 +18,16 @@ MinimapButton.BORDER = "Interface\\Minimap\\MiniMap-TrackingBorder"
 MinimapButton.BACKGROUND = "Interface\\Minimap\\UI-Minimap-Background"
 MinimapButton.HIGHLIGHT = "Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight"
 
--- deps: { env, settings (db.settings), store (FishingMasteryCharDB.ui), hud, openStats(),
--- openJournal() (Shift + left click), openSettings() }.
+-- deps: { env, settings (db.settings), store (FishingMasteryCharDB.ui), hud, toggleWindow(),
+-- toggleJournal() (Shift + left click), openSettings() }.
 function MinimapButton.Start(deps)
     local self = setmetatable({
         env = deps.env,
         settings = deps.settings,
         store = deps.store,
         hud = deps.hud,
-        openStats = deps.openStats,
-        openJournal = deps.openJournal,
+        toggleWindow = deps.toggleWindow,
+        toggleJournal = deps.toggleJournal,
         openSettings = deps.openSettings,
     }, MinimapButton)
     self:Update()
@@ -105,10 +105,10 @@ local function build(self)
         ns.Guard.Wrap("minimap:click", function(_, mouseButton)
             if mouseButton == "RightButton" then
                 self.openSettings()
-            elseif ns.Context.Call(env, "IsShiftKeyDown") and self.openJournal then
-                self.openJournal()
+            elseif ns.Context.Call(env, "IsShiftKeyDown") and self.toggleJournal then
+                self.toggleJournal()
             else
-                self.openStats()
+                self.toggleWindow()
             end
         end)
     )

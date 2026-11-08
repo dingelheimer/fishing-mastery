@@ -88,7 +88,7 @@ local function applySetting(key)
     ns.hud:Refresh()
 end
 
--- Settings panel and minimap button (after the stats window, which they open).
+-- Settings panel and minimap button (after the main window, which they open).
 local function startSettings()
     local conflict = ns.DoubleCast.Conflict(_G)
     ns.settingsPanel = ns.SettingsPanel.Start({
@@ -104,14 +104,14 @@ local function startSettings()
         settings = ns.db.settings,
         store = ns.charDb.ui,
         hud = ns.hud,
-        openStats = function()
+        toggleWindow = function()
             if ns.castLog.char then
-                ns.stats:Toggle()
+                ns.mainWindow:Toggle()
             end
         end,
-        openJournal = function()
+        toggleJournal = function()
             if ns.castLog.char then
-                ns.journalWindow:Toggle()
+                ns.mainWindow:Toggle(ns.JournalWindow.PAGE)
             end
         end,
         openSettings = function()
@@ -180,12 +180,14 @@ local function startTracker()
         serverTime = GetServerTime,
         print = ns.Print,
     })
+    ns.mainWindow = ns.MainWindow.Start({ env = _G, store = ns.charDb.ui })
     ns.stats = ns.StatsWindow.Start({
         env = _G,
         castLog = castLog,
         db = ns.db,
         charKey = ns.charKey,
         store = ns.charDb.ui,
+        host = ns.mainWindow,
         serverTime = GetServerTime,
         after = timer("timer:stats"),
     })
@@ -195,6 +197,7 @@ local function startTracker()
         db = ns.db,
         charKey = ns.charKey,
         store = ns.charDb.ui,
+        host = ns.mainWindow,
         areas = ns.area,
         zones = ns.Zones,
         journal = ns.Journal,

@@ -15,6 +15,7 @@ describe("FishingMastery zone reference", function()
             "LocaleStats.lua",
             "Data\\Zones.lua",
             "Codec.lua",
+            "CodecDecode.lua",
             "History.lua",
             "Options.lua",
             "Totals.lua",

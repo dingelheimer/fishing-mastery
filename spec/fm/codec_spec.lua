@@ -7,7 +7,7 @@ describe("FishingMastery Codec", function()
     local T0 = DAY * 86400
 
     before_each(function()
-        Codec = addon.load({ "Codec.lua" }, nil, "FishingMastery").Codec
+        Codec = addon.load({ "Codec.lua", "CodecDecode.lua" }, nil, "FishingMastery").Codec
     end)
 
     local function roundTrip(casts)

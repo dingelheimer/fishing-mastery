@@ -46,6 +46,13 @@ end
 function Region:IsShown()
     return self.shown
 end
+-- Shown, and every parent frame shown (UIParent has no parent).
+function Region:IsVisible()
+    if not self.shown then
+        return false
+    end
+    return self.parent == nil or self.parent:IsVisible()
+end
 
 local FontString = setmetatable({}, { __index = Region })
 FontString.__index = FontString
@@ -304,7 +311,11 @@ function Frame:PressKey(down)
 end
 
 -- The only frame names the addons may create: bindings of the form CLICK <name> need a name.
-M.ALLOWED_NAMES = { FishingMasteryProbeTestButton = true, FishingMasteryCastButton = true }
+M.ALLOWED_NAMES = {
+    FishingMasteryProbeTestButton = true,
+    FishingMasteryCastButton = true,
+    FishingMasteryFrame = true, -- the main window: UISpecialFrames (Escape) needs a name
+}
 
 -- Returns an env with CreateFrame and UIParent. opts.missingTemplates: { [name] = true }.
 function M.new(opts)

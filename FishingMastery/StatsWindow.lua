@@ -1,4 +1,4 @@
--- The stats window (/fm stats): a movable window (position saved per character) with 8 tabs
+-- The Statistics page of the main window (/fm stats; MainWindow.lua) with 8 bottom tabs
 -- (StatsTabs.lua, FailureTabs.lua, SkillTabs.lua). The tabs read the live aggregates and session
 -- records; only Skill reads the history, in steps. Built on first open (StatsFrame.lua); only the
 -- shown tab is drawn. Item names that load later redraw the tab once per frame. Unnamed, insecure
@@ -14,6 +14,8 @@ local StatsWindow = {}
 StatsWindow.__index = StatsWindow
 ns.StatsWindow = StatsWindow
 
+StatsWindow.PAGE = "stats" -- MainWindow page key
+StatsWindow.ICON = "Interface\\Icons\\INV_Misc_Note_01"
 StatsWindow.TABS =
     { "overview", "fish", "zones", "failures", "bites", "sessions", "skill", "compare" }
 -- Columns sorted A-Z on their first click, per sortable list; others start with the largest.
@@ -22,8 +24,8 @@ StatsWindow.TEXT_KEYS =
 StatsWindow.RECHECK = 1 -- seconds between checks while the history is counted
 StatsWindow.QUALITY_HEX = 4 -- C_Item.GetItemQualityColor: hex color
 
--- deps: { env, castLog, db (FishingMasteryDB), charKey, store (FishingMasteryCharDB.ui),
--- serverTime(), after(seconds, fn) }.
+-- deps: { env, castLog, db (FishingMasteryDB), charKey, store (FishingMasteryCharDB.ui), host
+-- (the MainWindow), serverTime(), after(seconds, fn) }.
 function StatsWindow.Start(deps)
     return setmetatable({
         env = deps.env,
@@ -31,6 +33,7 @@ function StatsWindow.Start(deps)
         db = deps.db,
         charKey = deps.charKey,
         store = deps.store,
+        host = deps.host,
         serverTime = deps.serverTime,
         after = deps.after,
         thresholds = ns.Stats.Thresholds(deps.db.settings.thresholds),
@@ -161,7 +164,7 @@ local function recheck(self)
     self.rechecking = true
     self.after(StatsWindow.RECHECK, function()
         self.rechecking = false
-        if self.frame:IsShown() then
+        if self.frame:IsVisible() then
             self:Render()
         end
     end)
@@ -179,7 +182,7 @@ end
 
 -- Redraws once per frame after item data arrived, keeping the scroll position.
 function StatsWindow:Redraw()
-    if self.redrawing or not (self.frame and self.frame:IsShown()) then
+    if self.redrawing or not (self.frame and self.frame:IsVisible()) then
         return
     end
     if not self.after then
@@ -189,7 +192,7 @@ function StatsWindow:Redraw()
     self.redrawing = true
     self.after(0, function()
         self.redrawing = false
-        if self.frame:IsShown() then
+        if self.frame:IsVisible() then
             self:Render(true)
         end
     end)
@@ -212,30 +215,31 @@ function StatsWindow:SortBy(list, key)
     self:Render()
 end
 
+-- Opens the main window on this page.
 function StatsWindow:Open()
-    if not self.frame then
-        ns.StatsFrame.Build(self)
-    end
-    self.frame:Show()
-    self:Render()
-end
-
--- Minimap button and addon compartment: opens the window, or closes it when it is shown.
-function StatsWindow:Toggle()
-    if self.frame and self.frame:IsShown() then
-        self.frame:Hide()
-    else
-        self:Open()
-    end
+    self.host:Open(StatsWindow.PAGE)
 end
 
 -- New thresholds from the settings panel; redraws the shown tab.
 function StatsWindow:SetThresholds(thresholds)
     self.thresholds = thresholds
-    if self.frame and self.frame:IsShown() then
+    if self.frame and self.frame:IsVisible() then
         self:Render(true)
     end
 end
+
+ns.MainWindow.Register({
+    key = StatsWindow.PAGE,
+    icon = StatsWindow.ICON,
+    label = L.PAGE_STATS,
+    order = 10,
+    build = function(_, panel)
+        ns.StatsFrame.Build(ns.stats, panel)
+    end,
+    show = function()
+        ns.stats:Render()
+    end,
+})
 
 ns.Commands.Register("stats", L.CMD_STATS, function()
     if not (ns.stats and ns.castLog and ns.castLog.char) then

@@ -10,7 +10,7 @@ describe("FishingMastery Totals", function()
 
     before_each(function()
         ns = addon.load(
-            { "Codec.lua", "History.lua", "Options.lua", "Totals.lua" },
+            { "Codec.lua", "CodecDecode.lua", "History.lua", "Options.lua", "Totals.lua" },
             nil,
             "FishingMastery"
         )

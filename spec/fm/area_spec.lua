@@ -23,6 +23,7 @@ describe("FishingMastery area lookup", function()
             "LocaleStats.lua",
             "Data\\Zones.lua",
             "Codec.lua",
+            "CodecDecode.lua",
             "History.lua",
             "Session.lua",
             "Options.lua",

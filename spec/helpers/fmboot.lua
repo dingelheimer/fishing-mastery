@@ -12,6 +12,7 @@ M.GUID = "Player-5827-0ABCDEF0"
 M.STUBS = {
     "CreateFrame",
     "UIParent",
+    "UISpecialFrames",
     "GetServerTime",
     "DEFAULT_CHAT_FRAME",
     "SlashCmdList",
@@ -124,6 +125,7 @@ function M.new()
         w.serverTime = w.serverTime + 60
         _G.CreateFrame = w.env.CreateFrame
         _G.UIParent = w.env.UIParent
+        _G.UISpecialFrames = {}
         _G.GameTooltip = w.env.GameTooltip
         _G.GetServerTime = function()
             return w.serverTime

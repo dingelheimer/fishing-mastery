@@ -1,23 +1,24 @@
--- Layout of the stats window: the movable frame (position saved per character), title, status
--- line, scope button, one panel per tab (built by its StatsTabs entry, else "coming soon"), and
--- the tab buttons run by PanelTemplates on frame.Tabs (the frames are unnamed). Unnamed, insecure
--- frames only.
+-- Layout of the Statistics page of the main window (MainWindow.lua): the scope dropdown at the
+-- top right, the status line at the top of the body, one panel per tab (built by its StatsTabs
+-- entry, else "coming soon"), and the bottom tab buttons run by PanelTemplates on frame.Tabs (the
+-- frames are unnamed). Unnamed, insecure frames only.
 local _, ns = ...
 
 local ipairs = ipairs
-local L, Frames, Context = ns.L, ns.Frames, ns.Context
+local L, Frames, Context, MainWindow = ns.L, ns.Frames, ns.Context, ns.MainWindow
 
 local StatsFrame = {}
 ns.StatsFrame = StatsFrame
 
-StatsFrame.WIDTH, StatsFrame.HEIGHT = 760, 470
-StatsFrame.POSITION_KEY = "stats"
+StatsFrame.WIDTH, StatsFrame.HEIGHT = MainWindow.WIDTH, MainWindow.HEIGHT
 StatsFrame.TAB_TEMPLATE = "PanelTabButtonTemplate"
+StatsFrame.PANEL_TOP = 82
 StatsFrame.PANEL_WIDTH = StatsFrame.WIDTH - 28
+StatsFrame.PANEL_HEIGHT = StatsFrame.HEIGHT - StatsFrame.PANEL_TOP - 14
 
 local function panel(self)
     local frame = self.env.CreateFrame("Frame", nil, self.frame)
-    frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 14, -58)
+    frame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 14, -StatsFrame.PANEL_TOP)
     frame:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -14, 14)
     return frame
 end
@@ -82,27 +83,19 @@ local function buildTabs(self)
     Context.Call(env, "PanelTemplates_SetNumTabs", frame, #frame.Tabs)
 end
 
--- Creates the window of a StatsWindow (window.frame, status, buttons, panels, lists, tabs).
-function StatsFrame.Build(self)
-    local env = self.env
-    local frame = Frames.Create(env, "Frame", env.UIParent, Frames.TEMPLATE)
-    self.frame = frame
-    frame:SetSize(StatsFrame.WIDTH, StatsFrame.HEIGHT)
-    frame:SetFrameStrata("HIGH")
-    frame:SetToplevel(true)
-    Frames.RestorePosition(frame, env, self.store, StatsFrame.POSITION_KEY)
-    Frames.MakeMovable(frame, self.store, StatsFrame.POSITION_KEY)
-    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("TOP", frame, "TOP", 0, -6)
-    title:SetText(L.STATS_TITLE)
-    self.status = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    self.status:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -36)
-    self.status:SetWidth(StatsFrame.WIDTH - 180)
+-- Builds the page of a StatsWindow on page (the panel of the main window): window.frame,
+-- status, scope dropdown, panels, lists, tabs.
+function StatsFrame.Build(self, page)
+    self.frame = page
+    self.status = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    self.status:SetPoint("TOPLEFT", page, "TOPLEFT", 16, MainWindow.BODY_Y)
+    self.status:SetWidth(StatsFrame.WIDTH - 32)
     self.status:SetJustifyH("LEFT")
-    self.scopeButton = StatsFrame.Button(self, frame, 130, function()
+    self.scopeButton = ns.Controls.Dropdown(self.env, page, 130, function()
         self.scope = self.scope == "char" and "all" or "char"
+        self:Render()
     end)
-    self.scopeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -14, -30)
+    self.scopeButton:SetPoint("TOPRIGHT", page, "TOPRIGHT", -14, MainWindow.CONTROLS_Y)
     buildPanels(self)
     buildTabs(self)
 end

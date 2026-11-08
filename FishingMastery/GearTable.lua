@@ -12,11 +12,11 @@ local GearTable = {}
 ns.GearTable = GearTable
 
 GearTable.COLUMNS = {
-    { key = "item", label = L.GEAR_COL_ITEM, width = 220 },
-    { key = "bonus", label = L.GEAR_COL_BONUS, width = 170 },
-    { key = "needs", label = L.GEAR_COL_NEEDS, width = 140 },
-    { key = "source", label = L.GEAR_COL_SOURCE, width = 190 },
-    { key = "owned", label = L.GEAR_COL_OWNED, width = 110 },
+    { key = "item", label = L.GEAR_COL_ITEM, width = 200 },
+    { key = "bonus", label = L.GEAR_COL_BONUS, width = 160 },
+    { key = "needs", label = L.GEAR_COL_NEEDS, width = 130 },
+    { key = "source", label = L.GEAR_COL_SOURCE, width = 180 },
+    { key = "owned", label = L.GEAR_COL_OWNED, width = 102 },
 }
 GearTable.HEADING = { 1, 0.82, 0 } -- gold
 GearTable.DERBY_QUEST = 8193 -- "Master Angler", the Stranglethorn Fishing Extravaganza

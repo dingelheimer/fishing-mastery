@@ -14,6 +14,7 @@ describe("FishingMastery stats tables", function()
             "Locale.lua",
             "LocaleStats.lua",
             "Codec.lua",
+            "CodecDecode.lua",
             "History.lua",
             "Session.lua",
             "Options.lua",

@@ -15,7 +15,7 @@ RecipeTable.SHOWS = { "all", "known", "unknown" }
 RecipeTable.COLUMNS = {
     { key = "recipe", label = L.RECIPES_COL_RECIPE, width = 180 },
     { key = "profession", label = L.RECIPES_COL_PROFESSION, width = 64 },
-    { key = "reagents", label = L.RECIPES_COL_REAGENTS, width = 240 },
+    { key = "reagents", label = L.RECIPES_COL_REAGENTS, width = 224 },
     { key = "colors", label = L.RECIPES_COL_COLORS, width = 64, right = true },
     { key = "learn", label = L.RECIPES_COL_LEARN, width = 104 },
     { key = "buff", label = L.RECIPES_COL_BUFF, width = 80 },

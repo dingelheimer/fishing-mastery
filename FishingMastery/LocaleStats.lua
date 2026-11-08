@@ -4,8 +4,7 @@ local _, ns = ...
 local L = ns.L
 
 -- Stats window (Story 3.7)
-L.CMD_STATS = "Open the statistics window"
-L.STATS_TITLE = "Fishing Mastery - Statistics"
+L.CMD_STATS = "Open the Statistics page of the Fishing Mastery window"
 L.STATS_TAB_overview = "Overview"
 L.STATS_TAB_fish = "Fish"
 L.STATS_TAB_zones = "Zones"

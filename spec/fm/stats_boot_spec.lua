@@ -175,11 +175,11 @@ describe("FishingMastery stats window boot", function()
         assert.is_false(window.scopeButton:IsShown()) -- the Overview always shows both
         assert.are.equal(2, #window.characters.box.drawn)
 
-        local frame = window.frame
-        frame:SetPoint("TOP", _G.UIParent, "TOP", 0, -50)
-        frame.points = { frame.points[#frame.points] }
-        frame:GetScript("OnDragStop")(frame)
-        assert.are.equal(-50, _G.FishingMasteryCharDB.ui.stats.y)
+        local main = w.ns.mainWindow
+        main.frame:SetPoint("TOP", _G.UIParent, "TOP", 0, -50)
+        main.frame.points = { main.frame.points[#main.frame.points] }
+        main.handle:GetScript("OnDragStop")(main.handle)
+        assert.are.equal(-50, _G.FishingMasteryCharDB.ui.main.y)
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 

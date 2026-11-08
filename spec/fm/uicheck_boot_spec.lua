@@ -298,7 +298,7 @@ describe("FishingMastery UI check boot", function()
     it("runs the compartment handler through the guard", function()
         assert.are.equal("function", type(_G.FishingMastery_OnAddonCompartmentClick))
         local toggled = 0
-        w.ns.stats = {
+        w.ns.mainWindow = {
             Toggle = function()
                 toggled = toggled + 1
             end,
@@ -308,7 +308,7 @@ describe("FishingMastery UI check boot", function()
         assert.are.equal(1, _G.FishingMasteryDB.dev.ui.compartmentClicks)
         assert.are.equal(1, toggled)
 
-        w.ns.stats.Toggle = function()
+        w.ns.mainWindow.Toggle = function()
             error("window broken")
         end
         _G.FishingMastery_OnAddonCompartmentClick("FishingMastery", "LeftButton")

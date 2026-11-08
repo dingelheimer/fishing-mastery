@@ -24,7 +24,7 @@ local function currentChar(self)
 end
 
 local function shown(self, name)
-    return self.frame:IsShown() and ns.StatsWindow.TABS[self.tab] == name
+    return self.frame:IsVisible() and ns.StatsWindow.TABS[self.tab] == name
 end
 
 local function progressText(self)
@@ -73,7 +73,7 @@ StatsTabs.skill = {
             self.env,
             panel,
             StatsFrame.PANEL_WIDTH,
-            StatsFrame.HEIGHT - 72 - top
+            StatsFrame.PANEL_HEIGHT - top
         )
         self.paceChart.frame:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -top)
     end,
@@ -176,7 +176,7 @@ StatsTabs.compare = {
         self.kindButton:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
         self.pickA = pickButton(self, panel, 232, "a")
         self.pickB = pickButton(self, panel, 444, "b")
-        local height = StatsFrame.HEIGHT - 72 - 30 - 22
+        local height = StatsFrame.PANEL_HEIGHT - 30 - 22
         local area = StatsFrame.Area(self, panel, 0, 30, height)
         self.compareList = ns.StatsList.Create(self.env, area, CompareTable.COLUMNS)
         self.compareHint = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")

@@ -18,7 +18,9 @@ and open source (GPL-3.0). Developers: see the [development reference](docs/deve
   catch, and two zone lines: the getaway risk at your skill and the fish you have not caught there
   yet. Movable, scalable, or one line of text.
 - **Session summary** after a session ends, in a small window or the chat.
-- **Stats window** (`/fm stats`, left click on the minimap button) with eight tabs: Overview, Fish,
+- **One window** (left click on the minimap button) with a side tab per module, like the
+  Professions window.
+- **Statistics** (`/fm stats`) with eight tabs: Overview, Fish,
   Zones, Failures, Bite times, Sessions, Skill, Compare. Every rate shows a 95 % range, and small
   samples show counts only, so a lucky streak is not mistaken for a rule.
 - **Journal** (`/fm journal`, Shift + left click on the minimap button):
@@ -55,8 +57,8 @@ Your data stays when you update.
 | Command | What it does |
 |---------|--------------|
 | `/fm` | Help: version and all commands |
-| `/fm stats` | Statistics window |
-| `/fm journal` | Journal window |
+| `/fm stats` | Statistics page |
+| `/fm journal` | Journal page |
 | `/fm summary` | Summary of the open or last session |
 | `/fm status` | The current session in the chat |
 | `/fm hud show`, `hide`, `lock`, `unlock`, `reset` | Show, hide, lock, or reset the HUD |

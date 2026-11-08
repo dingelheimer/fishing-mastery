@@ -32,8 +32,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 |-----------------|------------------------------------------------------------------------|
 | `Locale.lua`    | User-facing strings (`ns.L`), English fallback                         |
 | `Options.lua`   | Every setting's default in one table; settings panel controls with ranges; the proxy the panel writes through (pure) |
-| `LocaleStats.lua` | User-facing strings of the stats window                              |
-| `LocaleJournal.lua` | User-facing strings of the journal window |
+| `LocaleStats.lua` | User-facing strings of the Statistics page                           |
+| `LocaleJournal.lua` | User-facing strings of the Journal page |
 | `LocaleHelpers.lua` | User-facing strings of the helpers (casting key, Helpers settings, smart lure, catch line) |
 | `LocaleUI.lua` | User-facing strings of the UI overhaul (style kit; later the main window and its pages) |
 | `Data/Zones.lua` | Generated zone data `ns.Zones`: Classic loot lists, base skills, area placement (see Zone Data) |
@@ -50,7 +50,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Tracker.lua`   | Game events to classifier input (fishing spell, message names, channel length, fishing loot), end-of-attempt timer, outcome counts |
 | `Records.lua`   | Saved cast record from an attempt; per-character subzone table (pure) |
 | `Session.lua`   | Sessions: start, 15-minute idle end, logout, `/reload` resume, skill before and after, active time, last catch (pure) |
-| `Codec.lua`     | Day chunk format: packs casts into `<day>\|<cast>;<cast>;…` strings and parses them back (pure) |
+| `Codec.lua`     | Day chunk format: packs casts into `<day>\|<cast>;<cast>;…` strings (pure) |
+| `CodecDecode.lua` | Parses a day chunk back into casts, field by field, without `loadstring` (pure) |
 | `History.lua`   | Packing the open day, load check with quarantine, on-demand history iterator (pure) |
 | `Season.lua`    | Classic season windows (in season now, realm time), the realm hour offset, catches per realm hour; date helpers (pure) |
 | `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours, months, and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
@@ -87,7 +88,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Stress.lua`    | Developer storage test: test entry filled in steps, line test chunks, load measurements (pure) |
 | `Capture.lua`   | Raw capture ring buffer; aura spell IDs and loot source readers |
 | `CastLog.lua`   | Saves each attempt as a cast record, counts sessions and totals, detects skill-ups, packs at logout and day change, runs the load check, ends idle sessions on time (session-end listeners) |
-| `Frames.lua`    | Frame helpers: template fallback, saved position, movable, guarded buttons |
+| `Frames.lua`    | Frame helpers: template fallback (one template or the first of a list), saved position, movable (optionally by a handle), guarded buttons |
 | `TextWindow.lua` | Export (read-only pages, Select all) and import (paste box, Import button) window |
 | `Confirm.lua`   | Confirmation dialog (backup restore) |
 | `UiTest.lua`    | UI check test window: one line, one bar, an item icon, a 3-row scroll list, two tabs, "Open settings" (dev flag only) |
@@ -104,16 +105,19 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Hud.lua`       | HUD frame: shown from the first cast to the session end, two zone lines, lure tick, tooltip (risk lines; dev flag: resolved area line), `/fm hud` |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
 | `Tip.lua` | Tooltip builder: title, gold label and white value pairs, gaps, headers, green hints, explanations only while Shift is held (redraws on `MODIFIER_STATE_CHANGED`) |
-| `StatsList.lua` | Table widget: gold header bar with sort buttons and arrow (or labels) over a ScrollBox list; striped rows, hover highlight, number cells with separators, item icons, cell colors, season and night tags, grey cells, legend line, `Tip` or line tooltips |
+| `StatsListHeader.lua` | Table header: gold bar with sort buttons and arrow, or labels |
+| `StatsList.lua` | Table widget: header (`StatsListHeader`) over a ScrollBox list; striped rows, hover highlight, number cells with separators, item icons, cell colors, season and night tags, grey cells, legend line, `Tip` or line tooltips |
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
 | `LineChart.lua` | Line chart widget: pooled `CreateLine` segments (squares without it), grid and axis labels, hover tooltip per point |
 | `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |
-| `StatsWindow.lua` | Stats window `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
-| `StatsFrame.lua` | Stats window layout: movable frame, status line, scope button, one panel per tab, 8 tab buttons |
+| `Controls.lua` | Shared controls of the pages: dropdown-styled button |
+| `MainWindow.lua` | The Fishing Mastery window: page registry (`MainWindow.Register`), portrait frame (template fallbacks), side tabs on the right edge, page name, last page and position per character, Escape |
+| `StatsWindow.lua` | Statistics page `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
+| `StatsFrame.lua` | Statistics page layout: scope dropdown, status line, one panel per tab, 8 bottom tabs |
 | `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs (with the click hint) |
 | `JournalTable.lua` | Fish tab of the journal: filtered rows (group, caught or not, plain-text search), dimmed not-caught rows, progress line, detail lines (pure) |
-| `JournalWindow.lua` | Journal window `/fm journal`: tab (saved per character), scope (account-wide by default), filters, selection; builds the model and the table inputs (own share per area) |
-| `JournalFrame.lua` | Layout of the journal window: movable frame, progress line, filter row with search box, scope button, panels, tabs |
+| `JournalWindow.lua` | Journal page `/fm journal`: tab (saved per character), scope (account-wide by default), filters, selection; builds the model and the table inputs (own share per area) |
+| `JournalFrame.lua` | Journal page layout: scope dropdown, progress line, filter row with search box, panels, bottom tabs |
 | `WatersTable.lua` | Waters tab of the journal: one row per area (subzones under their zone, dungeons last, places without reference data), base and no-getaway skill, fish count, own casts and catches, color band for the effective skill, fishable filter, sort (pure) |
 | `RecipeTable.lua` | Recipes tab of the journal: rows (product, profession, reagents with own stock, color ranks, learn skill and source, fishing buff, known), hover lines, known and per-fish filters, progress line (pure) |
 | `GearTable.lua` | Gear tab of the journal: a heading row per section, rows (item, bonus with tooltip and game value, needs, source with the quest name, what you have), hover lines, the best setup line, the equipped-bonus line (pure) |
@@ -121,7 +125,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `FailureTabs.lua` | Build and draw of the Failures, Bite times, and Sessions tabs |
 | `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
-| `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click stats window, Shift + left click journal, right click settings, session tooltip, hide setting |
+| `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click main window, Shift + left click its Journal page, right click settings, session tooltip, hide setting |
 | `SettingsPanel.lua` | Settings panel (Settings API): one checkbox or slider per setting, section headings (Helpers), a warning note on a control's tooltip (also printed by `/fm settings`), `/fm settings`, `/fm minimap` |
 | `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing; a chooser (the smart lure) may make the next press a lure use or nothing, asked again in `PreClick`; `OnRelease` listeners (double-click, smart lure) |
 | `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, a lure being applied, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
@@ -131,7 +135,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `HelperStatus.lua` | `/fm helpers`: this login's casting key presses by mode (cast, lure, wait), double-click presses, casts the tracker saved, and each helper setting (memory only) |
 | `Helpers.lua` | Starts the helpers at login in order (casting key, smart lure, louder splash, hidden interface, double-click, status) and passes each saved cast to the catch line and the status |
 | `ItemTooltip.lua` | Item tooltip post-call: adds the line for items this character caught, one lookup per tooltip, tooltip setting |
-| `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; opens or closes the stats window, with Shift the journal |
+| `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; opens or closes the main window, with Shift its Journal page |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
 
 ### Saved Data
@@ -207,7 +211,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
   characters);
   on live the load check with the rebuild took 2.3 s in 80 steps (longest 48 ms).
 - `FishingMasteryCharDB` (per character): `schemaVersion` and `ui` (UI layout only: window and
-  HUD positions; `ui.stats` is the stats window, `ui.minimap.angle` the minimap button, degrees,
+  HUD positions; `ui.main` is the main window, `ui.page` its last page, `ui.minimap.angle` the minimap button, degrees,
   default 220).
 - `FishingMasteryDB.settings` (account; every default in `Options.DEFAULTS`): `hud` = `enabled`
   (default on), `locked`, `scale` (0.5-2, default 1), `style` (`full` or `text`), `zoneLine` (default on);
@@ -245,8 +249,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm hud style full\|text` | Five lines, or one line of text                              |
 | `/fm summary`              | Summary of the open session, or of the last one (also shown when a session ends after 15 minutes without a cast) |
 | `/fm summary window\|chat` | Where summaries appear: a small window (default) or your chat frame |
-| `/fm stats`                | Statistics window, see below (also the minimap button's left click and the addon compartment entry) |
-| `/fm journal`              | Journal window, see below (also Shift + left click on the minimap button or the compartment entry) |
+| `/fm stats`                | Statistics page of the main window, see below (the minimap button's left click and the addon compartment entry open the window on its last page) |
+| `/fm journal`              | Journal page of the main window, see below (also Shift + left click on the minimap button or the compartment entry) |
 | `/fm settings`             | Settings panel (also the minimap button's right click); lists any control the client could not show |
 | `/fm minimap show\|hide`   | Shows or hides the minimap button |
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
@@ -264,9 +268,16 @@ data fits with the longest risk text (checked in `spec/fm/season_spec.lua`). It 
 keeps it). The HUD tooltip adds the risk lines ("Differs from Classic" when your range excludes
 the model). The setting "HUD zone line" hides it.
 
+### Main Window
+
+One window "Fishing Mastery" holds every module as a page, with a side tab per page on its right
+edge (Statistics, Journal). It is movable by the title, closes with Escape, and opens on the last
+page; position and page are saved per character. Each page has its name under the title, its
+controls on the right (the scope dropdown), and its bottom tabs.
+
 ### Stats Window
 
-`/fm stats` opens a movable window (position saved per character) with 8 tabs. It reads the
+`/fm stats` opens the Statistics page with 8 tabs. It reads the
 totals and the session records; only the Skill tab reads the history, in steps. It draws only the
 shown tab. Ranges are in the row tooltips; values from small samples are grey (counts only below
 10).
@@ -330,13 +341,13 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   apply at once (T at the next login). Checkboxes use the Settings API confirmed on live; sliders
   appear only when the client has `Settings.CreateSlider`, else `/fm settings` names them.
 - **Minimap button** (own, no libraries): drag it around the minimap edge (square minimaps
-  follow their corners); the angle is saved per character. Left click opens or closes the stats
-  window, Shift + left click the journal, right click opens the settings; the tooltip shows the open session's rates. Hide it in
+  follow their corners); the angle is saved per character. Left click opens or closes the main
+  window, Shift + left click its Journal page, right click opens the settings; the tooltip shows the open session's rates. Hide it in
   the settings or with `/fm minimap hide`.
-- **Addon compartment:** the Fishing Mastery entry opens or closes the stats window (with Shift
-  held: the journal).
-- **Journal window** (`/fm journal`): an own window with the tabs Fish, Waters, Recipes, Gear;
-  position and last tab are saved per character. The
+- **Addon compartment:** the Fishing Mastery entry opens or closes the main window (with Shift
+  held: its Journal page).
+- **Journal page** (`/fm journal`): a page of the main window with the tabs Fish, Waters,
+  Recipes, Gear; the last tab is saved per character. The
   Fish tab lists every fish, trophy fish, container, and quest fish of the Classic data plus
   caught items new in Forever, for all characters (scope button: this character). Not-caught
   fish are marked (dimmed icon, grey row, "not caught") but show all their information. Filters:

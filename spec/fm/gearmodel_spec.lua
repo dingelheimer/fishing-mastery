@@ -17,6 +17,7 @@ describe("FishingMastery gear model", function()
             "LocaleJournal.lua",
             "Data\\Journal.lua",
             "Codec.lua",
+            "CodecDecode.lua",
             "History.lua",
             "Options.lua",
             "Totals.lua",

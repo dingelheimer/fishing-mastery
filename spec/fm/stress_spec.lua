@@ -2,8 +2,15 @@
 -- measurements (FishingMastery/Stress.lua).
 local addon = require("spec.helpers.addon")
 
-local FILES =
-    { "Codec.lua", "History.lua", "Options.lua", "Totals.lua", "Synthetic.lua", "Stress.lua" }
+local FILES = {
+    "Codec.lua",
+    "CodecDecode.lua",
+    "History.lua",
+    "Options.lua",
+    "Totals.lua",
+    "Synthetic.lua",
+    "Stress.lua",
+}
 
 describe("FishingMastery Stress", function()
     local ns, Stress

@@ -5,7 +5,15 @@
 local addon = require("spec.helpers.addon")
 local fakeui = require("spec.helpers.fakeui")
 
-local FILES = { "Locale.lua", "LocaleUI.lua", "Guard.lua", "Style.lua", "Tip.lua", "StatsList.lua" }
+local FILES = {
+    "Locale.lua",
+    "LocaleUI.lua",
+    "Guard.lua",
+    "Style.lua",
+    "Tip.lua",
+    "StatsListHeader.lua",
+    "StatsList.lua",
+}
 
 local function load()
     return addon.load(FILES, nil, "FishingMastery")

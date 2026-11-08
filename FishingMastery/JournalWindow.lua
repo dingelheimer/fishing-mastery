@@ -1,10 +1,8 @@
--- The journal window (/fm journal, Shift-click on the minimap button or the addon compartment):
--- an own movable window (owner decision 1, 2026-11-06) with the tabs Fish, Waters, Recipes, Gear.
--- Position and last tab are saved per character. The Fish tab lists the JournalModel entries of
--- the chosen scope (account-wide by default) with filters and a detail pane; Waters, Recipes, and
--- Gear follow (JournalTabs.lua). Built on first open
--- (JournalFrame.lua); item names that load later redraw once per frame. Unnamed, insecure frames
--- only.
+-- The Journal page of the main window (/fm journal, Shift-click on the minimap button or the
+-- addon compartment; MainWindow.lua) with the bottom tabs Fish, Waters, Recipes, Gear; the last
+-- tab is saved per character. Fish lists the JournalModel entries of the chosen scope (account-
+-- wide by default) with filters and a detail pane (JournalTabs.lua). Built on first open
+-- (JournalFrame.lua); item names that load later redraw once per frame. Unnamed, insecure frames.
 local _, ns = ...
 
 local setmetatable, type, pairs, ipairs, select, tostring =
@@ -15,14 +13,16 @@ local JournalWindow = {}
 JournalWindow.__index = JournalWindow
 ns.JournalWindow = JournalWindow
 
+JournalWindow.PAGE = "journal" -- MainWindow page key
+JournalWindow.ICON = "Interface\\Icons\\INV_Misc_Book_09"
 JournalWindow.TABS = { "fish", "waters", "recipes", "gear" }
 JournalWindow.TAB_KEY = "journalTab" -- FishingMasteryCharDB.ui key of the last tab
 JournalWindow.QUALITY_HEX = 4 -- C_Item.GetItemQualityColor: hex color
 -- Days before each month in a year without 29 February (1970, the epoch year).
 JournalWindow.DAYS_BEFORE = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 }
 
--- deps: { env, castLog, db (FishingMasteryDB), charKey, store (FishingMasteryCharDB.ui), areas
--- (the Area resolver), zones, journal, after(seconds, fn) }.
+-- deps: { env, castLog, db (FishingMasteryDB), charKey, store (FishingMasteryCharDB.ui), host
+-- (the MainWindow), areas (the Area resolver), zones, journal, after(seconds, fn) }.
 function JournalWindow.Start(deps)
     local tab = deps.store[JournalWindow.TAB_KEY]
     return setmetatable({
@@ -31,6 +31,7 @@ function JournalWindow.Start(deps)
         db = deps.db,
         charKey = deps.charKey,
         store = deps.store,
+        host = deps.host,
         areas = deps.areas,
         zones = deps.zones,
         journal = deps.journal,
@@ -249,7 +250,7 @@ end
 
 -- Redraws once per frame after item data arrived, keeping the scroll position.
 function JournalWindow:Redraw()
-    if self.redrawing or not (self.frame and self.frame:IsShown()) then
+    if self.redrawing or not (self.frame and self.frame:IsVisible()) then
         return
     end
     if not self.after then
@@ -259,7 +260,7 @@ function JournalWindow:Redraw()
     self.redrawing = true
     self.after(0, function()
         self.redrawing = false
-        if self.frame:IsShown() then
+        if self.frame:IsVisible() then
             self:Render(true)
         end
     end)
@@ -271,21 +272,23 @@ function JournalWindow:Select(index)
     self:Render()
 end
 
+-- Opens the main window on this page.
 function JournalWindow:Open()
-    if not self.frame then
-        ns.JournalFrame.Build(self)
-    end
-    self.frame:Show()
-    self:Render()
+    self.host:Open(JournalWindow.PAGE)
 end
 
-function JournalWindow:Toggle()
-    if self.frame and self.frame:IsShown() then
-        self.frame:Hide()
-    else
-        self:Open()
-    end
-end
+ns.MainWindow.Register({
+    key = JournalWindow.PAGE,
+    icon = JournalWindow.ICON,
+    label = L.PAGE_JOURNAL,
+    order = 20,
+    build = function(_, panel)
+        ns.JournalFrame.Build(ns.journalWindow, panel)
+    end,
+    show = function()
+        ns.journalWindow:Render()
+    end,
+})
 
 ns.Commands.Register("journal", L.CMD_JOURNAL, function()
     if not (ns.journalWindow and ns.castLog and ns.castLog.char) then

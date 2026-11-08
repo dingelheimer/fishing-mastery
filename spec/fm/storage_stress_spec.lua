@@ -12,6 +12,7 @@ describe("FishingMastery storage stress", function()
     setup(function()
         ns = addon.load({
             "Codec.lua",
+            "CodecDecode.lua",
             "History.lua",
             "Options.lua",
             "Totals.lua",
