@@ -77,6 +77,10 @@ local function applySetting(key)
         ns.minimap:Update()
     elseif key == "autoLure" and ns.castKey then
         ns.castKey:Update()
+    elseif key == "loudSplash" and ns.soundBoost then
+        ns.soundBoost:Update()
+    elseif key == "hideUI" and ns.hideUI then
+        ns.hideUI:Update()
     elseif key == "activeCap" then
         ns.Print(format(L.OPT_CAP_NEXT_LOGIN, ns.Options.Get(settings, "activeCap")))
     end
@@ -152,8 +156,11 @@ local function startTracker()
             return castLog:Loot()
         end,
         onAttempt = function(record)
-            castLog:OnAttempt(record)
+            local cast = castLog:OnAttempt(record)
             ns.hud:Refresh()
+            if ns.hideUI then
+                ns.hideUI:OnCast(cast)
+            end
         end,
     })
     ns.hud = ns.Hud.Start({
@@ -203,6 +210,19 @@ local function startTracker()
         areas = ns.area,
         journal = ns.Journal,
         now = GetTimePreciseSec,
+    })
+    ns.soundBoost = ns.SoundBoost.Start({
+        env = _G,
+        bus = bus,
+        settings = ns.db.settings,
+        store = ns.charDb,
+    })
+    ns.hideUI = ns.HideUI.Start({
+        env = _G,
+        bus = bus,
+        settings = ns.db.settings,
+        isFishingSpell = ns.Tracker.FishingSpellCheck(_G),
+        after = timer("timer:hideui"),
     })
     ns.doubleCast = ns.DoubleCast.Start({
         env = _G,

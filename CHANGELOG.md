@@ -12,6 +12,12 @@
   right-click put on the cheapest lure in your bags that stops getaways in this water (your best
   one if none does), and none when your skill is enough or a lure is running. The HUD tooltip names
   the lure that would help, with the setting on or off.
+- New: louder splash (setting, off by default): sound effects at full volume, music and ambience
+  off while a fishing pole is equipped; your own volumes are restored afterwards and at logout.
+- New: hide the interface while fishing (setting, off by default), like Alt+Z when the line goes
+  out; it comes back on movement, combat, death, a target change, a whisper, a dialog, a loot
+  window without auto loot, or when the pole leaves your hand. Catches show at the top of the
+  screen while it is hidden.
 - Fixed: the Recipes tab listed cooking recipes with raw meat or eggs as recipes that use fish.
   A Forever item now counts as a fish only once it was caught while fishing.
 

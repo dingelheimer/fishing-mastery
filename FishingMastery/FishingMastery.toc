@@ -103,6 +103,8 @@ SettingsPanel.lua
 CastKey.lua
 LureChoice.lua
 SmartLure.lua
+SoundBoost.lua
+HideUI.lua
 DoubleClick.lua
 DoubleCast.lua
 ItemTooltip.lua

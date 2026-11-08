@@ -21,6 +21,17 @@ L.OPT_TIP_autoLure = "With a fishing pole in hand, the casting key and the doubl
     .. "first put on the cheapest lure in your bags that stops getaways in this water, or your "
     .. "best one if none does. Nothing is used when your skill is enough or a lure is running."
 
+L.OPT_loudSplash = "Louder splash while a pole is equipped"
+L.OPT_TIP_loudSplash = "With a fishing pole in hand: sound effects at full volume, music and "
+    .. "ambience off. Your own volumes come back when the pole leaves your hand or you log out."
+L.OPT_hideUI = "Hide the interface while fishing"
+L.OPT_TIP_hideUI = "Hides the interface when your line goes out, like Alt+Z. It comes back when "
+    .. "you move, fight, die, change your target, get a whisper or a dialog, open a loot window "
+    .. "(auto loot off), or put the pole away. Your catches show at the top of the screen."
+
+-- Catch line while the interface is hidden (Story 8.4)
+L.HIDEUI_CATCH = "+%d %s"
+
 -- Smart lure lines in the HUD tooltip (Story 8.3)
 L.LURE_REACHES = "Lure: %s (+%d) would stop getaways here"
 L.LURE_STRONGEST = "Lure: %s (+%d) is your best; getaways stop at %d"

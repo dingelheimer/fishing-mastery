@@ -17,7 +17,7 @@ Options.DEFAULTS = {
     tooltip = { shown = true }, -- item tooltip line
     reloadReminder = true,
     thresholds = { countBelow = 10, greyBelow = 30, activeCap = 60 },
-    helpers = { doubleClick = false, autoLure = false },
+    helpers = { doubleClick = false, autoLure = false, loudSplash = false, hideUI = false },
     ui = { minimapAngle = 220 }, -- per character (FishingMasteryCharDB.ui.minimap)
 }
 
@@ -190,6 +190,26 @@ Options.CONTROLS = {
         end,
         set = function(s, v)
             section(s, "helpers").autoLure = v
+        end,
+    },
+    {
+        key = "loudSplash",
+        kind = "checkbox",
+        get = function(s)
+            return section(s, "helpers").loudSplash == true
+        end,
+        set = function(s, v)
+            section(s, "helpers").loudSplash = v
+        end,
+    },
+    {
+        key = "hideUI",
+        kind = "checkbox",
+        get = function(s)
+            return section(s, "helpers").hideUI == true
+        end,
+        set = function(s, v)
+            section(s, "helpers").hideUI = v
         end,
     },
 }

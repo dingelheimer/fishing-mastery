@@ -85,6 +85,8 @@ local function stubGame(w)
         GetItemInfo = function()
             return "Raw Slitherskin Mackerel", "link", 1
         end,
+        -- w.game.itemInfoInstant(id): item class data from the first login on (nil: no API).
+        GetItemInfoInstant = game.itemInfoInstant,
     }
     _G.C_UnitAuras = {
         GetAuraDataByIndex = function(_, index)
