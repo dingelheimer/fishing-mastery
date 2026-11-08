@@ -62,6 +62,7 @@ Your data stays when you update.
 | `/fm hud show`, `hide`, `lock`, `unlock`, `reset` | Show, hide, lock, or reset the HUD |
 | `/fm hud scale <0.5-2>`, `/fm hud style full` or `text` | HUD size and style |
 | `/fm settings` | Settings panel (also right click on the minimap button) |
+| `/fm contribute` | Your catch counts as text to share (no names, IDs, or times) |
 | `/fm helpers` | What the helpers did since login (casts, lures, double-clicks) and their settings |
 | `/fm minimap show` or `hide` | The minimap button |
 | `/fm export`, `/fm export all`, `/fm import` | Copy your history out, or back in |
@@ -91,6 +92,9 @@ Full credits and licenses: [NOTICE.md](FishingMastery/NOTICE.md).
 - `/fm export` shows one character's history as text **without** its name or ID; it still holds
   the time and place of every cast. `/fm export all` is a full backup **with** names and IDs:
   keep it private.
+- `/fm contribute` shows your catch counts to share: per area and skill band, summed over your
+  characters, with a random token (`/fm contribute new-token` makes a new one). No names,
+  realms, character IDs, subzone texts, or times.
 - Nothing leaves the game unless you copy it out yourself.
 
 ## Problems and Ideas

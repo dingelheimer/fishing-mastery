@@ -78,6 +78,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `CalendarModel.lua` | Calendar heatmap: 53 weeks of days, rows Monday to Sunday, color levels by catches (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
+| `Contribute.lua` | Contribution export (module 7, `/fm contribute`): counts only, all characters merged (`StatsView`), subzone texts resolved per area: `FMC!<format>!<token>!<version>!<build>!<checksum>`, then sorted `A!<area>!<casts>!<item>:<catches>,...`, `M!<map>!...` (no area), `S!<area or m<map>>!<band>!<hooked>!<getaways>`, `L!<map>!<lure casts>!<lure catches>`; the checksum (`Export.Checksum`) covers the lines after the header joined with newlines; fixture `spec/fixtures/contribution.txt` |
 | `Import.lua`    | Import: full validation, then merge of missing days (pure) |
 | `Backup.lua`    | Rolling snapshots of totals and settings; reload reminder rule (pure) |
 | `Synthetic.lua` | Deterministic synthetic casts for the stress test and the storage specs (pure) |
@@ -134,7 +135,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 
 - `FishingMasteryDB` (account-wide): `schemaVersion`, `chars[UnitGUID("player")]` with
   `name` and `part` (the two name parts, display only), `firstSeen`, `lastSeen` (server time),
-  and `settings`. `GetRealmName()` is never part of the key.
+  and `settings`. `GetRealmName()` is never part of the key. `contributeToken`: 8 random hex
+  digits for `/fm contribute`, made on its first use (never derived from a name, GUID, or realm).
 - `FishingMasteryDB.recipes` (account-wide): recipes read from profession windows that use a
   journal item, `[spellID] = { s = skill line (0: unknown), p = product item (0: none), r =
   { { itemID, count } } }`; at most 300 recipes and 8 reagents each. IDs and counts only.

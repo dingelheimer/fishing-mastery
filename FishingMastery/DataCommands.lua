@@ -1,9 +1,9 @@
--- Data commands: /fm backup, /fm export, /fm import, and /fm reminder. The windows are created on
--- first use.
+-- Data commands: /fm backup, /fm export, /fm import, /fm contribute, and /fm reminder. The
+-- windows are created on first use.
 local _, ns = ...
 
-local format, match, lower, tonumber, tostring, ipairs, type, _G =
-    string.format, string.match, string.lower, tonumber, tostring, ipairs, type, _G
+local format, match, lower, tonumber, tostring, ipairs, type, select, _G =
+    string.format, string.match, string.lower, tonumber, tostring, ipairs, type, select, _G
 local L = ns.L
 
 local DataCommands = {}
@@ -96,6 +96,30 @@ local function import()
     end)
 end
 
+-- The account token of the contribution export: made on first use, replaced with "new-token".
+function DataCommands.Token(db, renew, random)
+    local token = ns.Contribute.ValidToken(db.contributeToken)
+    if renew or not token then
+        token = ns.Contribute.NewToken(random)
+        db.contributeToken = token
+    end
+    return token
+end
+
+local function contribute(rest)
+    local renew = lower(rest or "") == "new-token"
+    local token = DataCommands.Token(ns.db, renew, math.random)
+    local build = _G.GetBuildInfo and select(2, _G.GetBuildInfo()) or nil
+    local version = ns.VERSION == L.VERSION_DEV and "dev" or ns.VERSION
+    local text, lines = ns.Contribute.Build(ns.db.chars, ns.area, {
+        token = token,
+        version = version,
+        build = build,
+    })
+    textWindow():Open(L.CONTRIBUTE_TITLE, L.CONTRIBUTE_HINT, { text })
+    ns.Print(format(renew and L.CONTRIBUTE_NEW_TOKEN or L.CONTRIBUTE_PRINT, lines))
+end
+
 local function reminder(rest)
     local value = lower(rest or "")
     if value == "on" or value == "off" then
@@ -115,4 +139,5 @@ end
 ns.Commands.Register("backup", L.CMD_BACKUP, guarded(backup))
 ns.Commands.Register("export", L.CMD_EXPORT, guarded(export))
 ns.Commands.Register("import", L.CMD_IMPORT, guarded(import))
+ns.Commands.Register("contribute", L.CMD_CONTRIBUTE, guarded(contribute))
 ns.Commands.Register("reminder", L.CMD_REMINDER, guarded(reminder))

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- New: `/fm contribute` shows your catch counts per area and skill band to share, with a random
+  token and no names, IDs, or times.
+
 ## 1.0.0
 
 First stable release: the tracker, statistics, zones, and journal of the beta, plus the helpers.
