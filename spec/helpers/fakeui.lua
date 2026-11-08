@@ -286,8 +286,8 @@ function Frame:PressKey(down)
     end
 end
 
--- The only frame name the probe may create (SetOverrideBindingClick needs a name).
-M.ALLOWED_NAMES = { FishingMasteryProbeTestButton = true }
+-- The only frame names the addons may create: bindings of the form CLICK <name> need a name.
+M.ALLOWED_NAMES = { FishingMasteryProbeTestButton = true, FishingMasteryCastButton = true }
 
 -- Returns an env with CreateFrame and UIParent. opts.missingTemplates: { [name] = true }.
 function M.new(opts)

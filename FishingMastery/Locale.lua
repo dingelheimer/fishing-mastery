@@ -10,6 +10,8 @@ ns.L = L
 
 L.PREFIX = "Fishing Mastery"
 L.HELP_HEADER = "Version %s. Commands:"
+L.BINDING_CAST = "Cast Fishing"
+L.CASTKEY_NO_FISHING = "Cast Fishing: this character has not learned Fishing yet."
 L.VERSION_DEV = "development build"
 L.HELP_LINE = "  /fm %s - %s"
 L.CMD_HELP = "Show this help"
@@ -266,6 +268,9 @@ L.OPT_TIP_greyBelow = "Below this sample size percentages are grey: the range is
 L.OPT_activeCap = "Idle cap T"
 L.OPT_TIP_activeCap = "Longest gap between two casts that counts as fishing time (per-hour rates). "
     .. "A change counts your totals again at the next login; past sessions keep their time."
+L.OPT_helpers = "Helpers"
+L.OPT_TIP_helpers = 'Bind a key to "Cast Fishing" in the game\'s Key Bindings, under AddOns, '
+    .. "Fishing Mastery. Helpers act only on your key press or click."
 
 -- Item tooltip line (Story 3.11)
 L.TOOLTIP_CAUGHT = "Fishing Mastery: caught %dx"

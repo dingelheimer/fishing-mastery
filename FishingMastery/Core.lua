@@ -190,6 +190,7 @@ local function startTracker()
         journal = ns.Journal,
         after = timer("timer:journal"),
     })
+    ns.castKey = ns.CastKey.Start({ env = _G, bus = bus, print = ns.Print })
     ns.recipeRead = ns.RecipeRead.Start({
         env = _G,
         bus = bus,

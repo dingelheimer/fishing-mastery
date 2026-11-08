@@ -1,0 +1,5 @@
+<Bindings>
+	<!-- Story 8.1: the casting key; the client lists it under Key Bindings, AddOns. No default key. -->
+	<Binding name="CLICK FishingMasteryCastButton:LeftButton" header="FISHINGMASTERY" category="ADDONS">
+	</Binding>
+</Bindings>

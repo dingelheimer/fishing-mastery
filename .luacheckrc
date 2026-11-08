@@ -36,6 +36,8 @@ files["FishingMastery/"] = {
         "SLASH_FM1",
         "SLASH_FM2",
         "FishingMastery_OnAddonCompartmentClick",
+        -- Key Bindings window texts of Bindings.xml (CastKey.lua).
+        "BINDING_HEADER_FISHINGMASTERY",
     },
     read_globals = { SlashCmdList = { fields = { FM = { read_only = false } } } },
 }

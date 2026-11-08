@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- New: casting key. Bind a key to "Cast Fishing" (Key Bindings, AddOns, Fishing Mastery); the
+  settings panel has a Helpers section that says where.
+- Fixed: the Recipes tab listed cooking recipes with raw meat or eggs as recipes that use fish.
+  A Forever item now counts as a fish only once it was caught while fishing.
+
 ## 0.9.0-beta
 
 First public test release for World of Warcraft: Forever.

@@ -169,11 +169,16 @@ Options.CONTROLS = {
         end,
         set = setThreshold("activeCap"),
     },
+    -- Helpers (module 5): a section heading with the key binding note; its options follow.
+    { key = "helpers", kind = "header" },
 }
 
+-- Value controls by key (section headings hold no value).
 Options.BY_KEY = {}
 for _, control in ipairs(Options.CONTROLS) do
-    Options.BY_KEY[control.key] = control
+    if control.kind ~= "header" then
+        Options.BY_KEY[control.key] = control
+    end
 end
 
 -- The default value of a control.

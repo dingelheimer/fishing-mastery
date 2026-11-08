@@ -1,7 +1,9 @@
 -- The settings panel (Settings API, vertical layout, confirmed on live in Story 3.1): one control
 -- per Options.CONTROLS entry, bound through RegisterAddOnSetting to an Options proxy, so every
--- change is validated and applied at once. Checkboxes are confirmed on live; a slider is added
--- only when CreateSlider and CreateSliderOptions exist, else the control is listed as missing
+-- change is validated and applied at once; a "header" entry is a section heading (listed as
+-- missing without CreateSettingsListSectionHeaderInitializer). Checkboxes are confirmed on live; a
+-- slider is added only when CreateSlider and CreateSliderOptions exist, else the control is listed
+-- as missing
 -- (/fm settings prints it). Each control is created protected; one failing control does not stop
 -- the others. Also /fm settings and /fm minimap.
 local _, ns = ...
@@ -36,7 +38,25 @@ local function sliderOptions(env, S, control)
     return options
 end
 
+-- A section heading with its note as tooltip (CreateSettingsListSectionHeaderInitializer).
+local function addHeader(self, control)
+    local make = self.env.CreateSettingsListSectionHeaderInitializer
+    local layout = self.layout
+    if
+        type(make) ~= "function"
+        or type(layout) ~= "table"
+        or type(layout.AddInitializer) ~= "function"
+    then
+        return "missing"
+    end
+    layout:AddInitializer(make(L["OPT_" .. control.key], L["OPT_TIP_" .. control.key]))
+    return "ok"
+end
+
 local function addControl(self, S, control)
+    if control.kind == "header" then
+        return addHeader(self, control)
+    end
     if control.kind == "slider" then
         if type(S.CreateSlider) ~= "function" or type(S.CreateSliderOptions) ~= "function" then
             return "missing"
@@ -81,7 +101,7 @@ function SettingsPanel.Start(deps)
     then
         return self
     end
-    self.category = S.RegisterVerticalLayoutCategory(L.PREFIX)
+    self.category, self.layout = S.RegisterVerticalLayoutCategory(L.PREFIX)
     for _, control in ipairs(Options.CONTROLS) do
         local ok, result = pcall(addControl, self, S, control)
         self.results[control.key] = ok and result or ("error " .. tostring(result))

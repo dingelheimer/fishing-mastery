@@ -99,6 +99,7 @@ FailureTabs.lua
 SkillTabs.lua
 MinimapButton.lua
 SettingsPanel.lua
+CastKey.lua
 ItemTooltip.lua
 Dev.lua
 Compartment.lua

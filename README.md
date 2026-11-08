@@ -30,6 +30,8 @@ and open source (GPL-3.0). Developers: see the [development reference](docs/deve
     a profession window once to add the Forever recipes you know.
   - **Gear:** poles, gear, lures, buff food, fishing ranks, and the glove enchant, with what you
     own (bags, bank, equipped) and your best possible skill.
+- **Casting key:** bind a key to "Cast Fishing" (Key Bindings, AddOns, Fishing Mastery) and cast
+  without an action bar slot. It acts only when you press it.
 - **Item tooltips** show "caught 37x (best: Darkspear Strand)" for items you caught.
 - **Backups:** daily snapshots, `/fm export` and `/fm import` as copyable text.
 

@@ -38,10 +38,14 @@ describe("FishingMastery settings and minimap math", function()
                 activeCap = 60,
             }
             for _, control in ipairs(ns.Options.CONTROLS) do
-                assert.are.equal(expected[control.key], ns.Options.Get(settings, control.key))
-                assert.are.equal(expected[control.key], ns.Options.Default(control.key))
+                if control.kind ~= "header" then
+                    assert.are.equal(expected[control.key], ns.Options.Get(settings, control.key))
+                    assert.are.equal(expected[control.key], ns.Options.Default(control.key))
+                end
             end
-            assert.are.equal(12, #ns.Options.CONTROLS)
+            assert.are.equal(13, #ns.Options.CONTROLS) -- 12 values and the Helpers heading
+            assert.is_nil(ns.Options.BY_KEY.helpers)
+            assert.is_false(ns.Options.Set(settings, "helpers", true))
             -- Hud, Summary, Stats, and Totals take their defaults from the same table.
             assert.are.equal(10, ns.Stats.DEFAULTS.countBelow)
             assert.are.equal(60, ns.Totals.ACTIVE_CAP)
