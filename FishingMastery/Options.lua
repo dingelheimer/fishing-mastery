@@ -17,6 +17,7 @@ Options.DEFAULTS = {
     tooltip = { shown = true }, -- item tooltip line
     reloadReminder = true,
     thresholds = { countBelow = 10, greyBelow = 30, activeCap = 60 },
+    helpers = { doubleClick = false },
     ui = { minimapAngle = 220 }, -- per character (FishingMasteryCharDB.ui.minimap)
 }
 
@@ -171,6 +172,16 @@ Options.CONTROLS = {
     },
     -- Helpers (module 5): a section heading with the key binding note; its options follow.
     { key = "helpers", kind = "header" },
+    {
+        key = "doubleClick",
+        kind = "checkbox",
+        get = function(s)
+            return section(s, "helpers").doubleClick == true
+        end,
+        set = function(s, v)
+            section(s, "helpers").doubleClick = v
+        end,
+    },
 }
 
 -- Value controls by key (section headings hold no value).

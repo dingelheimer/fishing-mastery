@@ -32,6 +32,8 @@ and open source (GPL-3.0). Developers: see the [development reference](docs/deve
     own (bags, bank, equipped) and your best possible skill.
 - **Casting key:** bind a key to "Cast Fishing" (Key Bindings, AddOns, Fishing Mastery) and cast
   without an action bar slot. It acts only when you press it.
+- **Double right-click casting** (off by default; Settings, AddOns, Fishing Mastery): with a
+  fishing pole in hand, a double right-click into the world casts Fishing.
 - **Item tooltips** show "caught 37x (best: Darkspear Strand)" for items you caught.
 - **Backups:** daily snapshots, `/fm export` and `/fm import` as copyable text.
 

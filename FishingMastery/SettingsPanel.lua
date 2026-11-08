@@ -76,6 +76,10 @@ local function addControl(self, S, control)
         Options.Default(control.key)
     )
     local tooltip = L["OPT_TIP_" .. control.key]
+    local note = self.notes[control.key]
+    if note then
+        tooltip = tooltip .. "\n\n" .. note
+    end
     if isBox then
         S.CreateCheckbox(self.category, setting, tooltip)
     else
@@ -84,13 +88,16 @@ local function addControl(self, S, control)
     return "ok"
 end
 
--- deps: { env, settings (db.settings), onChange(key) }. Registers the category once; results per
--- control key ("ok", "missing", or "error ..."). Without the Settings API, panel.category is nil.
+-- deps: { env, settings (db.settings), onChange(key), notes ({ [key] = warning } or nil) }.
+-- Registers the category once; results per control key ("ok", "missing", or "error ..."); a note
+-- is added to its control's tooltip and printed by /fm settings. Without the Settings API,
+-- panel.category is nil.
 function SettingsPanel.Start(deps)
     local self = setmetatable({
         env = deps.env,
         settings = deps.settings,
         results = {},
+        notes = deps.notes or {},
         proxy = Options.Proxy(deps.settings, deps.onChange),
     }, SettingsPanel)
     local S = deps.env.Settings
@@ -140,6 +147,11 @@ ns.Commands.Register("settings", L.CMD_SETTINGS, function()
     end
     for _, problem in ipairs(panel:Problems()) do
         ns.Print(format(L.OPT_PROBLEM, problem))
+    end
+    for _, control in ipairs(Options.CONTROLS) do
+        if panel.notes[control.key] then
+            ns.Print(panel.notes[control.key])
+        end
     end
 end)
 

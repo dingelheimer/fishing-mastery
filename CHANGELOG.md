@@ -4,6 +4,10 @@
 
 - New: casting key. Bind a key to "Cast Fishing" (Key Bindings, AddOns, Fishing Mastery); the
   settings panel has a Helpers section that says where.
+- New: double right-click casting (setting "Double right-click casts Fishing", off by default).
+  With a fishing pole in hand, a double right-click into the world casts Fishing; right-clicks on
+  units and windows, camera turning, and combat stay as they are. The setting's tooltip warns when
+  Luredon or Classic Fishing Companion is loaded.
 - Fixed: the Recipes tab listed cooking recipes with raw meat or eggs as recipes that use fish.
   A Forever item now counts as a fish only once it was caught while fishing.
 

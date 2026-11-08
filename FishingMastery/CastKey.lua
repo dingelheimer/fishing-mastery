@@ -70,6 +70,7 @@ function CastKey.Start(deps)
         env = deps.env,
         print = deps.print,
         attributes = {},
+        released = {},
         pending = false,
         warned = false,
         built = false,
@@ -132,8 +133,16 @@ function CastKey:Update()
     set(self, "spell", spell)
 end
 
+-- fn() runs after every release of the button (the double-click override clears itself).
+function CastKey:OnRelease(fn)
+    self.released[#self.released + 1] = fn
+end
+
 -- After a key press: says once per login that this character has no Fishing.
 function CastKey:AfterPress()
+    for _, fn in ipairs(self.released) do
+        fn()
+    end
     if self.spell == nil and not self.warned then
         self.warned = true
         self.print(L.CASTKEY_NO_FISHING)

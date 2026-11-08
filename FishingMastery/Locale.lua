@@ -271,6 +271,10 @@ L.OPT_TIP_activeCap = "Longest gap between two casts that counts as fishing time
 L.OPT_helpers = "Helpers"
 L.OPT_TIP_helpers = 'Bind a key to "Cast Fishing" in the game\'s Key Bindings, under AddOns, '
     .. "Fishing Mastery. Helpers act only on your key press or click."
+L.OPT_doubleClick = "Double right-click casts Fishing"
+L.OPT_TIP_doubleClick = "With a fishing pole in hand, a double right-click into the world casts "
+    .. "Fishing. Right-clicks on units and windows, camera turning, and combat stay as they are."
+L.HELPER_CONFLICT = "%s is loaded and has its own casting; both may react to the same click."
 
 -- Item tooltip line (Story 3.11)
 L.TOOLTIP_CAUGHT = "Fishing Mastery: caught %dx"

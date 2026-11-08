@@ -83,9 +83,11 @@ end
 
 -- Settings panel and minimap button (after the stats window, which they open).
 local function startSettings()
+    local conflict = ns.DoubleCast.Conflict(_G)
     ns.settingsPanel = ns.SettingsPanel.Start({
         env = _G,
         settings = ns.db.settings,
+        notes = { doubleClick = conflict and format(L.HELPER_CONFLICT, conflict) or nil },
         onChange = function(key)
             ns.Guard.Call("settings:apply", applySetting, key)
         end,
@@ -191,6 +193,15 @@ local function startTracker()
         after = timer("timer:journal"),
     })
     ns.castKey = ns.CastKey.Start({ env = _G, bus = bus, print = ns.Print })
+    ns.doubleCast = ns.DoubleCast.Start({
+        env = _G,
+        bus = bus,
+        castKey = ns.castKey,
+        settings = ns.db.settings,
+        now = GetTimePreciseSec,
+        after = timer("timer:double"),
+        isFishingSpell = ns.Tracker.FishingSpellCheck(_G),
+    })
     ns.recipeRead = ns.RecipeRead.Start({
         env = _G,
         bus = bus,
