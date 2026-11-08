@@ -17,7 +17,7 @@ Options.DEFAULTS = {
     tooltip = { shown = true }, -- item tooltip line
     reloadReminder = true,
     thresholds = { countBelow = 10, greyBelow = 30, activeCap = 60 },
-    helpers = { doubleClick = false },
+    helpers = { doubleClick = false, autoLure = false },
     ui = { minimapAngle = 220 }, -- per character (FishingMasteryCharDB.ui.minimap)
 }
 
@@ -180,6 +180,16 @@ Options.CONTROLS = {
         end,
         set = function(s, v)
             section(s, "helpers").doubleClick = v
+        end,
+    },
+    {
+        key = "autoLure",
+        kind = "checkbox",
+        get = function(s)
+            return section(s, "helpers").autoLure == true
+        end,
+        set = function(s, v)
+            section(s, "helpers").autoLure = v
         end,
     },
 }

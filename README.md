@@ -34,6 +34,9 @@ and open source (GPL-3.0). Developers: see the [development reference](docs/deve
   without an action bar slot. It acts only when you press it.
 - **Double right-click casting** (off by default; Settings, AddOns, Fishing Mastery): with a
   fishing pole in hand, a double right-click into the world casts Fishing.
+- **Smart lure** (off by default): the casting key and the double right-click first put on the
+  cheapest lure in your bags that stops getaways in this water, or your best one if none does, and
+  nothing when your skill is enough. The HUD tooltip says which lure would help.
 - **Item tooltips** show "caught 37x (best: Darkspear Strand)" for items you caught.
 - **Backups:** daily snapshots, `/fm export` and `/fm import` as copyable text.
 

@@ -279,8 +279,12 @@ end
 function Frame:RegisterForClicks(...)
     self.clicks = { ... }
 end
--- Test helper: a key press on a secure button, as the binding would deliver it.
+-- Test helper: a key press on a secure button, as the binding would deliver it (PreClick, then
+-- the secure action, then PostClick).
 function Frame:PressKey(down)
+    if self.scripts.PreClick then
+        self.scripts.PreClick(self, "LeftButton", down)
+    end
     if self.scripts.PostClick then
         self.scripts.PostClick(self, "LeftButton", down)
     end

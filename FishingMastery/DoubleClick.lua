@@ -86,6 +86,7 @@ DoubleClick.BLOCKS = {
     { "no-button", "noButton" },
     { "no-fishing", "noFishing" },
     { "no-pole", "noPole" },
+    { "lure-wait", "lureWait" },
     { "line-out", "lineOut" },
 }
 

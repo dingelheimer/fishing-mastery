@@ -2,7 +2,9 @@
 -- casts Fishing when the player presses the key bound to "Cast Fishing" (Bindings.xml; the game's
 -- Key Bindings, AddOns, Fishing Mastery; no key by default). It acts once, on key release. Its
 -- attributes change only out of combat; a change during combat waits for the end of the fight. The
--- button never clicks itself, and casts through it are tracked like any other cast.
+-- button never clicks itself, and casts through it are tracked like any other cast. A chooser (the
+-- smart lure, Story 8.3) may turn the next press into a lure use on the pole or into nothing while
+-- a lure is being applied; it is asked again right before each press (PreClick, out of combat).
 local _, ns = ...
 
 local setmetatable, type, pcall, ipairs = setmetatable, type, pcall, ipairs
@@ -17,6 +19,7 @@ CastKey.TEMPLATE = "SecureActionButtonTemplate"
 CastKey.SPELL = 7620 -- Fishing; cast by name, the client picks the highest known rank
 CastKey.RANKS = { 18248, 7732, 7731, 7620 } -- Artisan, Expert, Journeyman, Apprentice
 CastKey.EVENTS = { "SPELLS_CHANGED", "SKILL_LINES_CHANGED" }
+CastKey.MAIN_HAND = 16 -- target-slot of a lure use: the pole
 
 -- Texts of the game's Key Bindings window (globals the client reads; listed in .luacheckrc).
 BINDING_HEADER_FISHINGMASTERY = L.PREFIX
@@ -54,6 +57,10 @@ local function build(self)
     end
     button:RegisterForClicks("AnyDown", "AnyUp")
     button:SetAttribute("useOnKeyDown", false) -- act on release only, once per press
+    button:SetScript("PreClick", function()
+        -- The smart lure decides with the bags and the lure of this moment.
+        ns.Guard.Call("castkey:preclick", self.Update, self)
+    end)
     button:SetScript("PostClick", function(_, _, down)
         if not down then
             self:AfterPress()
@@ -104,6 +111,19 @@ function CastKey:CurrentSpell()
     end)
 end
 
+-- fn() -> nil (cast) or { action = "lure", item = itemID } or { action = "wait" }.
+function CastKey:SetChooser(fn)
+    self.chooser = fn
+end
+
+local function plan(self)
+    if not self.chooser then
+        return nil
+    end
+    local ok, result = pcall(self.chooser)
+    return ok and type(result) == "table" and result or nil
+end
+
 local function set(self, key, value)
     if self.attributes[key] ~= value then
         self.attributes[key] = value
@@ -129,11 +149,23 @@ function CastKey:Update()
     end
     local spell = self:CurrentSpell()
     self.spell = spell
-    set(self, "type", spell and "spell" or nil)
-    set(self, "spell", spell)
+    local choice = spell and plan(self) or nil
+    local action = choice and choice.action
+    local mode = spell and (action == "wait" and "wait" or action == "lure" and "lure" or "spell")
+        or nil
+    local lure = mode == "lure" and type(choice.item) == "number" and choice.item or nil
+    if mode == "lure" and not lure then
+        mode = "spell"
+    end
+    self.mode, self.item = mode, lure
+    set(self, "type", mode == "spell" and "spell" or lure and "item" or nil)
+    set(self, "spell", mode == "spell" and spell or nil)
+    set(self, "item", lure and "item:" .. lure or nil)
+    set(self, "target-slot", lure and CastKey.MAIN_HAND or nil)
 end
 
--- fn() runs after every release of the button (the double-click override clears itself).
+-- fn(mode, item) runs after every release of the button: mode "spell", "lure" (item: the lure's
+-- item ID), "wait", or nil (the double-click override clears itself, the smart lure waits).
 function CastKey:OnRelease(fn)
     self.released[#self.released + 1] = fn
 end
@@ -141,7 +173,7 @@ end
 -- After a key press: says once per login that this character has no Fishing.
 function CastKey:AfterPress()
     for _, fn in ipairs(self.released) do
-        fn()
+        fn(self.mode, self.item)
     end
     if self.spell == nil and not self.warned then
         self.warned = true

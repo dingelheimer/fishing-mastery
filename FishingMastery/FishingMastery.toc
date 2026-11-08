@@ -15,6 +15,7 @@
 Locale.lua
 LocaleStats.lua
 LocaleJournal.lua
+LocaleHelpers.lua
 Data\Zones.lua
 Data\Journal.lua
 Options.lua
@@ -100,6 +101,8 @@ SkillTabs.lua
 MinimapButton.lua
 SettingsPanel.lua
 CastKey.lua
+LureChoice.lua
+SmartLure.lua
 DoubleClick.lua
 DoubleCast.lua
 ItemTooltip.lua

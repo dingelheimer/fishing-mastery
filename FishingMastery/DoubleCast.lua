@@ -17,8 +17,6 @@ DoubleCast.__index = DoubleCast
 ns.DoubleCast = DoubleCast
 
 DoubleCast.KEY = "BUTTON2"
-DoubleCast.MAIN_HAND = 16
-DoubleCast.POLE = { 2, 20 } -- item class and subclass of fishing poles
 -- Fishing addons with their own double right-click casting (folder names).
 DoubleCast.CONFLICTS = { "Luredon", "ClassicFishingCompanion" }
 DoubleCast.WORLD_EVENTS =
@@ -114,15 +112,6 @@ function DoubleCast:Place()
     return "world"
 end
 
-local function hasPole(env)
-    local id = Context.Call(env, "GetInventoryItemID", "player", DoubleCast.MAIN_HAND)
-    if isSecret(id) or type(id) ~= "number" then
-        return false
-    end
-    local info = { Context.Call(env, "C_Item.GetItemInfoInstant", id) }
-    return info[6] == DoubleCast.POLE[1] and info[7] == DoubleCast.POLE[2]
-end
-
 -- The state DoubleClick.Blocked reads.
 function DoubleCast:State()
     local env = self.env
@@ -137,7 +126,8 @@ function DoubleCast:State()
         dead = flag(env, "UnitIsDeadOrGhost", "player"),
         noButton = key.button == nil or key.pending,
         noFishing = key.spell == nil,
-        noPole = not hasPole(env),
+        lureWait = key.mode == "wait",
+        noPole = not Context.HasPole(env),
         lineOut = self.lineOut,
     }
 end
@@ -150,6 +140,7 @@ function DoubleCast:Press()
         self.last = reason
         return reason
     end
+    self.castKey:Update() -- the smart lure may be waiting for a lure to land
     local blocked = DoubleClick.Blocked(self:State())
     if blocked then
         self.last = blocked

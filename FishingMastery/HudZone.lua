@@ -50,6 +50,10 @@ function HudZone.Read(env, areas, char, t)
     }
     zone.text, zone.fish = ZoneRef.HudLine(zone)
     zone.tips = risk and Getaway.Lines(risk) or {}
+    local lure = rank and ns.SmartLure.Line(env, areas, ns.Journal)
+    if lure then
+        zone.tips[#zone.tips + 1] = lure
+    end
     return zone
 end
 

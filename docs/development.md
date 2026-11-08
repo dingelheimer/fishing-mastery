@@ -34,6 +34,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Options.lua`   | Every setting's default in one table; settings panel controls with ranges; the proxy the panel writes through (pure) |
 | `LocaleStats.lua` | User-facing strings of the stats window                              |
 | `LocaleJournal.lua` | User-facing strings of the journal window |
+| `LocaleHelpers.lua` | User-facing strings of the helpers (casting key, Helpers settings, smart lure) |
 | `Data/Zones.lua` | Generated zone data `ns.Zones`: Classic loot lists, base skills, area placement (see Zone Data) |
 | `Data/Journal.lua` | Generated journal data `ns.Journal`: item groups, Classic recipes that use fish, fishing gear, lures, buff food, fishing ranks, the glove enchant, season rules (see Journal Data) |
 | `Guard.lua`     | Runs every handler and slash command through `xpcall`; counts errors   |
@@ -41,7 +42,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Db.lua`        | Schema version, migration walk, repair of missing fields, migration snapshot (pure) |
 | `Character.lua` | Character key `UnitGUID("player")` and the character entry           |
 | `Attempt.lua`   | Attempt classifier: cast, message, and loot events to one outcome per attempt (pure) |
-| `Context.lua`   | Cast context: server time, map, subzone text, fishing rank and modifier, lure enchant; area name, instance ID, current area; the client name of Fishing |
+| `Context.lua`   | Cast context: server time, map, subzone text, fishing rank and modifier, lure enchant; area name, instance ID, current area; the client name of Fishing; a fishing pole in the main hand |
 | `Area.lua`      | Area lookup: instance ID, UI map, and subzone text to an area of the zone data; subzone names from `C_Map.GetAreaInfo`, cached per zone (pure) |
 | `Loot.lua`      | Loot slots (item ID, quantity, quality) and loot source type and object ID |
 | `Items.lua`     | Item cache: quality the loot window did not give, and name, icon, quality, sell price for the UI; uncached items requested once and filled in after `ITEM_DATA_LOAD_RESULT` |
@@ -96,7 +97,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `GearInputs.lua` | Gear tab reads: item counts with and without the bank, the equipped slots, the fishing bonus on item tooltips and on the equipped gloves, race, level, rank, cap, skill modifier, active lure, quest names (all protected; missing APIs give "?") |
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
-| `HudZone.lua`   | HUD zone lines' data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; dev area readout |
+| `HudZone.lua`   | HUD zone lines' data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; the smart lure tooltip line; dev area readout |
 | `Hud.lua`       | HUD frame: shown from the first cast to the session end, two zone lines, lure tick, tooltip (risk lines; dev flag: resolved area line), `/fm hud` |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
 | `StatsList.lua` | Table widget of the stats window: sort buttons or header labels over a ScrollBox list, grey cells, row tooltips |
@@ -118,8 +119,9 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click stats window, Shift + left click journal, right click settings, session tooltip, hide setting |
 | `SettingsPanel.lua` | Settings panel (Settings API): one checkbox or slider per setting, section headings (Helpers), a warning note on a control's tooltip (also printed by `/fm settings`), `/fm settings`, `/fm minimap` |
-| `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing |
-| `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
+| `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing; a chooser (the smart lure) may make the next press a lure use or nothing, asked again in `PreClick`; `OnRelease` listeners (double-click, smart lure) |
+| `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, a lure being applied, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
+| `LureChoice.lua`, `SmartLure.lua` | Smart lure (module 5, setting `autoLure`, off): pure `LureChoice` picks no lure when the skill without a lure reaches base + 95, else the cheapest usable lure in the bags that does, else the strongest (also in water without data); nothing while a lure with more than 30 s runs, only a same-kind renewal at 30 s or less, a wait while a lure is applied. `SmartLure` reads the inputs, is the casting key's chooser (`type=item`, `target-slot` 16, decided in `PreClick` out of combat), waits after a lure click until the enchant shows up (at most 10 s, or a failed cast), and gives the HUD tooltip line |
 | `ItemTooltip.lua` | Item tooltip post-call: adds the line for items this character caught, one lookup per tooltip, tooltip setting |
 | `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; opens or closes the stats window, with Shift the journal |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |

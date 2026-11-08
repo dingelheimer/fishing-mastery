@@ -8,6 +8,10 @@
   With a fishing pole in hand, a double right-click into the world casts Fishing; right-clicks on
   units and windows, camera turning, and combat stay as they are. The setting's tooltip warns when
   Luredon or Classic Fishing Companion is loaded.
+- New: smart lure (setting "Apply a lure first", off by default). The casting key and the double
+  right-click put on the cheapest lure in your bags that stops getaways in this water (your best
+  one if none does), and none when your skill is enough or a lure is running. The HUD tooltip names
+  the lure that would help, with the setting on or off.
 - Fixed: the Recipes tab listed cooking recipes with raw meat or eggs as recipes that use fish.
   A Forever item now counts as a fish only once it was caught while fishing.
 

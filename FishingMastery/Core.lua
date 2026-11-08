@@ -75,6 +75,8 @@ local function applySetting(key)
         ns.stats:SetThresholds(thresholds)
     elseif key == "minimapShown" then
         ns.minimap:Update()
+    elseif key == "autoLure" and ns.castKey then
+        ns.castKey:Update()
     elseif key == "activeCap" then
         ns.Print(format(L.OPT_CAP_NEXT_LOGIN, ns.Options.Get(settings, "activeCap")))
     end
@@ -193,6 +195,15 @@ local function startTracker()
         after = timer("timer:journal"),
     })
     ns.castKey = ns.CastKey.Start({ env = _G, bus = bus, print = ns.Print })
+    ns.smartLure = ns.SmartLure.Start({
+        env = _G,
+        bus = bus,
+        castKey = ns.castKey,
+        settings = ns.db.settings,
+        areas = ns.area,
+        journal = ns.Journal,
+        now = GetTimePreciseSec,
+    })
     ns.doubleCast = ns.DoubleCast.Start({
         env = _G,
         bus = bus,

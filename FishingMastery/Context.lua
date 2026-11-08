@@ -61,6 +61,19 @@ function Context.FishingName(env)
     return type(name) == "string" and name ~= "" and name or nil
 end
 
+Context.MAIN_HAND = 16
+Context.POLE = { 2, 20 } -- item class and subclass of fishing poles (C_Item.GetItemInfoInstant)
+
+-- True when a fishing pole is in the main hand.
+function Context.HasPole(env)
+    local id = number(Context.Call(env, "GetInventoryItemID", "player", Context.MAIN_HAND))
+    if not id then
+        return false
+    end
+    local info = { Context.Call(env, "C_Item.GetItemInfoInstant", id) }
+    return plain(info[6]) == Context.POLE[1] and plain(info[7]) == Context.POLE[2]
+end
+
 -- Lure enchant ID on the main hand, or nil without a lure.
 function Context.Lure(env)
     local info = { Context.Call(env, "GetWeaponEnchantInfo") }

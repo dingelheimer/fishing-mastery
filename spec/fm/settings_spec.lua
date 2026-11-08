@@ -37,6 +37,7 @@ describe("FishingMastery settings and minimap math", function()
                 greyBelow = 30,
                 activeCap = 60,
                 doubleClick = false,
+                autoLure = false,
             }
             for _, control in ipairs(ns.Options.CONTROLS) do
                 if control.kind ~= "header" then
@@ -44,7 +45,7 @@ describe("FishingMastery settings and minimap math", function()
                     assert.are.equal(expected[control.key], ns.Options.Default(control.key))
                 end
             end
-            assert.are.equal(14, #ns.Options.CONTROLS) -- 13 values and the Helpers heading
+            assert.are.equal(15, #ns.Options.CONTROLS) -- 14 values and the Helpers heading
             assert.is_nil(ns.Options.BY_KEY.helpers)
             assert.is_false(ns.Options.Set(settings, "helpers", true))
             -- Hud, Summary, Stats, and Totals take their defaults from the same table.
