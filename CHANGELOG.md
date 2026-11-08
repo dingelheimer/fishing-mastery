@@ -18,6 +18,7 @@
   out; it comes back on movement, combat, death, a target change, a whisper, a dialog, a loot
   window without auto loot, or when the pole leaves your hand. Catches show at the top of the
   screen while it is hidden.
+- New: `/fm helpers` shows what the helpers did since login and their settings.
 - Fixed: the Recipes tab listed cooking recipes with raw meat or eggs as recipes that use fish.
   A Forever item now counts as a fish only once it was caught while fishing.
 

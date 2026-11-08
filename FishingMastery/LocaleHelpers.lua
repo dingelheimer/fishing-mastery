@@ -29,6 +29,18 @@ L.OPT_TIP_hideUI = "Hides the interface when your line goes out, like Alt+Z. It 
     .. "you move, fight, die, change your target, get a whisper or a dialog, open a loot window "
     .. "(auto loot off), or put the pole away. Your catches show at the top of the screen."
 
+-- /fm helpers (Story 8.5)
+L.CMD_HELPERS = "Show what the helpers did this login"
+L.HELPERS_COUNTS = "Helpers this login: the casting key cast Fishing %d times, put on a lure %d "
+    .. "times, waited for a lure %d times; %d presses came from a double right-click. Casts "
+    .. "tracked: %d."
+L.HELPERS_STATE = "Double right-click %s, smart lure %s, louder splash %s (%s), hide the "
+    .. "interface %s (hidden %d times)."
+L.HELPERS_ON = "on"
+L.HELPERS_OFF = "off"
+L.HELPERS_ACTIVE = "active"
+L.HELPERS_IDLE = "idle"
+
 -- Catch line while the interface is hidden (Story 8.4)
 L.HIDEUI_CATCH = "+%d %s"
 

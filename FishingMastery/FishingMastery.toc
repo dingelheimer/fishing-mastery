@@ -105,6 +105,8 @@ LureChoice.lua
 SmartLure.lua
 SoundBoost.lua
 HideUI.lua
+HelperStatus.lua
+Helpers.lua
 DoubleClick.lua
 DoubleCast.lua
 ItemTooltip.lua

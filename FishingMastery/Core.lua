@@ -158,9 +158,7 @@ local function startTracker()
         onAttempt = function(record)
             local cast = castLog:OnAttempt(record)
             ns.hud:Refresh()
-            if ns.hideUI then
-                ns.hideUI:OnCast(cast)
-            end
+            ns.Helpers.OnCast(cast)
         end,
     })
     ns.hud = ns.Hud.Start({
@@ -201,37 +199,15 @@ local function startTracker()
         journal = ns.Journal,
         after = timer("timer:journal"),
     })
-    ns.castKey = ns.CastKey.Start({ env = _G, bus = bus, print = ns.Print })
-    ns.smartLure = ns.SmartLure.Start({
-        env = _G,
-        bus = bus,
-        castKey = ns.castKey,
-        settings = ns.db.settings,
-        areas = ns.area,
-        journal = ns.Journal,
-        now = GetTimePreciseSec,
-    })
-    ns.soundBoost = ns.SoundBoost.Start({
+    ns.Helpers.Start({
         env = _G,
         bus = bus,
         settings = ns.db.settings,
         store = ns.charDb,
-    })
-    ns.hideUI = ns.HideUI.Start({
-        env = _G,
-        bus = bus,
-        settings = ns.db.settings,
-        isFishingSpell = ns.Tracker.FishingSpellCheck(_G),
-        after = timer("timer:hideui"),
-    })
-    ns.doubleCast = ns.DoubleCast.Start({
-        env = _G,
-        bus = bus,
-        castKey = ns.castKey,
-        settings = ns.db.settings,
+        areas = ns.area,
+        print = ns.Print,
         now = GetTimePreciseSec,
-        after = timer("timer:double"),
-        isFishingSpell = ns.Tracker.FishingSpellCheck(_G),
+        timer = timer,
     })
     ns.recipeRead = ns.RecipeRead.Start({
         env = _G,

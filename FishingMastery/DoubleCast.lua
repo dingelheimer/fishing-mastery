@@ -158,6 +158,7 @@ function DoubleCast:Arm()
     end
     Context.Call(env, "SetOverrideBindingClick", self.owner, true, DoubleCast.KEY, CastKey.BUTTON)
     self.armed = true
+    self.armedCount = (self.armedCount or 0) + 1
     self.token = self.token + 1
     local token = self.token
     if self.after then

@@ -275,4 +275,35 @@ describe("FishingMastery sound boost and hidden interface", function()
             assert.are.equal(0, w.ns.Guard.errors)
         end)
     end)
+
+    describe("/fm helpers", function()
+        it(
+            "counts the presses by what they did, the double-clicks, and the tracked casts",
+            function()
+                set("hideUI", true)
+                local button = w.ns.castKey.button
+                button:PressKey(true)
+                button:PressKey(false)
+                w.catch(6000, 5)
+                button:PressKey(false)
+                w.at(6010, "UNIT_SPELLCAST_CHANNEL_START", "player", nil, 7620) -- still hidden
+                w.fire("PLAYER_STARTED_MOVING")
+                w.at(6020, "UNIT_SPELLCAST_CHANNEL_START", "player", nil, 7620) -- hidden again
+                w.ns.doubleCast.armedCount = 1 -- double-click arming is covered by its own spec
+                w.printed = {}
+                _G.SlashCmdList.FM("helpers")
+                local out = w.output()
+                assert.truthy(
+                    out:find("the casting key cast Fishing 2 times, put on a lure 0 times", 1, true)
+                )
+                assert.truthy(out:find("1 presses came from a double right-click", 1, true))
+                -- The 6010 cast ended when the 6020 one started: two casts tracked.
+                assert.truthy(out:find("Casts tracked: 2.", 1, true))
+                assert.truthy(
+                    out:find("louder splash off (idle), hide the interface on (hidden 2", 1, true)
+                )
+                assert.are.equal(0, w.ns.Guard.errors)
+            end
+        )
+    end)
 end)

@@ -104,6 +104,7 @@ function HideUI:LineOut()
         return
     end
     self.hidden = true
+    self.hides = (self.hides or 0) + 1
 end
 
 -- Brings the interface back (only one Fishing Mastery hid and the player did not show already).

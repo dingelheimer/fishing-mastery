@@ -62,6 +62,7 @@ Your data stays when you update.
 | `/fm hud show`, `hide`, `lock`, `unlock`, `reset` | Show, hide, lock, or reset the HUD |
 | `/fm hud scale <0.5-2>`, `/fm hud style full` or `text` | HUD size and style |
 | `/fm settings` | Settings panel (also right click on the minimap button) |
+| `/fm helpers` | What the helpers did since login (casts, lures, double-clicks) and their settings |
 | `/fm minimap show` or `hide` | The minimap button |
 | `/fm export`, `/fm export all`, `/fm import` | Copy your history out, or back in |
 | `/fm backup list`, `/fm backup restore <n>` | Daily snapshots of your totals and settings |
