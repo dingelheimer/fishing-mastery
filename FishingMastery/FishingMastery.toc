@@ -16,10 +16,13 @@ Locale.lua
 LocaleStats.lua
 LocaleJournal.lua
 LocaleHelpers.lua
+LocaleUI.lua
 Data\Zones.lua
 Data\Journal.lua
 Options.lua
 Guard.lua
+Style.lua
+Tip.lua
 Events.lua
 Db.lua
 Character.lua

@@ -35,6 +35,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `LocaleStats.lua` | User-facing strings of the stats window                              |
 | `LocaleJournal.lua` | User-facing strings of the journal window |
 | `LocaleHelpers.lua` | User-facing strings of the helpers (casting key, Helpers settings, smart lure, catch line) |
+| `LocaleUI.lua` | User-facing strings of the UI overhaul (style kit; later the main window and its pages) |
 | `Data/Zones.lua` | Generated zone data `ns.Zones`: Classic loot lists, base skills, area placement (see Zone Data) |
 | `Data/Journal.lua` | Generated journal data `ns.Journal`: item groups, Classic recipes that use fish, fishing gear, lures, buff food, fishing ranks, the glove enchant, season rules (see Journal Data) |
 | `Guard.lua`     | Runs every handler and slash command through `xpcall`; counts errors   |
@@ -75,6 +76,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `CompareTable.lua` | Compare tab: groups (lure, day/night, zone, character), rates with the Newcombe difference, median bite time (pure) |
 | `MinimapModel.lua` | Minimap button position for an angle (round minimap or `GetMinimapShape` shapes), drag angle, saved angle (pure) |
 | `TooltipModel.lua` | Item tooltip line "caught Nx (best: zone)" from one item total (pure) |
+| `Style.lua` | Colors, fonts by role, thousands separators, grey ranges "66 % (52 - 78)", "~" estimates (pure) |
 | `CalendarModel.lua` | Calendar heatmap: 53 weeks of days, rows Monday to Sunday, color levels by catches (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
@@ -101,7 +103,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `HudZone.lua`   | HUD zone lines' data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; the smart lure tooltip line; dev area readout |
 | `Hud.lua`       | HUD frame: shown from the first cast to the session end, two zone lines, lure tick, tooltip (risk lines; dev flag: resolved area line), `/fm hud` |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
-| `StatsList.lua` | Table widget of the stats window: sort buttons or header labels over a ScrollBox list, grey cells, row tooltips |
+| `Tip.lua` | Tooltip builder: title, gold label and white value pairs, gaps, headers, green hints, explanations only while Shift is held (redraws on `MODIFIER_STATE_CHANGED`) |
+| `StatsList.lua` | Table widget: gold header bar with sort buttons and arrow (or labels) over a ScrollBox list; striped rows, hover highlight, number cells with separators, item icons, cell colors, season and night tags, grey cells, legend line, `Tip` or line tooltips |
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
 | `LineChart.lua` | Line chart widget: pooled `CreateLine` segments (squares without it), grid and axis labels, hover tooltip per point |
 | `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |

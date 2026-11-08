@@ -1,5 +1,7 @@
 -- A small fake of the WoW frame API: only the methods the probe window uses exist, so a call to
 -- a method the window should not need fails the test.
+local templates = require("spec.helpers.faketemplates")
+
 local M = {}
 
 local Region = {}
@@ -66,6 +68,10 @@ end
 function FontString:SetTextColor(r, g, b)
     self.color = { r, g, b }
 end
+-- Width of the text at about 6 pixels per letter (the client measures the font).
+function FontString:GetStringWidth()
+    return #(self.text or "") * 6
+end
 
 local Texture = setmetatable({}, { __index = Region })
 Texture.__index = Texture
@@ -81,6 +87,9 @@ function Texture:SetTexture(texture)
 end
 function Texture:SetSize(width, height)
     self.width, self.height = width, height
+end
+function Texture:SetTexCoord(...)
+    self.coords = { ... }
 end
 
 -- Line (Frame:CreateLine): records its end points, thickness, and color.
@@ -194,6 +203,10 @@ function Frame:SetText(text)
 end
 function Frame:GetText()
     return self.text
+end
+function Frame:SetFontString(fontString)
+    assert(self.frameType == "Button", "SetFontString on a non-button frame")
+    self.fontString = fontString
 end
 function Frame:SetEnabled(value)
     self.enabled = value and true or false
@@ -319,7 +332,13 @@ function M.new(opts)
         if name then
             env[name] = frame
         end
+        templates.apply(env, frame, frameType, template)
         return frame
+    end
+    -- Modifier state: specs set env.shift to hold Shift.
+    env.shift = false
+    function env.IsShiftKeyDown()
+        return env.shift
     end
     -- GameTooltip: records the lines of the last tooltip.
     env.GameTooltip = {
@@ -327,11 +346,24 @@ function M.new(opts)
         SetOwner = function(tip, owner, anchor)
             tip.owner, tip.anchor, tip.lines = owner, anchor, {}
         end,
-        SetText = function(tip, text)
-            tip.lines = { text }
+        SetText = function(tip, text, r, g, b)
+            tip.lines, tip.colors, tip.wraps = { text }, { { r, g, b } }, {}
         end,
-        AddLine = function(tip, text)
+        AddLine = function(tip, text, r, g, b, wrap)
             tip.lines[#tip.lines + 1] = text
+            tip.colors = tip.colors or {}
+            tip.colors[#tip.lines] = { r, g, b }
+            tip.wraps = tip.wraps or {}
+            tip.wraps[#tip.lines] = wrap
+        end,
+        -- A double line is recorded as "left = right"; its colors as { left, right }.
+        AddDoubleLine = function(tip, left, right, lr, lg, lb, rr, rg, rb)
+            tip.lines[#tip.lines + 1] = left .. " = " .. tostring(right)
+            tip.colors = tip.colors or {}
+            tip.colors[#tip.lines] = { { lr, lg, lb }, { rr, rg, rb } }
+        end,
+        IsOwned = function(tip, owner)
+            return tip.shown and tip.owner == owner
         end,
         Show = function(tip)
             tip.shown = true

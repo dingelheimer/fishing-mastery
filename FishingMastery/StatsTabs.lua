@@ -64,7 +64,7 @@ StatsTabs.fish = {
     draw = function(self, input, keepScroll)
         local view = StatsView.Build(self:Chars())
         input.sort = self.sorts.fish
-        self.fish:SetRows(StatsTables.Fish(view, input), keepScroll)
+        self.fish:SetRows(StatsTables.Fish(view, input), keepScroll, input.sort)
         local quality = input.quality
         self.qualityButton:SetText(
             quality and format(L.STATS_QUALITY, L["STATS_QUALITY_" .. quality])

@@ -142,7 +142,7 @@ StatsTabs.sessions = {
         input.sort = self.sorts.sessions
         input.now = self.serverTime()
         local rows = SessionTable.Rows(namedChars(self), input)
-        self.sessions:SetRows(rows, keepScroll)
+        self.sessions:SetRows(rows, keepScroll, input.sort)
         self.sessionCount = #rows
         return nil
     end,

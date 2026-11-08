@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Changed: tables have a gold header bar with a sort arrow on the sorted column, striped rows,
+  and a highlight on the row under the mouse (first step of the interface overhaul).
 - New: `/fm contribute` shows your catch counts per area and skill band to share, with a random
   token and no names, IDs, or times.
 
