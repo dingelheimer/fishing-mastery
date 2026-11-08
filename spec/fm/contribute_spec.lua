@@ -6,12 +6,12 @@ local fmboot = require("spec.helpers.fmboot")
 
 local FIXTURE = "spec/fixtures/contribution.txt"
 
--- Resolver with fixed answers: map 1411 is area 14, its subzone "Razor Hill" area 362; map 1412
+-- Resolver with fixed answers: map 1411 is area 14, its subzone "Tor'kren Farm" area 2979; map 1412
 -- is area 17; map 9999 has no area.
 local AREAS = {
     Resolve = function(_, map, text)
         if map == 1411 then
-            return text == "Razor Hill" and 362 or 14
+            return text == "Tor'kren Farm" and 2979 or 14
         elseif map == 1412 then
             return 17
         end
@@ -24,7 +24,7 @@ local function chars()
         ["Player-1-0000000A"] = {
             name = "Brannoc",
             part = "Brann",
-            subzones = { "Razor Hill" },
+            subzones = { "Tor'kren Farm" },
             totals = {
                 subs = {
                     [1411] = {
@@ -50,7 +50,7 @@ local function chars()
         ["Player-1-0000000B"] = {
             name = "Ysolde",
             part = "Ysol",
-            subzones = { "Unknown Cove", "Razor Hill" },
+            subzones = { "Unknown Cove", "Tor'kren Farm" },
             totals = {
                 subs = {
                     [1411] = {
@@ -78,10 +78,10 @@ end
 local INFO = { token = "0a1b2c3d", version = "1.0.0", build = "70790" }
 local BODY = {
     "A!14!5!6303:2,6358:1",
-    "A!362!15!6303:9",
+    "A!2979!15!6303:9",
     "M!9999!2!6291:1",
-    "S!362!10!12!3",
-    "S!362!15!1!0",
+    "S!2979!10!12!3",
+    "S!2979!15!1!0",
     "S!m9999!0!2!1",
     "L!1411!5!3",
 }
@@ -112,7 +112,7 @@ describe("FishingMastery contribution export", function()
     it("holds no names, keys, subzone texts, times, or pipes", function()
         local text = ns.Contribute.Build(chars(), AREAS, INFO)
         assert.truthy(text:match("^[%w!:,\n%.%-]+$"))
-        for _, word in ipairs({ "Brann", "Ysol", "Razor", "Cove", "Player", "20765" }) do
+        for _, word in ipairs({ "Brann", "Ysol", "kren", "Cove", "Player", "20765" }) do
             assert.is_nil(text:find(word, 1, true), word)
         end
         -- Header fields lose separators and spaces.

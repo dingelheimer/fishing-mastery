@@ -16,7 +16,7 @@ under `projects/wow-fishing-addon`.
 | `spec/`                 | busted tests for the probe: pure logic, fake-UI window tests, and a boot test of all TOC files |
 | `spec/fm/`              | busted tests for `FishingMastery/`, including a boot test of all its TOC files |
 | `spec/fixtures/`        | Redacted event sequences from the live probe run, replayed by the tracker specs |
-| `tools/`                | Developer scripts: fixture extraction from a probe log, zone and journal data fetch and build, privacy scan |
+| `tools/`                | Developer scripts: fixture extraction from a probe log, zone and journal data fetch and build, privacy scan, contribution checker |
 | `tools/data/`           | Trimmed, pinned copies of the zone and journal data sources (input of both builds) |
 | `docs/`                 | This development reference, the probe reference, the CurseForge page text, the logo (`images/`, drawn by `tools/draw_logo.py`, needs Pillow) |
 | `.github/workflows/`    | `check.yml`: the quality gates on every push and pull request; `package.yml`: a dry run of the release zip (started by hand); `release.yml`: upload on a version tag |
@@ -545,6 +545,17 @@ searches the full history and the current files of each given repository for the
 realm, and character folder names and the character keys and name parts in
 `FishingMasteryDB.chars`, as whole words. It prints counts per kind only, never a term or the
 path, and exits with 1 on any hit. Terms shorter than 3 letters are not searched.
+
+**Contribution checker:** `python tools/contrib.py <file>` checks one `/fm contribute` text
+(module 7) and prints "valid" with the lines per kind, or "rejected: <rule>". It cleans what
+pasting does (Markdown code fences, Windows line ends, the "|" form), limits the size to 65,536
+characters before parsing, and rejects the whole text on: a bad header or format version, a
+checksum mismatch, an unknown line kind or field count, counts that are not non-negative integers,
+area IDs the addon cannot resolve (`Data/Zones.lua`: areas, subzones, zones of maps, instances),
+item IDs outside 1-999999, map IDs outside 1-99999, bands not on a 5-point step, catches above
+casts, getaways above hooked, lure casts above the map's casts (its zone's areas and its `M`
+line), and duplicate keys. Messages name the rule and a line number, never the content. Tests:
+`tools/test_contrib.py` with the addon's fixture `spec/fixtures/contribution.txt`.
 
 `.luacheckrc` turns the LuaJIT JIT compiler off for luacheck: with it on, full-tree runs crashed
 with a segfault in most attempts, while the interpreter is stable.
