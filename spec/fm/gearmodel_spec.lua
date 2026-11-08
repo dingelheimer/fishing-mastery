@@ -4,6 +4,7 @@
 -- the equipped bonus against the skill modifier, the best setup, and the reads from a fake client
 -- (counts without the equipped item, tooltip lines, race bit, missing APIs).
 local addon = require("spec.helpers.addon")
+local tiplines = require("spec.helpers.tiplines")
 
 local HUMAN, ORC = 1, 2 -- race bits
 
@@ -13,6 +14,8 @@ describe("FishingMastery gear model", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleUI.lua",
+            "Style.lua",
             "LocaleStats.lua",
             "LocaleJournal.lua",
             "Data\\Journal.lua",
@@ -195,9 +198,10 @@ describe("FishingMastery gear model", function()
         assert.are.equal("+42 tooltip, data +20, game +20", cells[6367][2])
         assert.are.equal("+5 (tooltip)", cells[6365][2])
         assert.are.equal("+5 (no tooltip number)", cells[19971][2])
-        local tip = table.concat(GearTable.Tooltip(big, tableInput), "\n")
-        assert.truthy(tip:find("Tooltip: +42 Fishing", 1, true))
-        assert.truthy(tip:find("The game applies +20", 1, true))
+        local tip = tiplines.text(GearTable.Tip(big, tableInput))
+        assert.truthy(tip:find("Tooltip = +42 Fishing", 1, true))
+        assert.truthy(tip:find("The game applies = +20 Fishing", 1, true))
+        assert.truthy(tip:find("Needs = ", 1, true))
         assert.are.equal(
             "Equipped items +42, but the game applies +20 (skill modifier without the lure; a buff "
                 .. "food also counts).",

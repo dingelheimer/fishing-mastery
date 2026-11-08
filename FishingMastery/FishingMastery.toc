@@ -106,6 +106,7 @@ StatsScope.lua
 StatsFrame.lua
 StatsTabs.lua
 JournalWindow.lua
+JournalInputs.lua
 JournalFrame.lua
 JournalTabs.lua
 FailureTabs.lua

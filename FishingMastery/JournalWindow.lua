@@ -5,8 +5,7 @@
 -- (JournalFrame.lua); item names that load later redraw once per frame. Unnamed, insecure frames.
 local _, ns = ...
 
-local setmetatable, type, pairs, ipairs, select, tostring =
-    setmetatable, type, pairs, ipairs, select, tostring
+local setmetatable, type, pairs, ipairs, select = setmetatable, type, pairs, ipairs, select
 local L, Context = ns.L, ns.Context
 
 local JournalWindow = {}
@@ -58,7 +57,8 @@ function JournalWindow:Index()
     return self.index
 end
 
-local function itemInfo(self, id)
+-- Item data for the tables; an uncached item is requested once and redraws the page on load.
+function JournalWindow:ItemInfo(id)
     local onLoad = nil
     if not self.waiting[id] then
         onLoad = function()
@@ -140,97 +140,6 @@ function JournalWindow:Model()
     return model, view, recipes
 end
 
--- Own catches of an item and all catches in an area's water (ZoneRef.Own over its zone's map).
-local function ownShare(self, view, area, id)
-    local info = self.areas:Info(area)
-    local zone = info and (info.zone or area)
-    local map = zone and self.areaMap[zone]
-    if not map then
-        return nil
-    end
-    local group = ns.ZoneRef.Own(view, self.areas, map, area)
-    local catches = group.outcomes.catch or 0
-    return group.items[id] or 0, catches
-end
-
--- Inputs of the table builders (JournalTable, RecipeTable). recipes: the recipe list (built when
--- not given).
-function JournalWindow:Inputs(view, recipes)
-    local env, names, spells, known, stock = self.env, {}, {}, {}, {}
-    recipes = recipes or self:Recipes()
-    local now = Context.Call(env, "GetServerTime")
-    local offset = ns.Season.Offset(Context.Call(env, "GetGameTime"), now)
-    return {
-        hourOffset = offset,
-        inSeason = function(season)
-            if type(now) ~= "number" then
-                return nil -- no server time
-            end
-            return ns.Season.InSeason(season, now, offset)
-        end,
-        monthName = function(month)
-            local date = env.date
-            local days = JournalWindow.DAYS_BEFORE[month]
-            return type(date) == "function" and date("!%b", days * 86400) or tostring(month)
-        end,
-        info = function(id)
-            return itemInfo(self, id)
-        end,
-        areas = self.areas,
-        thresholds = ns.Stats.Thresholds(self.db.settings.thresholds),
-        mapName = function(map)
-            if names[map] == nil then
-                names[map] = Context.MapName(env, map) or false
-            end
-            return names[map] or nil
-        end,
-        areaName = function(area)
-            return Context.AreaName(env, area)
-        end,
-        spellName = function(spell)
-            if spells[spell] == nil then
-                local data = Context.Call(env, "C_Spell.GetSpellInfo", spell)
-                spells[spell] = type(data) == "table" and type(data.name) == "string" and data.name
-                    or false
-            end
-            return spells[spell] or nil
-        end,
-        recipe = function(spell)
-            return ns.RecipeModel.Find(recipes, spell)
-        end,
-        known = function(spell)
-            if known[spell] == nil then
-                -- Story 5.1: IsSpellKnown is false for known recipes on Forever.
-                local value = Context.Call(env, "IsPlayerSpell", spell)
-                known[spell] = type(value) == "boolean" and { value } or {}
-            end
-            return known[spell][1]
-        end,
-        stock = function(id)
-            if stock[id] == nil then
-                local value = Context.Call(env, "C_Item.GetItemCount", id, true)
-                stock[id] = type(value) == "number" and value or false
-            end
-            return stock[id] or nil
-        end,
-        ownShare = function(area, id)
-            return ownShare(self, view, area, id)
-        end,
-        formatDate = function(t)
-            local date = env.date
-            return type(date) == "function" and date("%Y-%m-%d", t) or tostring(t)
-        end,
-        formatMonthDay = function(month, day)
-            local date = env.date
-            if type(date) ~= "function" then
-                return month .. "/" .. day
-            end
-            local days = JournalWindow.DAYS_BEFORE[month] + day - 1
-            return date("!%d %b", days * 86400)
-        end,
-    }
-end
-
 -- Draws the shown tab.
 function JournalWindow:Render(keepScroll)
     for i, frame in ipairs(self.panels) do
@@ -238,6 +147,9 @@ function JournalWindow:Render(keepScroll)
     end
     Context.Call(self.env, "PanelTemplates_SetTab", self.frame, self.tab)
     self.scopeButton:SetText(L["JOURNAL_SCOPE_" .. self.scope])
+    local model, view, recipes = self:Model()
+    self.current = { model = model, view = view, recipes = recipes }
+    ns.JournalFrame.DrawBar(self, ns.JournalTable.Bar(model))
     local name = JournalWindow.TABS[self.tab]
     local tab = ns.JournalTabs[name]
     local filters = tab.filters == true

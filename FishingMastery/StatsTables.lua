@@ -26,6 +26,15 @@ StatsTables.FISH_COLUMNS = {
     { key = "best", label = L.STATS_COL_BEST_WATER, width = 200 },
 }
 
+-- Tag of a fish from the journal data: { text, kind } for a season (summer, winter) or a time of
+-- day (night, day), or nil.
+function StatsTables.Tag(season, time)
+    if type(season) == "table" and season.season then
+        return { text = L["TAG_" .. season.season], kind = "season" }
+    end
+    return time and { text = L["TAG_" .. time], kind = "night" } or nil
+end
+
 -- Item name with icon and quality color; "Item <id>" while the name is loading.
 function StatsTables.ItemText(id, info)
     local name = info.name or format(L.HUD_ITEM_LOADING, id)
@@ -142,7 +151,6 @@ end
 
 local function fishCells(row, input)
     local info = row.info
-    row.text = StatsTables.ItemText(row.id, info)
     row.cells = {
         info.name or format(L.HUD_ITEM_LOADING, row.id),
         Style.Number(row.n),

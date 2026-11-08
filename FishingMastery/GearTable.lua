@@ -6,13 +6,14 @@
 local _, ns = ...
 
 local format, ipairs, concat = string.format, ipairs, table.concat
-local L, StatsTables, GearModel = ns.L, ns.StatsTables, ns.GearModel
+local L, GearModel = ns.L, ns.GearModel
 
+local Style = ns.Style
 local GearTable = {}
 ns.GearTable = GearTable
 
 GearTable.COLUMNS = {
-    { key = "item", label = L.GEAR_COL_ITEM, width = 200 },
+    { key = "item", label = L.GEAR_COL_ITEM, width = 200, icon = true },
     { key = "bonus", label = L.GEAR_COL_BONUS, width = 160 },
     { key = "needs", label = L.GEAR_COL_NEEDS, width = 130 },
     { key = "source", label = L.GEAR_COL_SOURCE, width = 180 },
@@ -23,7 +24,7 @@ GearTable.DERBY_QUEST = 8193 -- "Master Angler", the Stranglethorn Fishing Extra
 local GREY_ALL = { true, true, true, true, true }
 
 local function itemText(input, id)
-    return StatsTables.ItemText(id, input.info(id))
+    return input.info(id).name or format(L.HUD_ITEM_LOADING, id)
 end
 
 local function nameOf(e, input)
@@ -151,37 +152,45 @@ local function has(e)
 end
 
 -- Hover lines of one entry.
-function GearTable.Tooltip(e, input)
-    local lines = { nameOf(e, input), L["GEAR_SECTION_" .. e.section] }
-    local function add(...)
-        lines[#lines + 1] = format(...)
+function GearTable.Tip(e, input)
+    return function(tip)
+        local info = e.id and input.info(e.id) or {}
+        tip:Title(nameOf(e, input), Style.FromHex(info.hex) or Style.WHITE)
+        tip:Line(L["GEAR_SECTION_" .. e.section], Style.GOLD)
+        if e.section ~= "rank" then
+            local label = isGuide(e) and L.GEAR_TP_GUIDE or L.GEAR_TP_DATA
+            tip:Pair(label, format(L.GEAR_TV_BONUS, e.bonus))
+        end
+        if type(e.tip) == "number" then
+            tip:Pair(L.GEAR_TP_TIP, format(L.GEAR_TV_BONUS, e.tip))
+        elseif e.tip == false then
+            tip:Pair(L.GEAR_TP_TIP, L.GEAR_TV_NO_LINE, Style.GREY)
+        end
+        if e.game then
+            tip:Pair(L.GEAR_TP_GAME, format(L.GEAR_TV_BONUS, e.game))
+        end
+        if e.kind == "lure" and e.section == "lure" and e.slot then
+            tip:Line(L.GEAR_T_LURE_HAT, Style.GREY)
+        end
+        tip:Gap()
+        tip:Pair(L.GEAR_COL_NEEDS, needsText(e))
+        tip:Pair(L.GEAR_COL_SOURCE, sourceText(e, input))
+        tip:Pair(L.GEAR_COL_OWNED, ownText(e))
+        if e.game then
+            tip:Details({ L.GEAR_D_GAME })
+        end
     end
-    if e.section ~= "rank" then
-        add(isGuide(e) and L.GEAR_T_GUIDE or L.GEAR_T_DATA, e.bonus)
-    end
-    if type(e.tip) == "number" then
-        add(L.GEAR_T_TIP, e.tip)
-    elseif e.tip == false then
-        add("%s", L.GEAR_T_NO_LINE)
-    end
-    if e.game then
-        add(L.GEAR_T_GAME, e.game)
-    end
-    if e.kind == "lure" and e.section == "lure" and e.slot then
-        add("%s", L.GEAR_T_LURE_HAT)
-    end
-    add(L.GEAR_T_NEEDS, needsText(e))
-    add(L.GEAR_T_SOURCE, sourceText(e, input))
-    add(L.GEAR_T_OWNED, ownText(e))
-    return lines
 end
 
 local function row(e, input)
+    local info = e.id and input.info(e.id) or {}
     return {
         id = e.id,
         grey = not has(e) and GREY_ALL or nil,
         cells = { nameOf(e, input), bonusText(e), needsText(e), sourceText(e, input), ownText(e) },
-        tooltip = GearTable.Tooltip(e, input),
+        icons = { info.icon },
+        colors = { Style.FromHex(info.hex) },
+        tip = GearTable.Tip(e, input),
     }
 end
 

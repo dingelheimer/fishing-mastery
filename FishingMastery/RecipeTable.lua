@@ -6,14 +6,15 @@
 local _, ns = ...
 
 local format, ipairs, concat, tostring = string.format, ipairs, table.concat, tostring
-local L, StatsTables = ns.L, ns.StatsTables
+local L = ns.L
 
+local Style = ns.Style
 local RecipeTable = {}
 ns.RecipeTable = RecipeTable
 
 RecipeTable.SHOWS = { "all", "known", "unknown" }
 RecipeTable.COLUMNS = {
-    { key = "recipe", label = L.RECIPES_COL_RECIPE, width = 180 },
+    { key = "recipe", label = L.RECIPES_COL_RECIPE, width = 180, icon = true },
     { key = "profession", label = L.RECIPES_COL_PROFESSION, width = 64 },
     { key = "reagents", label = L.RECIPES_COL_REAGENTS, width = 224 },
     { key = "colors", label = L.RECIPES_COL_COLORS, width = 64, right = true },
@@ -31,9 +32,9 @@ local function itemName(input, id)
     return input.info(id).name or format(L.HUD_ITEM_LOADING, id)
 end
 
-local function productText(entry, input)
+local function productName(entry, input)
     if entry.product then
-        return StatsTables.ItemText(entry.product, input.info(entry.product))
+        return itemName(input, entry.product)
     end
     return input.spellName(entry.spell) or format(L.JOURNAL_SPELL_LOADING, entry.spell)
 end
@@ -100,44 +101,42 @@ local function matches(entry, filters, known)
     return true
 end
 
--- Hover lines of one recipe.
-function RecipeTable.Tooltip(entry, input, known)
-    local lines = { productText(entry, input) }
-    local function add(...)
-        lines[#lines + 1] = format(...)
-    end
-    add("%s", professionName(entry))
-    add("%s", L.RECIPES_T_REAGENTS)
-    for _, reagent in ipairs(entry.reagents) do
-        add(
-            L.RECIPES_T_REAGENT,
-            itemName(input, reagent[1]),
-            reagent[2],
-            stockText(input, reagent[1])
-        )
-    end
-    if entry.low then
-        add(L.RECIPES_T_COLORS, entry.low, entry.high)
-    end
-    if entry.forever then
-        add("%s", L.RECIPES_T_FOREVER)
-    else
-        add(
-            L.RECIPES_T_LEARN,
-            professionName(entry),
-            entry.learn,
-            L["RECIPES_SOURCE_" .. entry.source] or ""
-        )
-        if entry.read then
-            add("%s", L.RECIPES_T_READ)
+-- The tooltip of one recipe, drawn into a Tip builder: product, profession, reagents with what
+-- the player has, colors, where to learn it, the fishing buff, and whether it is known.
+function RecipeTable.Tip(entry, input, known)
+    return function(tip)
+        local info = entry.product and input.info(entry.product) or {}
+        tip:Title(productName(entry, input), Style.FromHex(info.hex) or Style.WHITE)
+        tip:Pair(L.RECIPES_TP_PROFESSION, professionName(entry))
+        tip:Gap()
+        tip:Header(L.RECIPES_T_REAGENTS)
+        for _, reagent in ipairs(entry.reagents) do
+            tip:Pair(
+                itemName(input, reagent[1]),
+                format(L.RECIPES_TV_REAGENT, reagent[2], stockText(input, reagent[1]))
+            )
         end
+        tip:Gap()
+        if entry.low then
+            tip:Pair(L.RECIPES_COL_COLORS, format(L.RECIPES_TV_COLORS, entry.low, entry.high))
+        end
+        if entry.forever then
+            tip:Line(L.RECIPES_T_FOREVER, Style.GREY)
+        else
+            local source = L["RECIPES_SOURCE_" .. entry.source] or ""
+            local learn = format(L.RECIPES_TV_LEARN, professionName(entry), entry.learn, source)
+            tip:Pair(L.RECIPES_COL_LEARN, learn)
+            if entry.read then
+                tip:Line(L.RECIPES_T_READ, Style.GREY)
+            end
+        end
+        local food = entry.food
+        if food then
+            local value = L["RECIPES_VALUE_" .. food.source] or ""
+            tip:Pair(L.RECIPES_COL_BUFF, format(L.RECIPES_TV_BUFF, food.bonus, food.level, value))
+        end
+        tip:Pair(L.RECIPES_COL_KNOWN, knownText(known))
     end
-    local food = entry.food
-    if food then
-        add(L.RECIPES_T_BUFF, food.bonus, food.level, L["RECIPES_VALUE_" .. food.source] or "")
-    end
-    add(L.RECIPES_T_KNOWN, knownText(known))
-    return lines
 end
 
 -- input: { info(id) -> { name, icon, hex }, spellName(spell), known(spell) -> true, false, or nil
@@ -148,8 +147,9 @@ function RecipeTable.Rows(list, input, filters)
     for _, entry in ipairs(list) do
         local known = input.known(entry.spell)
         if matches(entry, filters, known) then
+            local info = entry.product and input.info(entry.product) or {}
             local cells = {
-                productText(entry, input),
+                productName(entry, input),
                 professionName(entry),
                 reagentsText(entry, input),
                 entry.low and format(L.RECIPES_COLORS, entry.low, entry.high) or L.JOURNAL_NO_PLACE,
@@ -161,7 +161,9 @@ function RecipeTable.Rows(list, input, filters)
                 spell = entry.spell,
                 grey = known ~= true and GREY_ALL or nil,
                 cells = cells,
-                tooltip = RecipeTable.Tooltip(entry, input, known),
+                icons = { info.icon },
+                colors = { Style.FromHex(info.hex) },
+                tip = RecipeTable.Tip(entry, input, known),
             }
         end
     end

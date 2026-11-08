@@ -75,12 +75,7 @@ end
 -- Season or night tag of a fish from the bundled journal data, or nil.
 local function tag(id)
     local journal = ns.Journal or {}
-    local season = (journal.seasons or {})[id]
-    if season then
-        return { text = L["TAG_" .. season.season], kind = "season" }
-    end
-    local time = (journal.times or {})[id]
-    return time and { text = L["TAG_" .. time], kind = "night" } or nil
+    return StatsTables.Tag((journal.seasons or {})[id], (journal.times or {})[id])
 end
 
 local function inputs(self)

@@ -11,6 +11,10 @@ local concat, ipairs, tonumber = table.concat, ipairs, tonumber
 local L, StatsFrame, JournalTable, WatersTable, RecipeTable, GearTable =
     ns.L, ns.StatsFrame, ns.JournalTable, ns.WatersTable, ns.RecipeTable, ns.GearTable
 
+local function Dropdown(...)
+    return ns.JournalFrame.Dropdown(...)
+end
+
 local JournalTabs = {}
 ns.JournalTabs = JournalTabs
 
@@ -45,22 +49,18 @@ JournalTabs.fish = {
         detail:SetWordWrap(true)
         self.fishDetail = detail
         -- Link to the Recipes tab, filtered to the selected fish.
-        self.fishRecipes = ns.Frames.Button(
-            self.env,
-            panel,
-            L.JOURNAL_RECIPES_BUTTON,
-            140,
-            function()
-                local recipes = self.recipeFilters
-                recipes.fish, recipes.show = self.filters.selected, "all"
-                self:Select(JournalTabs.RECIPES_TAB)
-            end
-        )
+        self.fishRecipes = ns.Controls.Button(self.env, panel, 160, function()
+            local recipes = self.recipeFilters
+            recipes.fish, recipes.show = self.filters.selected, "all"
+            self:Select(JournalTabs.RECIPES_TAB)
+        end)
+        self.fishRecipes:SetText(L.JOURNAL_RECIPES_BUTTON)
         self.fishRecipes:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", JournalTabs.LIST_WIDTH + 12, 2)
     end,
     draw = function(self, keepScroll)
-        local model, view, recipes = self:Model()
-        local input = self:Inputs(view, recipes)
+        local current = self.current
+        local model = current.model
+        local input = self:Inputs(current.view, current.recipes)
         local filters = self.filters
         local rows = JournalTable.Rows(model, input, filters)
         self.fishList:SetRows(rows, keepScroll)
@@ -68,7 +68,8 @@ JournalTabs.fish = {
         local entry = filters.selected and findEntry(model, filters.selected)
         self.fishDetail:SetText(concat(JournalTable.Detail(entry, input), "\n"))
         self.fishRecipes:SetShown(entry ~= nil and #entry.recipes > 0)
-        self.progress:SetText(JournalTable.Progress(model))
+        local bar = JournalTable.Bar(model)
+        self.progress:SetText(bar.pending or "")
         self.groupButton:SetText(L["JOURNAL_GROUP_" .. filters.group])
         self.showButton:SetText(L["JOURNAL_SHOW_" .. filters.show])
         self.model = model
@@ -87,15 +88,15 @@ end
 JournalTabs.waters = {
     build = function(self, panel)
         local state = self.waters
-        self.fishableButton = StatsFrame.Button(self, panel, 120, function()
+        self.fishableButton = Dropdown(self, panel, 120, function()
             state.fishable = not state.fishable
         end)
         self.fishableButton:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
-        self.sortButton = StatsFrame.Button(self, panel, 120, function()
+        self.sortButton = Dropdown(self, panel, 120, function()
             state.sort = ns.JournalFrame.Next(WatersTable.SORTS, state.sort)
         end)
         self.sortButton:SetPoint("LEFT", self.fishableButton, "RIGHT", 6, 0)
-        self.bestButton = StatsFrame.Button(self, panel, 140, function()
+        self.bestButton = Dropdown(self, panel, 140, function()
             state.best = not state.best
         end)
         self.bestButton:SetPoint("LEFT", self.sortButton, "RIGHT", 6, 0)
@@ -162,12 +163,13 @@ JournalTabs.waters = {
 JournalTabs.recipes = {
     build = function(self, panel)
         local filters = self.recipeFilters
-        self.recipeShowButton = StatsFrame.Button(self, panel, 120, function()
+        self.recipeShowButton = Dropdown(self, panel, 120, function()
             filters.show = ns.JournalFrame.Next(RecipeTable.SHOWS, filters.show)
         end)
         self.recipeShowButton:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, 0)
-        self.recipeAllButton = StatsFrame.Button(self, panel, 120, function()
+        self.recipeAllButton = ns.Controls.Button(self.env, panel, 120, function()
             filters.fish = nil
+            self:Render()
         end)
         self.recipeAllButton:SetPoint("LEFT", self.recipeShowButton, "RIGHT", 6, 0)
         self.recipeAllButton:SetText(L.RECIPES_ALL)

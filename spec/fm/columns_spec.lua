@@ -33,6 +33,26 @@ describe("FishingMastery statistics columns", function()
         end
     end)
 
+    it("keeps the Journal tables within their lists", function()
+        local ns = w.ns
+        local lists = {
+            fish = { ns.JournalTable.COLUMNS, ns.JournalTabs.LIST_WIDTH - 20 },
+            waters = { ns.WatersTable.COLUMNS, 772 },
+            recipes = { ns.RecipeTable.COLUMNS, 772 },
+            gear = { ns.GearTable.COLUMNS, 772 },
+        }
+        for name, list in pairs(lists) do
+            local width = 0
+            for _, column in ipairs(list[1]) do
+                width = width + column.width
+            end
+            assert.is_true(#list[1] <= 7, name)
+            assert.is_true(width <= list[2], name .. " " .. width)
+        end
+        assert.is_true(ns.JournalTable.COLUMNS[1].icon and ns.JournalTable.COLUMNS[1].tags)
+        assert.is_true(ns.RecipeTable.COLUMNS[1].icon and ns.GearTable.COLUMNS[1].icon)
+    end)
+
     it("keeps every Statistics table at seven columns or fewer, within the page width", function()
         local ns = w.ns
         local tables = {

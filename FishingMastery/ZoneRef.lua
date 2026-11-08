@@ -8,7 +8,7 @@ local _, ns = ...
 
 local format, pairs, ipairs, sort, floor, type =
     string.format, pairs, ipairs, table.sort, math.floor, type
-local L, Stats, HudModel, StatsTables = ns.L, ns.Stats, ns.HudModel, ns.StatsTables
+local L, Stats, HudModel = ns.L, ns.Stats, ns.HudModel
 local Style, RowTip = ns.Style, ns.RowTip
 
 local ZoneRef = {}
@@ -17,7 +17,7 @@ ns.ZoneRef = ZoneRef
 ZoneRef.SEASONS = { [322] = "winter", [323] = "summer" } -- condition IDs of the zone data
 
 ZoneRef.COLUMNS = {
-    { key = "fish", label = L.ZONE_COL_FISH, width = 260 },
+    { key = "fish", label = L.ZONE_COL_FISH, width = 260, icon = true },
     { key = "classic", label = L.ZONE_COL_CLASSIC, width = 130, right = true },
     { key = "flag", label = L.ZONE_COL_FLAG, width = 110 },
     { key = "own", label = L.ZONE_COL_OWN, width = 110, right = true },
@@ -132,8 +132,10 @@ function ZoneRef.Rows(rows, group, input)
                 key = format("%d", id),
                 chance = chance,
                 n = n,
+                icons = { info.icon },
+                colors = { Style.FromHex(info.hex) },
                 cells = {
-                    StatsTables.ItemText(id, info),
+                    info.name or format(L.HUD_ITEM_LOADING, id),
                     chanceText(chance),
                     flagText(row),
                     own,
@@ -159,8 +161,10 @@ function ZoneRef.Rows(rows, group, input)
             extra[#extra + 1] = {
                 key = format("%d", id),
                 n = n,
+                icons = { info.icon },
+                colors = { Style.FromHex(info.hex) },
                 cells = {
-                    StatsTables.ItemText(id, info),
+                    info.name or format(L.HUD_ITEM_LOADING, id),
                     rows and L.ZONE_NOT_IN_CLASSIC or "-",
                     "",
                     own,

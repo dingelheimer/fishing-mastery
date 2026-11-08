@@ -5,6 +5,9 @@
 - Changed: statistics and journal are pages of one Fishing Mastery window with side tabs on its
   right edge, like the Professions window. It opens on the last page, moves by the title, and
   closes with Escape. Window positions saved before this version are reset once.
+- Changed: the Journal tabs show item icons and quality colors, season and night tags, a
+  progress bar in the page header (every group in its tooltip), dropdown-styled filters, and
+  recipe and gear tooltips as short labels and values.
 - Changed: the Fish tab has six columns with item icons, quality colors, and season or night
   tags; the hour and dates moved into the row tooltip. Every table's row tooltip lists short
   labels and values with the range in grey brackets; explanations appear while Shift is held.

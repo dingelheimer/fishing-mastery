@@ -16,6 +16,7 @@ JournalFrame.SEARCH_TEMPLATE = "InputBoxTemplate"
 JournalFrame.SEARCH_MAX = 40 -- letters in the search box
 JournalFrame.PANEL_TOP = 108
 JournalFrame.FILTER_Y = -82 -- the filter row
+JournalFrame.BAR_X, JournalFrame.BAR_WIDTH = 150, 200 -- the progress bar in the page header
 
 -- The next value of list after current (wraps around).
 function JournalFrame.Next(list, current)
@@ -94,13 +95,21 @@ local function buildSearch(self, frame)
     self.searchBox, self.searchLabel = box, label
 end
 
+-- A dropdown-styled button that changes the window state, then redraws the page.
+function JournalFrame.Dropdown(self, parent, width, onClick)
+    return ns.Controls.Dropdown(self.env, parent, width, function()
+        onClick()
+        self:Render()
+    end)
+end
+
 local function buildFilters(self, frame)
     local Table = ns.JournalTable
-    self.groupButton = StatsFrame.Button(self, frame, 120, function()
+    self.groupButton = JournalFrame.Dropdown(self, frame, 120, function()
         self.filters.group = JournalFrame.Next(Table.FILTERS, self.filters.group)
     end)
     self.groupButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 14, JournalFrame.FILTER_Y)
-    self.showButton = StatsFrame.Button(self, frame, 120, function()
+    self.showButton = JournalFrame.Dropdown(self, frame, 120, function()
         self.filters.show = JournalFrame.Next(Table.SHOWS, self.filters.show)
     end)
     self.showButton:SetPoint("LEFT", self.groupButton, "RIGHT", 6, 0)
@@ -112,6 +121,41 @@ local function buildFilters(self, frame)
     self.scopeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -14, MainWindow.CONTROLS_Y)
 end
 
+-- The progress bar in the page header; its tooltip lists every group.
+local function buildBar(self, page)
+    local bar = ns.Controls.Bar(self.env, page, JournalFrame.BAR_WIDTH, 16)
+    bar:SetPoint("TOPLEFT", page, "TOPLEFT", JournalFrame.BAR_X, MainWindow.NAME_Y + 2)
+    bar:EnableMouse(true)
+    bar:SetScript("OnEnter", function(owner)
+        local data = owner.data
+        if not data then
+            return
+        end
+        ns.Tip.Open(self.env, owner, function(tip)
+            tip:Title(L.JOURNAL_BAR_TITLE, ns.Style.GOLD)
+            for _, line in ipairs(data.lines) do
+                tip:Pair(line.label, line.value)
+            end
+            if data.pending then
+                tip:Line(data.pending, ns.Style.GREY)
+            end
+        end, "ANCHOR_BOTTOM")
+    end)
+    bar:SetScript("OnLeave", function(owner)
+        ns.Tip.Close(self.env, owner)
+    end)
+    self.progressBar = bar
+end
+
+-- Fills the header bar from JournalTable.Bar.
+function JournalFrame.DrawBar(self, data)
+    local bar = self.progressBar
+    bar.data = data
+    bar:SetMinMaxValues(0, data.total > 0 and data.total or 1)
+    bar:SetValue(data.caught)
+    bar.text:SetText(data.text)
+end
+
 -- Builds the page of a JournalWindow on page (the panel of the main window): window.frame,
 -- progress, filters, panels, tabs.
 function JournalFrame.Build(self, page)
@@ -120,6 +164,7 @@ function JournalFrame.Build(self, page)
     self.progress:SetPoint("TOPLEFT", page, "TOPLEFT", 16, MainWindow.BODY_Y)
     self.progress:SetWidth(JournalFrame.WIDTH - 32)
     self.progress:SetJustifyH("LEFT")
+    buildBar(self, page)
     buildFilters(self, page)
     buildPanels(self)
     buildTabs(self)

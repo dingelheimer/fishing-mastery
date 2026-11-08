@@ -19,6 +19,8 @@ describe("FishingMastery journal table", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleUI.lua",
+            "Style.lua",
             "LocaleStats.lua",
             "LocaleJournal.lua",
             "Data\\Zones.lua",
@@ -125,16 +127,16 @@ describe("FishingMastery journal table", function()
         local rows =
             byId(JournalTable.Rows(model(CAUGHT), input(), { group = "all", show = "all" }))
         local fish = rows[6291]
-        assert.are.same(
-            { "|T7291:14:14|t Raw Brilliant Smallfish", "Fish", "4", "Durotar", "1-25" },
-            fish.cells
-        )
+        assert.are.same({ "Raw Brilliant Smallfish", "Fish", "4", "Durotar", "1-25" }, fish.cells)
+        assert.are.same({ 7291 }, fish.icons)
+        assert.are.same({ false }, fish.dim)
         assert.is_nil(fish.grey)
         local squid = rows[13755]
-        assert.are.equal(
-            "|T14755:14:14:0:0:64:64:0:64:0:64:110:110:110|t Winter Squid",
-            squid.cells[1]
-        )
+        assert.are.equal("Winter Squid", squid.cells[1])
+        assert.are.same({ 14755 }, squid.icons)
+        assert.are.same({ true }, squid.dim) -- not caught: dimmed icon
+        assert.are.same({}, squid.colors) -- grey row, no quality color
+        assert.are.same({ { text = "winter", kind = "season" } }, squid.tags)
         assert.are.same({ "Fish", "not caught" }, { squid.cells[2], squid.cells[3] })
         assert.are.equal("205-300", squid.cells[5])
         assert.are_not.equal("-", squid.cells[4]) -- best Classic place
@@ -156,17 +158,20 @@ describe("FishingMastery journal table", function()
         assert.is_true(selected[1].selected)
     end)
 
-    it("shows the progress per group with new-in-Forever and pending items", function()
+    it("writes the header bar with every group, new-in-Forever, and pending items", function()
         local m = model(CAUGHT)
-        assert.are.equal(
-            "Fish 1 / 28 + 1 new in Forever;  Trophy fish 0 / 35;  Containers 0 / 18;  "
-                .. "Quest fish 0 / 7",
-            JournalTable.Progress(m)
-        )
+        local bar = JournalTable.Bar(m)
+        assert.are.same({ 1, 28, "Fish 1 / 28" }, { bar.caught, bar.total, bar.text })
+        assert.are.same({
+            { label = "Fish", value = "1 / 28 + 1 new in Forever" },
+            { label = "Trophy fish", value = "0 / 35" },
+            { label = "Containers", value = "0 / 18" },
+            { label = "Quest fish", value = "0 / 7" },
+        }, bar.lines)
+        assert.is_nil(bar.pending)
         m.pending = 2
-        assert.truthy(
-            JournalTable.Progress(m):find("Loading item data for 2 caught items", 1, true)
-        )
+        bar = JournalTable.Bar(m)
+        assert.truthy(bar.pending:find("Loading item data for 2 caught items", 1, true))
     end)
 
     it("details a caught fish with first place, own shares, and recipes", function()

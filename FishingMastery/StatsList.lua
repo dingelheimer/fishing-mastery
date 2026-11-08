@@ -3,10 +3,10 @@
 -- Epic 9 (Draft 2): striped rows, a gold hover highlight, numbers right-aligned with thousands
 -- separators, optional item icons, per-cell colors (quality), small tags (season, night), grey
 -- cells for small samples, and an optional legend line. Rows come from the table builders:
--- cells per column, .grey[i], .colors[i] ({ r, g, b }), .icons[i] (texture), .tags[i]
--- ({ text, kind }), .color for every cell, .selected (first cell gold), and the tooltip as
--- .tip(tip) (Tip builder) or .tooltip (lines). With onSelect a click on a row selects it.
--- Unnamed, insecure frames only.
+-- cells per column, .grey[i], .colors[i] ({ r, g, b }), .icons[i] (texture), .dim[i] (a dimmed
+-- icon), .tags[i] ({ text, kind }), .color for every cell, .selected (first cell gold), and the
+-- tooltip as .tip(tip) (Tip builder) or .tooltip (lines). With onSelect a click on a row selects
+-- it. Unnamed, insecure frames only.
 local _, ns = ...
 
 local setmetatable, ipairs, pcall, type = setmetatable, ipairs, pcall, type
@@ -21,6 +21,7 @@ StatsList.ROW_HEIGHT = 18
 StatsList.HEADER_HEIGHT = Header.HEIGHT
 StatsList.LEGEND_HEIGHT = 16
 StatsList.ICON = 16
+StatsList.DIM = 0.43 -- icon brightness of .dim[i] cells (not-caught fish)
 StatsList.SCROLLBAR_WIDTH = 16
 StatsList.SCROLL_TEMPLATE = "WowScrollBoxList"
 StatsList.SCROLLBAR_TEMPLATE = "MinimalScrollBar"
@@ -146,6 +147,8 @@ local function initRow(self, row, data)
             local texture = data.icons and data.icons[i]
             icon:SetTexture(texture)
             icon:SetShown(texture ~= nil)
+            local dim = data.dim and data.dim[i] and StatsList.DIM or 1
+            icon:SetVertexColor(dim, dim, dim)
         end
         drawTag(row, i, cell, data.tags and data.tags[i])
     end

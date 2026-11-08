@@ -92,7 +92,16 @@ describe("FishingMastery journal window boot", function()
             window.frame.Tabs[4]:GetText(),
         })
         assert.are.equal(88, #window.fishList.box.drawn)
-        assert.truthy(window.progress:GetText():find("^Fish 0 / 28;  Trophy fish 0 / 35"))
+        -- The header bar shows the fish group; its tooltip lists every group.
+        local bar = window.progressBar
+        assert.are.equal("Fish 0 / 28", bar.text:GetText())
+        assert.are.same({ 0, 28 }, { bar:GetMinMaxValues() })
+        bar:GetScript("OnEnter")(bar)
+        assert.are.same(
+            { "Journal progress", "Fish = 0 / 28", "Trophy fish = 0 / 35" },
+            { _G.GameTooltip.lines[1], _G.GameTooltip.lines[2], _G.GameTooltip.lines[3] }
+        )
+        bar:GetScript("OnLeave")(bar)
         assert.are.equal("Click a fish to see its details.", window.fishDetail:GetText())
         assert.are.equal("All characters", window.scopeButton:GetText())
         assert.are.equal(0, w.ns.Guard.errors)
@@ -104,8 +113,8 @@ describe("FishingMastery journal window boot", function()
         local window = journal()
         local rows = texts(window.fishList)
         assert.are.same({ "Fish", "2", "Durotar" }, { rows[1][2], rows[1][3], rows[1][4] })
-        assert.truthy(rows[1][1]:find("Raw Slitherskin Mackerel", 1, true))
-        assert.truthy(window.progress:GetText():find("^Fish 1 / 28"))
+        assert.are.equal("Raw Slitherskin Mackerel", rows[1][1])
+        assert.are.equal("Fish 1 / 28", window.progressBar.text:GetText())
 
         assert.are.equal("All groups", window.groupButton:GetText())
         window.groupButton:Click()
@@ -200,10 +209,10 @@ describe("FishingMastery journal window boot", function()
         first.chars["Player-5827-0FFFFFFF"] = other
         _G.SlashCmdList.FM("journal")
         local window = journal()
-        assert.truthy(window.progress:GetText():find("^Fish 2 / 28"))
+        assert.are.equal("Fish 2 / 28", window.progressBar.text:GetText())
         window.scopeButton:Click()
         assert.are.equal("This character", window.scopeButton:GetText())
-        assert.truthy(window.progress:GetText():find("^Fish 1 / 28"))
+        assert.are.equal("Fish 1 / 28", window.progressBar.text:GetText())
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 

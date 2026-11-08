@@ -112,19 +112,20 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
 | `LineChart.lua` | Line chart widget: pooled `CreateLine` segments (squares without it), grid and axis labels, hover tooltip per point |
 | `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |
-| `Controls.lua` | Shared controls of the pages: dropdown-styled button |
+| `Controls.lua` | Shared controls of the pages: dropdown-styled button, the same look without the arrow for actions, framed box, small status bar |
 | `MainWindow.lua` | The Fishing Mastery window: page registry (`MainWindow.Register`), portrait frame (template fallbacks), side tabs on the right edge, page name, last page and position per character, Escape |
 | `StatsWindow.lua` | Statistics page `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
 | `StatsScope.lua` | Statistics page helpers: characters of the scope, their overview model, session count, the Fishing skill |
 | `StatsFrame.lua` | Statistics page layout: scope dropdown, status line, one panel per tab, 8 bottom tabs |
 | `OverviewPage.lua` | Overview frames: Fishing panel with the skill bar, headline numbers, where casts end, most caught |
 | `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs (with the click hint) |
-| `JournalTable.lua` | Fish tab of the journal: filtered rows (group, caught or not, plain-text search), dimmed not-caught rows, progress line, detail lines (pure) |
-| `JournalWindow.lua` | Journal page `/fm journal`: tab (saved per character), scope (account-wide by default), filters, selection; builds the model and the table inputs (own share per area) |
-| `JournalFrame.lua` | Journal page layout: scope dropdown, progress line, filter row with search box, panels, bottom tabs |
+| `JournalTable.lua` | Fish tab of the journal: filtered rows (group, caught or not, plain-text search) with icon, quality color, season or night tag, dimmed icon and grey row when not caught; the header bar (fish caught of total, every group in its tooltip); detail lines (pure) |
+| `JournalWindow.lua` | Journal page `/fm journal`: tab (saved per character), scope (account-wide by default), filters, selection; builds the model once per draw |
+| `JournalInputs.lua` | Inputs of the Journal table builders: names, seasons, recipes, known spells, stock, own share per area, dates |
+| `JournalFrame.lua` | Journal page layout: progress bar in the page header, scope dropdown, info line, filter row (dropdowns and the search box), panels, bottom tabs |
 | `WatersTable.lua` | Waters tab of the journal: one row per area (subzones under their zone, dungeons last, places without reference data), base and no-getaway skill, fish count, own casts and catches, color band for the effective skill, fishable filter, sort (pure) |
-| `RecipeTable.lua` | Recipes tab of the journal: rows (product, profession, reagents with own stock, color ranks, learn skill and source, fishing buff, known), hover lines, known and per-fish filters, progress line (pure) |
-| `GearTable.lua` | Gear tab of the journal: a heading row per section, rows (item, bonus with tooltip and game value, needs, source with the quest name, what you have), hover lines, the best setup line, the equipped-bonus line (pure) |
+| `RecipeTable.lua` | Recipes tab of the journal: rows (product, profession, reagents with own stock, color ranks, learn skill and source, fishing buff, known), product icon and quality color, `Tip` tooltip, known and per-fish filters, progress line (pure) |
+| `GearTable.lua` | Gear tab of the journal: a heading row per section, rows (item, bonus with tooltip and game value, needs, source with the quest name, what you have), item icon and quality color, `Tip` tooltip, the best setup line, the equipped-bonus line (pure) |
 | `JournalTabs.lua` | Build and draw of the journal tabs: Fish (list, detail pane, link to its recipes), Waters (waters list, the selected water's fish, colors for the skill now or the best setup), Recipes, and Gear |
 | `FailureTabs.lua` | Build and draw of the Failures, Bite times, and Sessions tabs |
 | `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
@@ -371,7 +372,8 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   the recipes that use it, and the Classic season with "in season now" or not (Classic
   window in server time). Caught fish list your catches by month (UTC). Raw Nightfin Snapper
   and Raw Sunscale Salmon carry the guides' day or night claim, "unconfirmed" below 30 catches,
-  with your catches by server hour. The line on top shows the progress per group.
+  with your catches by server hour. A bar in the page header shows the fish caught of all fish;
+  its tooltip lists every group. Filters and buttons have the dropdown look.
   The **Waters** tab lists every water of the Classic data (subzones under their zone, dungeons
   last) and places you fished that have no reference data, with the skill to catch there and to
   stop getaways, the number of fish, and your casts and catches. Rows are colored for your

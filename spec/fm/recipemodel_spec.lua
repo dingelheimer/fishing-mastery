@@ -3,6 +3,7 @@
 -- Forever-only recipe, what the store keeps (journal items only, valid IDs, the cap), the
 -- per-fish index, and the rows, filters, hover lines, and progress line.
 local addon = require("spec.helpers.addon")
+local tiplines = require("spec.helpers.tiplines")
 
 local ITEMS = { [6291] = "Raw Brilliant Smallfish", [21071] = "Raw Sagefish", [6290] = "Fish" }
 local JOURNAL_ITEMS = { [6291] = true, [6308] = true, [21071] = true }
@@ -13,6 +14,8 @@ describe("FishingMastery recipe model", function()
     before_each(function()
         ns = addon.load({
             "Locale.lua",
+            "LocaleUI.lua",
+            "Style.lua",
             "LocaleStats.lua",
             "LocaleJournal.lua",
             "Data\\Journal.lua",
@@ -165,9 +168,10 @@ describe("FishingMastery recipe model", function()
             "yes",
         }, first.cells)
         assert.is_nil(first.grey)
-        assert.are.equal(
-            "  Raw Brilliant Smallfish x1 - you have 3 (bags and bank)",
-            first.tooltip[4]
+        local lines = tiplines.lines(first.tip)
+        assert.are.same(
+            { "Profession = Cooking", " ", "Reagents", "Raw Brilliant Smallfish = x1, you have 3" },
+            { lines[2], lines[3], lines[4], lines[5] }
         )
         local catfish
         for _, row in ipairs(rows) do
@@ -177,11 +181,10 @@ describe("FishingMastery recipe model", function()
         end
         assert.are.same({ "+8 (guide)", "no" }, { catfish.cells[6], catfish.cells[7] })
         assert.is_true(catfish.grey[1])
-        local tip = table.concat(catfish.tooltip, "\n")
-        assert.truthy(
-            tip:find("Fishing buff: +8 Fishing, character level 15 (guide value", 1, true)
-        )
-        assert.truthy(tip:find("Learn at Cooking 100 from a vendor", 1, true))
+        local tip = tiplines.text(catfish.tip)
+        assert.truthy(tip:find("Fishing buff = +8 Fishing, level 15 (guide value)", 1, true))
+        assert.truthy(tip:find("Learn = Cooking 100, vendor", 1, true))
+        assert.truthy(tip:find("Known = no", 1, true))
 
         local sage = RecipeTable.Rows(list, inp, { show = "all", fish = 21071 })
         assert.are.equal(1, #sage)
@@ -190,7 +193,7 @@ describe("FishingMastery recipe model", function()
             sage[1].cells[4],
             sage[1].cells[5],
         })
-        assert.truthy(table.concat(sage[1].tooltip, "\n"):find("New in Forever", 1, true))
+        assert.truthy(tiplines.text(sage[1].tip):find("New in Forever", 1, true))
         assert.are.equal(2, #RecipeTable.Rows(list, inp, { show = "known" }))
         assert.are.equal(1, #RecipeTable.Rows(list, inp, { show = "unknown" }))
         assert.are.equal("?", RecipeTable.Rows(list, input(), { show = "all" })[1].cells[7])

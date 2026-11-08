@@ -95,6 +95,9 @@ end
 function Texture:SetSize(width, height)
     self.width, self.height = width, height
 end
+function Texture:SetVertexColor(r, g, b)
+    self.vertex = { r, g, b }
+end
 function Texture:SetTexCoord(...)
     self.coords = { ... }
 end

@@ -10,6 +10,7 @@ local format, ipairs, find, lower, min, concat, type, tostring =
     string.format, ipairs, string.find, string.lower, math.min, table.concat, type, tostring
 local L, StatsTables = ns.L, ns.StatsTables
 
+local Style = ns.Style
 local JournalTable = {}
 ns.JournalTable = JournalTable
 
@@ -18,10 +19,10 @@ JournalTable.DIM = 110 -- icon vertex color (0-255) of not-caught fish
 JournalTable.FILTERS = { "all", "fish", "trophy", "container", "quest" }
 JournalTable.SHOWS = { "all", "caught", "missing" }
 JournalTable.COLUMNS = {
-    { key = "fish", label = L.JOURNAL_COL_FISH, width = 190 },
-    { key = "group", label = L.JOURNAL_COL_GROUP, width = 80 },
+    { key = "fish", label = L.JOURNAL_COL_FISH, width = 196, icon = true, tags = true },
+    { key = "group", label = L.JOURNAL_COL_GROUP, width = 76 },
     { key = "caught", label = L.JOURNAL_COL_CAUGHT, width = 64, right = true },
-    { key = "where", label = L.JOURNAL_COL_WHERE, width = 120 },
+    { key = "where", label = L.JOURNAL_COL_WHERE, width = 118 },
     { key = "skill", label = L.JOURNAL_COL_SKILL, width = 56, right = true },
 }
 local GREY_ALL = { true, true, true, true, true }
@@ -104,35 +105,42 @@ function JournalTable.Rows(model, input, filters)
                 selected = filters.selected == entry.id,
                 grey = not entry.caught and GREY_ALL or nil,
                 cells = {
-                    JournalTable.ItemText(entry.id, info, entry.caught),
+                    info.name or format(L.HUD_ITEM_LOADING, entry.id),
                     L["JOURNAL_GROUP_" .. entry.group],
-                    entry.caught and tostring(entry.n) or L.JOURNAL_NOT_CAUGHT,
+                    entry.caught and Style.Number(entry.n) or L.JOURNAL_NOT_CAUGHT,
                     where or L.JOURNAL_NO_PLACE,
                     skillText(entry),
                 },
+                icons = { info.icon },
+                colors = { entry.caught and Style.FromHex(info.hex) or nil },
+                dim = { not entry.caught },
+                tags = { StatsTables.Tag(entry.season, entry.time) },
             }
         end
     end
     return rows
 end
 
--- "Fish 17 / 28 + 2 new in Forever;  Trophy fish 0 / 35;  ...".
-function JournalTable.Progress(model)
-    local parts = {}
-    for i, group in ipairs(ns.JournalModel.GROUPS) do
+-- The header bar: the fish group caught of total ("Fish 17 / 28"), and one tooltip line per
+-- group with the new items and the items still waiting for data.
+function JournalTable.Bar(model)
+    local fish = model.progress.fish or { caught = 0, total = 0, new = 0 }
+    local lines = {}
+    for _, group in ipairs(ns.JournalModel.GROUPS) do
         local p = model.progress[group]
-        local text =
-            format(L.JOURNAL_PROGRESS_GROUP, L["JOURNAL_GROUP_" .. group], p.caught, p.total)
+        local value = format(L.JOURNAL_BAR_VALUE, p.caught, p.total)
         if p.new > 0 then
-            text = text .. format(L.JOURNAL_PROGRESS_NEW, p.new)
+            value = value .. format(L.JOURNAL_PROGRESS_NEW, p.new)
         end
-        parts[i] = text
+        lines[#lines + 1] = { label = L["JOURNAL_GROUP_" .. group], value = value }
     end
-    local line = concat(parts, ";  ")
-    if model.pending > 0 then
-        line = line .. "  " .. format(L.JOURNAL_PENDING, model.pending)
-    end
-    return line
+    return {
+        caught = fish.caught,
+        total = fish.total,
+        text = format(L.JOURNAL_PROGRESS_GROUP, L.JOURNAL_GROUP_fish, fish.caught, fish.total),
+        lines = lines,
+        pending = model.pending > 0 and format(L.JOURNAL_PENDING, model.pending) or nil,
+    }
 end
 
 local function pct(x)

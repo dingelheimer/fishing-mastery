@@ -1,7 +1,7 @@
 -- Small controls in the Forever look, shared by the pages of the main window (Epic 9): a
 -- dropdown-styled button (an inset box with the value and a down arrow, as in Draft 2; a click
--- runs onClick, the pages cycle the value, no menu) and a framed box with a gold title (Draft 1).
--- Unnamed, insecure frames only.
+-- runs onClick, the pages cycle the value, no menu), the same look without the arrow for actions,
+-- a framed box with a gold title (Draft 1), and a small status bar. Unnamed, insecure frames only.
 local _, ns = ...
 
 local Frames, Style = ns.Frames, ns.Style
@@ -53,4 +53,25 @@ function Controls.Box(env, parent, title)
         box.title:SetText(title)
     end
     return box
+end
+
+-- A button in the dropdown look without the arrow (actions next to dropdowns).
+function Controls.Button(env, parent, width, onClick)
+    local button = Controls.Dropdown(env, parent, width, onClick)
+    button.arrow:Hide()
+    return button
+end
+
+-- A small status bar with centered text (the Journal progress in the page header).
+function Controls.Bar(env, parent, width, height)
+    local bar = env.CreateFrame("StatusBar", nil, parent)
+    bar:SetSize(width, height)
+    bar:SetStatusBarTexture(Style.BAR)
+    bar:SetStatusBarColor(Style.SKILL[1], Style.SKILL[2], Style.SKILL[3])
+    local track = bar:CreateTexture(nil, "BACKGROUND")
+    track:SetAllPoints(bar)
+    tint(track, Style.TRACK)
+    bar.text = bar:CreateFontString(nil, "OVERLAY", Style.FONTS.small)
+    bar.text:SetPoint("CENTER", bar, "CENTER", 0, 0)
+    return bar
 end
