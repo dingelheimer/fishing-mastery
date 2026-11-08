@@ -157,6 +157,7 @@ describe("FishingMastery skill and compare boot", function()
         w.catch(5020, 12)
         w.runTimers(5040)
         _G.SlashCmdList.FM("stats")
+        stats().frame.Tabs[6]:Click() -- the calendar is on the Sessions tab
         local heatmap = stats().heatmap
         assert.are.equal(1, heatmap.drawn.fishing)
         assert.truthy(heatmap.title:GetText():find("last 53 weeks: 1", 1, true))

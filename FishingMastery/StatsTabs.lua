@@ -1,51 +1,39 @@
--- Filled tabs of the stats window, one entry per tab name: build(window, panel) creates its frames
--- once, draw(window, input, keepScroll) fills them from the aggregates and returns the view it
--- used (for the status line); scoped tabs show the scope button. This file: Overview, Fish, and
--- Zones (a click on a zone row shows its Classic comparison below); FailureTabs.lua adds Failures,
--- Bite times, and Sessions; SkillTabs.lua Skill and Compare.
+-- Filled tabs of the Statistics page, one entry per tab name: build(window, panel) creates its
+-- frames once, draw(window, input, keepScroll) fills them from the aggregates and returns the view
+-- it used (for the status line); scoped tabs show the scope button. This file: Overview
+-- (OverviewPage.lua), Fish, and Zones (a click on a zone row shows its Classic comparison
+-- below); FailureTabs.lua adds Failures, Bite times, and Sessions; SkillTabs.lua Skill and
+-- Compare.
 local _, ns = ...
 
-local concat, format, ipairs = table.concat, string.format, ipairs
+local format, ipairs = string.format, ipairs
 local L, StatsFrame = ns.L, ns.StatsFrame
-local StatsModel, StatsView, StatsTables, ZoneTable, OverviewTable =
-    ns.StatsModel, ns.StatsView, ns.StatsTables, ns.ZoneTable, ns.OverviewTable
+local StatsView, StatsTables, ZoneTable = ns.StatsView, ns.StatsTables, ns.ZoneTable
 
 local StatsTabs = {}
 ns.StatsTabs = StatsTabs
 
-StatsTabs.OVERVIEW_TEXT = 150 -- height of the Overview text block
 StatsTabs.ZONE_LIST = 190 -- height of the zone list above the comparison
 
 StatsTabs.overview = {
+    scoped = true,
     build = function(self, panel)
-        self.overviewText = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        self.overviewText:SetPoint("TOPLEFT", panel, "TOPLEFT", 2, 0)
-        self.overviewText:SetWidth(StatsFrame.PANEL_WIDTH - 4)
-        self.overviewText:SetJustifyH("LEFT")
-        local heatTop = StatsFrame.PANEL_HEIGHT - ns.Heatmap.HEIGHT
-        local area = StatsFrame.Area(
-            self,
-            panel,
-            0,
-            StatsTabs.OVERVIEW_TEXT,
-            heatTop - 8 - StatsTabs.OVERVIEW_TEXT
-        )
-        self.characters = ns.StatsList.Create(self.env, area, OverviewTable.COLUMNS)
-        self.heatmap = ns.Heatmap.Create(self.env, panel, StatsFrame.PANEL_WIDTH)
-        self.heatmap.frame:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -heatTop)
+        self.overview = {}
+        local width, height = StatsFrame.PANEL_WIDTH, StatsFrame.PANEL_HEIGHT
+        ns.OverviewPage.Build(self.overview, self.env, panel, width, height)
     end,
-    draw = function(self, input, keepScroll)
-        local model = StatsModel.Overview({
-            chars = self.db.chars,
-            current = self.charKey,
-            now = self.serverTime(),
-            thresholds = self.thresholds,
-        })
-        self.overviewText:SetText(concat(OverviewTable.Lines(model, input), "\n"))
-        self.characters:SetRows(OverviewTable.Rows(model, input), keepScroll)
-        local today = ns.Codec.Day(self.serverTime())
-        self.heatmap:Draw(ns.CalendarModel.Build(model.days, today), input)
-        return nil
+    draw = function(self, input)
+        local model = self:OverviewModel()
+        ns.OverviewPage.Draw(
+            self.overview,
+            ns.OverviewModel.Build({
+                model = model,
+                sessions = self:SessionCount(),
+                skill = self:Skill(),
+                info = input.info,
+            })
+        )
+        return model.view
     end,
 }
 

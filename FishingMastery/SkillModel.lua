@@ -94,6 +94,22 @@ local function forecast(points, pace, perHour)
     return result
 end
 
+-- Skill points gained since tracking started: rank minus the lowest rank at the start of a saved
+-- session (sessions: the character's list), or nil without one.
+function SkillModel.Gained(sessions, rank)
+    if type(rank) ~= "number" or type(sessions) ~= "table" then
+        return nil
+    end
+    local start = nil
+    for _, session in ipairs(sessions) do
+        local first = type(session) == "table" and session.skillStart
+        if type(first) == "number" and (not start or first < start) then
+            start = first
+        end
+    end
+    return start and max(0, rank - start) or nil
+end
+
 -- The next rank cap above rank: the saved cap when it is higher, else the next step of 75.
 function SkillModel.NextCap(rank, cap)
     if type(cap) == "number" and cap > rank then

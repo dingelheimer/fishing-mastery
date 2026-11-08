@@ -55,14 +55,15 @@ describe("FishingMastery stats window boot", function()
     it("shows the same casts and catches on the Overview as /fm rebuild", function()
         fish()
         _G.SlashCmdList.FM("stats")
-        local text = stats().overviewText:GetText()
-        assert.truthy(text:find("All characters: 3 casts, 2 catches on 1 days", 1, true))
-        assert.truthy(text:find("favorite zone Durotar", 1, true))
-        assert.truthy(text:find("Most catches in a session: 2 (Dingel", 1, true))
-        assert.are.same(
-            { { "Dingel (you)", "3", "2", "2/3", "-", "Durotar" } },
-            texts(stats().characters)
-        )
+        local overview = stats().overview
+        assert.are.equal("2", overview.numbers[1].value:GetText())
+        assert.are.equal("of 3 casts", overview.numbers[1].sub:GetText())
+        assert.are.equal("2/3", overview.numbers[2].value:GetText())
+        assert.are.equal("Catch", overview.outcomeRows[1].label:GetText())
+        assert.are.equal("2", overview.outcomeRows[1].count:GetText())
+        assert.are.equal("1", overview.outcomeRows[2].count:GetText())
+        stats().frame.Tabs[6]:Click()
+        assert.truthy(stats().recordText:GetText():find("Most catches in a session: 2 (", 1, true))
         w.printed = {}
         _G.SlashCmdList.FM("rebuild")
         assert.truthy(
@@ -172,8 +173,12 @@ describe("FishingMastery stats window boot", function()
             names
         )
         window.frame.Tabs[1]:Click()
-        assert.is_false(window.scopeButton:IsShown()) -- the Overview always shows both
-        assert.are.equal(2, #window.characters.box.drawn)
+        assert.is_true(window.scopeButton:IsShown()) -- the Overview follows the scope too
+        assert.are.equal(2, #window.overview.characters)
+        assert.are.equal("3", window.overview.numbers[1].value:GetText())
+        window.scopeButton:Click()
+        assert.is_nil(window.overview.characters)
+        assert.are.equal("2", window.overview.numbers[1].value:GetText())
 
         local main = w.ns.mainWindow
         main.frame:SetPoint("TOP", _G.UIParent, "TOP", 0, -50)
@@ -194,7 +199,7 @@ describe("FishingMastery stats window boot", function()
         w.ns.castLog.counting = false
         w.runTimers(w.clock + 1) -- the window checks again every second while counting
         assert.are.equal("", window.status:GetText())
-        assert.truthy(window.overviewText:GetText():find("3 casts, 2 catches", 1, true))
+        assert.are.equal("of 3 casts", window.overview.numbers[1].sub:GetText())
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 

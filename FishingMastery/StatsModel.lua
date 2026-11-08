@@ -97,7 +97,8 @@ end
 
 -- input: { chars (db.chars), current (key of the logged-in character), now (server time),
 -- thresholds }. Returns { account = Summary, characters = { { key, name, current, summary } }
--- (most casts first), records, days (the account's { [day] = { casts, catches } }) }.
+-- (most casts first), records, days (the account's { [day] = { casts, catches } }), view (the
+-- merged StatsView of every character in chars) }.
 function StatsModel.Overview(input)
     local t = input.thresholds or Stats.DEFAULTS
     local entries, list = {}, {}
@@ -111,6 +112,7 @@ function StatsModel.Overview(input)
     local model = {
         account = StatsModel.Summary(accountView, t),
         days = accountView.days,
+        view = accountView,
         characters = {},
         records = records(entries, input.now, t),
     }

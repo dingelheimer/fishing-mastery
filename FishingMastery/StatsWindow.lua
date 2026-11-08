@@ -123,6 +123,50 @@ function StatsWindow:Chars()
     return list
 end
 
+-- Characters of the chosen scope by key (StatsModel.Overview input).
+function StatsWindow:CharMap()
+    local chars = type(self.db.chars) == "table" and self.db.chars or {}
+    if self.scope == "char" then
+        return { [self.charKey] = chars[self.charKey] }
+    end
+    return chars
+end
+
+-- StatsModel.Overview of the chosen scope (Overview numbers, records, calendar days).
+function StatsWindow:OverviewModel()
+    return ns.StatsModel.Overview({
+        chars = self:CharMap(),
+        current = self.charKey,
+        now = self.serverTime(),
+        thresholds = self.thresholds,
+    })
+end
+
+-- Saved sessions of the chosen scope.
+function StatsWindow:SessionCount()
+    local count = 0
+    for _, entry in ipairs(self:Chars()) do
+        if type(entry.sessions) == "table" then
+            count = count + #entry.sessions
+        end
+    end
+    return count
+end
+
+-- Fishing skill of the logged-in character: { rank, max, modifier, gained }, live from the
+-- client, else the saved rank and cap.
+function StatsWindow:Skill()
+    local char = self.castLog.char or {}
+    local rank, modifier, max = Context.Fishing(self.env)
+    rank = rank or char.fishingRank
+    return {
+        rank = rank,
+        max = max or char.fishingMax,
+        modifier = modifier,
+        gained = ns.SkillModel.Gained(char.sessions, rank),
+    }
+end
+
 local function statusText(self, name, view)
     if self.castLog:Counting() then
         return L.STATS_COUNTING
@@ -132,7 +176,7 @@ local function statusText(self, name, view)
     if custom then
         return custom
     end
-    if name ~= "overview" and view and view.stale > 0 then
+    if view and view.stale > 0 then
         return format(L.STATS_STALE, view.stale)
     end
     if view and ns.Stats.Count(view.outcomes, "catch") == 0 then

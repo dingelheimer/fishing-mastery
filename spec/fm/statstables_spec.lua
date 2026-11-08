@@ -1,6 +1,6 @@
 -- Table builders of the stats window: Fish (cells, ranges in tooltips, grey small samples, dry
 -- streak and expected casts, sorting, quality filter), Zones (zones with their subzones), and the
--- Overview lines and character rows.
+-- record lines of the Sessions tab.
 local addon = require("spec.helpers.addon")
 
 local DAY = 20763 * 86400
@@ -191,7 +191,7 @@ describe("FishingMastery stats tables", function()
         assert.truthy(tip:find("Raw Slitherskin Mackerel|r: Share 100 % of catches", 1, true))
     end)
 
-    it("writes the Overview lines and one row per character", function()
+    it("writes the record lines of a scope", function()
         local totals = Totals.New()
         for i = 1, 40 do
             Totals.Add(
@@ -199,9 +199,6 @@ describe("FishingMastery stats tables", function()
                 { t = HOUR5 + i * 20, map = 1411, out = "catch", loot = { { id = 6303 } } }
             )
         end
-        local old = Totals.New()
-        Totals.Add(old, { t = DAY, map = 1412, out = "getaway" })
-        old.version = 3
         local chars = {
             ["Player-1"] = {
                 name = "Alice",
@@ -220,25 +217,15 @@ describe("FishingMastery stats tables", function()
                     },
                 },
             },
-            ["Player-2"] = { totals = old },
         }
         local model = StatsModel.Overview({ chars = chars, current = "Player-1", now = HOUR5 })
-        local lines = table.concat(ns.OverviewTable.Lines(model, input()), "\n")
-        assert.truthy(lines:find("All characters: 41 casts, 40 catches on 1 days", 1, true))
-        assert.truthy(lines:find("Success rate 98 % (95 % range", 1, true))
-        assert.truthy(lines:find("favorite zone Durotar", 1, true))
         local date = os.date("!%Y-%m-%d", HOUR5)
-        assert.truthy(
-            lines:find("Most catches in a session: 40 (Alice, " .. date .. ", Durotar)", 1, true)
-        )
-        assert.truthy(lines:find("Most catches per hour: 171 (Alice", 1, true))
-        assert.truthy(lines:find("Longest session: 14 min active (Alice", 1, true))
-        assert.truthy(lines:find("1 character(s) were counted by an older version", 1, true))
-
-        local rows = ns.OverviewTable.Rows(model, input())
-        assert.are.same({ "Alice (you)", "40", "40", "100 %", "171/h", "Durotar" }, rows[1].cells)
-        assert.are.same({ "(unnamed)", "1", "0", "0/1", "-", "Mulgore" }, rows[2].cells)
-        assert.is_false(rows[1].grey[4])
-        assert.is_true(rows[2].grey[4])
+        assert.are.same({
+            "Most catches in a session: 40 (Alice, " .. date .. ", Durotar)",
+            "Most catches per hour: 171 (Alice, " .. date .. ", Durotar)",
+            "Longest session: 14 min active (Alice, " .. date .. ", Durotar)",
+        }, ns.OverviewTable.Records(model, input()))
+        model = StatsModel.Overview({ chars = {}, now = HOUR5 })
+        assert.are.same({}, ns.OverviewTable.Records(model, input()))
     end)
 end)

@@ -56,6 +56,7 @@ WatersTable.lua
 ZoneTable.lua
 ZoneRef.lua
 OverviewTable.lua
+OverviewModel.lua
 ChartModel.lua
 FailureTable.lua
 BiteTable.lua
@@ -97,6 +98,7 @@ BarChart.lua
 LineChart.lua
 Heatmap.lua
 Controls.lua
+OverviewPage.lua
 MainWindow.lua
 StatsWindow.lua
 StatsFrame.lua

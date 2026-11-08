@@ -59,14 +59,15 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Getaway.lua`   | Getaway risk: Classic model at an effective skill and base, own rate per resolved area and skill band with its range, the comparison, and its text lines (pure) |
 | `HudModel.lua`  | HUD numbers and texts from the session, rank, lure, and item; count/grey rules and tooltip ranges (pure) |
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
-| `StatsModel.lua` | Overview model: per-character and account numbers, favorite zone, session records (pure) |
+| `StatsModel.lua` | Scope model: per-character and merged numbers, favorite zone, session records, calendar days, the merged view (pure) |
 | `JournalModel.lua` | Journal model: entries of the four journal groups with own catches (account-wide or one character), places, base and no-getaway skill, recipes, season, quest-only flag, new-in-Forever items by Forever class, progress per group, gear for a skill gap (pure) |
 | `GearModel.lua` | Gear tab model: poles, other gear, lures, buff food, fishing ranks, enchants with bundled and tooltip bonus, needs, source, and where the player has them; the equipped bonus against the skill modifier; the best setup per slot plus the best lure in the bags; the tooltip number parser (pure) |
 | `RecipeModel.lua` | Journal recipes: the bundled recipes merged with the ones read in game, the account store of read recipes (journal items only, capped), buff food, recipes per fish (pure) |
 | `StatsTables.lua` | Fish table: count, share with range, best zone and hour, first and last catch, dry streak and expected casts for uncommon and better items, sorting, quality filter; item text helpers (pure) |
 | `ZoneRef.lua`   | Classic reference next to own catches: own group per area, comparison rows (Classic estimate, season or quest flag, own share, fish not in the Classic data), note, the two HUD zone lines (pure) |
 | `ZoneTable.lua` | Zones table: zones with their subzones (one row per resolved subzone area, else per text), casts, catches per hour, species, top items with shares; rows carry the area ID (pure) |
-| `OverviewTable.lua` | Overview lines (account totals, rates with ranges, favorite zone, records) and the character rows (pure) |
+| `OverviewTable.lua` | Record lines of the Sessions tab (pure) |
+| `OverviewModel.lua` | Overview page: skill bar, four headline numbers with ranges and grey rules, outcome rows, the five most caught items, the characters of the Catches tooltip (pure) |
 | `ChartModel.lua` | Chart math: nice axis scales, histogram bins, bar layout, x label step, line chart range and placement (pure) |
 | `FailureTable.lua` | Failures tab: outcome rows with rates of fair and hooked casts, getaway rate by skill band or by skill above the water's base with the Classic model, early clicks by click time (pure) |
 | `BiteTable.lua` | Bite times tab: groups per zone and lure state with median and quartiles, histogram chart (pure) |
@@ -114,6 +115,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `MainWindow.lua` | The Fishing Mastery window: page registry (`MainWindow.Register`), portrait frame (template fallbacks), side tabs on the right edge, page name, last page and position per character, Escape |
 | `StatsWindow.lua` | Statistics page `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
 | `StatsFrame.lua` | Statistics page layout: scope dropdown, status line, one panel per tab, 8 bottom tabs |
+| `OverviewPage.lua` | Overview frames: Fishing panel with the skill bar, headline numbers, where casts end, most caught |
 | `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs (with the click hint) |
 | `JournalTable.lua` | Fish tab of the journal: filtered rows (group, caught or not, plain-text search), dimmed not-caught rows, progress line, detail lines (pure) |
 | `JournalWindow.lua` | Journal page `/fm journal`: tab (saved per character), scope (account-wide by default), filters, selection; builds the model and the table inputs (own share per area) |
@@ -282,11 +284,13 @@ totals and the session records; only the Skill tab reads the history, in steps. 
 shown tab. Ranges are in the row tooltips; values from small samples are grey (counts only below
 10).
 
-- **Overview:** all characters' casts, catches, fishing days, success rate and catches per hour
-  with ranges, active time, species, favorite zone (most catches); records (most catches in a
-  session, most catches per hour in a session with at least 30 fair casts, longest session);
-  one row per character of this account; a calendar heatmap of the last 53 weeks (UTC days of
-  the server time, brighter = more catches; date, casts, and catches in each day's tooltip).
+- **Overview** (of the scope): the Fishing panel (rank name, the skill bar "Fishing 154 / 225"
+  with a white mark at the effective skill with lure and gear, the skill points gained since the
+  first saved session); four numbers: catches of casts, success rate, catches per hour (each
+  with "likely low - high", grey or counts only for few casts), active fishing time in sessions;
+  where casts end (catch, got away, clicked too early, not clicked: count, bar, share of fair
+  casts; cancelled and invalid target grey, counted only); the five most caught items with a bar.
+  With all characters the Catches number lists every character in its tooltip.
 - **Fish:** every item with catches, share of catches, best zone, best hour (realm time), first
   and last catch; for uncommon and better items the dry streak (fair casts since the last one)
   and the expected casts per item. Click a header to sort, again to flip the order; the quality
@@ -312,8 +316,12 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   chart is shown.
 - **Bite times:** histogram (1-second bins up to 30 s) of all zones or of one zone and lure state
   (the button steps through them), median and quartiles; a table of every group.
-- **Sessions:** every session (newest first) with date, character, zone, active time, casts,
-  catches, and skill change; click a header to sort. Rates with ranges in the tooltip.
+- **Sessions** (of the scope): the records above the list (most catches in a session, most
+  catches per hour in a session with at least 30 fair casts, longest session); every session
+  (newest first) with date, character, zone, active time, casts, catches, and skill change; click
+  a header to sort, rates with ranges in the tooltip; a calendar heatmap of the last 53 weeks
+  below (UTC days of the server time, brighter = more catches; date, casts, and catches in each
+  day's tooltip).
 - Charts: bar values above the bars when they fit, the numbers of every bar in its tooltip, grey
   bars for small samples.
 - **Skill** (this character): reads the history 10 chunks per frame with "Reading your history"

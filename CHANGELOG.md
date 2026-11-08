@@ -5,6 +5,9 @@
 - Changed: statistics and journal are pages of one Fishing Mastery window with side tabs on its
   right edge, like the Professions window. It opens on the last page, moves by the title, and
   closes with Escape. Window positions saved before this version are reset once.
+- Changed: the Statistics Overview shows your Fishing skill bar, four headline numbers with their
+  likely range, where your casts end, and your five most caught items, for this character or all
+  characters. The records and the fishing days calendar moved to the Sessions tab.
 - Changed: tables have a gold header bar with a sort arrow on the sorted column, striped rows,
   and a highlight on the row under the mouse (first step of the interface overhaul).
 - New: `/fm contribute` shows your catch counts per area and skill band to share, with a random

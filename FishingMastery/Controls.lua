@@ -1,6 +1,7 @@
 -- Small controls in the Forever look, shared by the pages of the main window (Epic 9): a
--- dropdown-styled button (an inset box with the value and a down arrow, as in Draft 2). A click
--- runs onClick (the pages cycle the value; no menu). Unnamed, insecure frames only.
+-- dropdown-styled button (an inset box with the value and a down arrow, as in Draft 2; a click
+-- runs onClick, the pages cycle the value, no menu) and a framed box with a gold title (Draft 1).
+-- Unnamed, insecure frames only.
 local _, ns = ...
 
 local Frames, Style = ns.Frames, ns.Style
@@ -41,4 +42,15 @@ function Controls.Dropdown(env, parent, width, onClick)
     button.arrow = arrow
     button:SetScript("OnClick", ns.Guard.Wrap("dropdown:click", onClick))
     return button
+end
+
+-- A framed panel (the inset look of the Professions window) with an optional gold title.
+function Controls.Box(env, parent, title)
+    local box = Frames.Create(env, "Frame", parent, Controls.BOX_TEMPLATE)
+    if title then
+        box.title = box:CreateFontString(nil, "OVERLAY", Style.FONTS.label)
+        box.title:SetPoint("TOPLEFT", box, "TOPLEFT", 10, -8)
+        box.title:SetText(title)
+    end
+    return box
 end

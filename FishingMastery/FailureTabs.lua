@@ -2,10 +2,11 @@
 -- outcome table with two bar charts (getaway rate by skill band with ranges, early clicks by click
 -- time; a button groups the skill chart by skill above the water's base with the Classic model
 -- where waters have zone data), the bite histogram of a chosen group with median and quartiles
--- over the table of groups, and the sortable session list.
+-- over the table of groups, and the sortable session list between the records and the fishing
+-- days calendar.
 local _, ns = ...
 
-local type, pairs, format = type, pairs, string.format
+local type, pairs, format, concat = type, pairs, string.format, table.concat
 local L, StatsFrame, StatsTabs, StatsView = ns.L, ns.StatsFrame, ns.StatsTabs, ns.StatsView
 local FailureTable, BiteTable, SessionTable = ns.FailureTable, ns.BiteTable, ns.SessionTable
 
@@ -16,6 +17,7 @@ FailureTabs.TABLE_HEIGHT = 150 -- outcome table on the Failures tab
 FailureTabs.CHART_GAP = 12
 FailureTabs.BITE_CHART = 190
 FailureTabs.SKILL_BUTTON = 200
+FailureTabs.RECORDS = 60 -- height of the records above the session list
 
 local function chart(self, panel, x, top, width, height)
     local widget = ns.BarChart.Create(self.env, panel, width, height)
@@ -130,13 +132,26 @@ local function namedChars(self)
     return list
 end
 
+-- Sessions: the records above the list and the fishing days calendar below it (both moved from
+-- the Overview in Story 9.3), all of the chosen scope.
 StatsTabs.sessions = {
     scoped = true,
     build = function(self, panel)
-        local area = StatsFrame.Area(self, panel)
+        self.recordTitle = panel:CreateFontString(nil, "OVERLAY", ns.Style.FONTS.smallLabel)
+        self.recordTitle:SetPoint("TOPLEFT", panel, "TOPLEFT", 2, 0)
+        self.recordTitle:SetText(L.STATS_OV_RECORDS)
+        self.recordText = panel:CreateFontString(nil, "OVERLAY", ns.Style.FONTS.small)
+        self.recordText:SetPoint("TOPLEFT", panel, "TOPLEFT", 2, -14)
+        self.recordText:SetWidth(StatsFrame.PANEL_WIDTH - 4)
+        self.recordText:SetJustifyH("LEFT")
+        local heatTop = StatsFrame.PANEL_HEIGHT - ns.Heatmap.HEIGHT
+        local top = FailureTabs.RECORDS
+        local area = StatsFrame.Area(self, panel, 0, top, heatTop - 8 - top)
         self.sessions = ns.StatsList.Create(self.env, area, SessionTable.COLUMNS, function(key)
             self:SortBy("sessions", key)
         end)
+        self.heatmap = ns.Heatmap.Create(self.env, panel, StatsFrame.PANEL_WIDTH)
+        self.heatmap.frame:SetPoint("TOPLEFT", panel, "TOPLEFT", 0, -heatTop)
     end,
     draw = function(self, input, keepScroll)
         input.sort = self.sorts.sessions
@@ -144,6 +159,12 @@ StatsTabs.sessions = {
         local rows = SessionTable.Rows(namedChars(self), input)
         self.sessions:SetRows(rows, keepScroll, input.sort)
         self.sessionCount = #rows
+        local model = self:OverviewModel()
+        local records = ns.OverviewTable.Records(model, input)
+        self.recordTitle:SetShown(#records > 0)
+        self.recordText:SetText(concat(records, "\n"))
+        local today = ns.Codec.Day(self.serverTime())
+        self.heatmap:Draw(ns.CalendarModel.Build(model.days, today), input)
         return nil
     end,
 }
