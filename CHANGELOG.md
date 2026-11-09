@@ -1,7 +1,13 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
+The interface overhaul: one Fishing Mastery window with side tabs for Statistics, Journal,
+Helpers, and Settings, a HUD card, and every table and tooltip in the game's style. Your saved
+data, settings, and history carry over.
+
+- Fixed: an open HUD tooltip kept the numbers of the moment you hovered; it now follows the card
+  while it is open.
 - Changed: every tooltip of the addon uses short labels and values in the game's style. The item
   tooltip shows "Fishing Mastery" with "caught N" and your best water; the minimap button shows
   the session, your Fishing skill, and the click hints; chart bars and calendar days list their

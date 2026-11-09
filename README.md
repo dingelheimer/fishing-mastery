@@ -8,6 +8,12 @@ fishing gear, with what you have already caught and owned.
 Published on CurseForge as **Fishing Mastery Forever**; in game it is called Fishing Mastery. Free
 and open source (GPL-3.0). Developers: see the [development reference](docs/development.md).
 
+![The Statistics Overview: the Fishing skill bar, catches, success rate, catches per hour, active fishing time, where casts end, and the most caught fish](docs/images/stats-overview.png)
+
+| HUD card while fishing | Journal: every fish with where it bites |
+|---|---|
+| ![The HUD card in Booty Bay: 21 % get away, the skill bar with the lure mark, the lure timer, catches, success, per hour, the last catch, and the water's fish](docs/images/hud-card.png) | ![The Journal Fish tab with Raw Spotted Yellowtail selected: caught, first catch, skill, and the places it bites](docs/images/journal-fish.png) |
+
 ## Features
 
 - **Tracking:** every cast and its outcome (catch, getaway, early click, timeout, cancel, invalid

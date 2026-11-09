@@ -77,6 +77,11 @@ function Tip.Into(tooltip)
     return setmetatable({ tooltip = tooltip, shift = false, lines = count }, Tip)
 end
 
+-- True while owner's tooltip is shown (a view that redraws can draw it again with Tip.Open).
+function Tip.IsOpen(owner)
+    return current ~= nil and current.owner == owner and owned(current)
+end
+
 -- Hides the tooltip of owner (OnLeave).
 function Tip.Close(env, owner)
     if current and current.owner == owner then

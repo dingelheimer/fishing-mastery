@@ -239,6 +239,9 @@ function Hud:Refresh(keepZone)
     end
     draw(self, model)
     self.frame:Show()
+    if ns.Tip.IsOpen(self.frame) then -- an open tooltip shows the same numbers as the card
+        self:ShowTooltip(self.frame)
+    end
     if model.lureSeconds then
         scheduleTick(self)
     end

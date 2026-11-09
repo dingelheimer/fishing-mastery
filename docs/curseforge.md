@@ -10,6 +10,8 @@ description into the description editor (Markdown). Keep it in step with the
 GPL-3.0, source `https://github.com/dingelheimer/fishing-mastery`, issues on the same repository.
 **Logo:** `docs/images/logo-400.png` (400 × 400; `logo-1024.png` if a larger one is asked for),
 drawn by `tools/draw_logo.py`.
+**Images tab:** `docs/images/stats-overview.png`, `hud-card.png`, `journal-fish.png` (the README
+screenshots of 1.1.0; no character names).
 
 ## Summary
 
@@ -23,14 +25,21 @@ turns it into numbers you can trust.
 
 ### What you get
 
-- **HUD:** casts, catches, success rate, catches per hour, skill, lure time, last catch, and the
-  getaway risk and missing fish of the water you stand in.
-- **Stats window** with eight tabs: Overview, Fish, Zones, Failures, Bite times, Sessions, Skill,
+- **One window** with side tabs like the Professions window: Statistics, Journal, Helpers, and
+  Settings.
+- **HUD card:** the water with its getaway risk, your skill bar, the lure with its time left or the
+  one that would help, catches, success rate, catches per hour, the last catch, and the water's
+  fish you have not caught there yet. Or one compact line.
+- **Statistics** with eight tabs: Overview, Fish, Zones, Failures, Bite times, Sessions, Skill,
   Compare. Every rate has a 95 % range; small samples show counts only.
 - **Journal:** every fish (caught or not) with where it bites and the skill it needs; every water
   colored for your skill; recipes that use fish and which ones you know; fishing gear, lures,
   buff food, and ranks with what you own and your best possible skill.
-- **Session summary**, item tooltip counts, daily snapshots, and text export and import.
+- **Helpers** (all off by default): a casting key, double right-click casting, a smart lure that
+  puts on the cheapest lure that stops getaways, a louder splash, and hiding the interface while
+  your line is out. They act only on your key press or click.
+- **Tooltips** in the game's style, with the explanations behind Shift; item tooltip counts,
+  the session summary, daily snapshots, and text export and import.
 
 ### Where the numbers come from
 
@@ -45,12 +54,12 @@ are text you copy yourself; `/fm export` leaves out character names and IDs.
 
 ### Commands
 
-`/fm` (help), `/fm stats`, `/fm journal`, `/fm summary`, `/fm settings`, `/fm hud`,
-`/fm export`, `/fm import`.
+`/fm` (help), `/fm stats`, `/fm journal`, `/fm helpers`, `/fm settings`, `/fm summary`,
+`/fm hud`, `/fm export`, `/fm import`. Left click on the minimap button opens the window.
 
 ### Credits
 
 Data: CMaNGOS classic-db (GPL-3.0), AllTheThings Forever client exports (MIT). Full notices in
 `NOTICE.md` inside the addon folder.
 
-This is a beta. Bug reports with the Lua error text are very welcome on GitHub.
+Bug reports with the Lua error text are very welcome on GitHub.

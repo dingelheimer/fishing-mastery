@@ -200,8 +200,15 @@ describe("FishingMastery HUD boot", function()
         assert.are.equal("Catches = 12 of 12 casts", tip.lines[3])
         assert.truthy(tip.lines[4]:find("^Success rate = 100 %% |cff8c8c8c%(76 %- 100%)|r$"))
         assert.are.equal("Hold Shift for how this is counted", tip.lines[#tip.lines])
+        -- An open tooltip follows the card (owner review, Story 9.10: 126 on the card, 127 in a
+        -- tooltip drawn seconds earlier).
+        w.catch(5240, 9)
+        assert.is_true(tip.shown)
+        assert.are.equal("Catches = 13 of 13 casts", tip.lines[3])
         frame:GetScript("OnLeave")(frame)
         assert.is_false(tip.shown)
+        w.catch(5260, 9)
+        assert.is_false(tip.shown) -- a refresh does not open a closed tooltip
     end)
 
     it("fills in the item name once its data has loaded", function()
