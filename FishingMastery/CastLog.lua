@@ -174,7 +174,8 @@ function CastLog:OnAttempt(record)
     return cast
 end
 
--- fn(session) runs when an open session ends after IDLE seconds without a cast (not at logout).
+-- fn(session) runs when an open session ends after IDLE seconds without a cast or by the HUD's
+-- stop button (not at logout).
 function CastLog:OnSessionEnd(fn)
     self.endListeners[#self.endListeners + 1] = fn
 end
@@ -234,6 +235,23 @@ end
 -- True while the totals are being counted from the history after login (schema 2 update).
 function CastLog:Counting()
     return self.counting == true
+end
+
+-- Ends the open session now (the HUD's stop button) and runs the end listeners. Returns true when
+-- a session was open; the next cast starts a new one.
+function CastLog:StopSession()
+    if not self.char then
+        return false
+    end
+    local session = Session.Stop(self.char, self.serverTime())
+    if not session then
+        return false
+    end
+    self.idleFor, self.idleLast = nil, nil
+    for _, fn in ipairs(self.endListeners) do
+        fn(session)
+    end
+    return true
 end
 
 -- The open session (after the idle check), or nil.

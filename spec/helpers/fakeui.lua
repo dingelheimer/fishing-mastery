@@ -22,6 +22,15 @@ end
 function Region:SetWidth(width)
     self.width = width
 end
+function Region:SetHeight(height)
+    self.height = height
+end
+function Region:GetWidth()
+    return self.width or 0
+end
+function Region:GetHeight()
+    return self.height or 0
+end
 function Region:SetShown(shown)
     if shown then
         self:Show()

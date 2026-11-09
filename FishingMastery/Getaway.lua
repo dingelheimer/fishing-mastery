@@ -7,9 +7,8 @@
 -- or API calls.
 local _, ns = ...
 
-local type, pairs, floor, max, min, format =
-    type, pairs, math.floor, math.max, math.min, string.format
-local L, Stats, Totals, HudModel = ns.L, ns.Stats, ns.Totals, ns.HudModel
+local type, pairs, floor, max, min = type, pairs, math.floor, math.max, math.min
+local Stats, Totals = ns.Stats, ns.Totals
 
 local Getaway = {}
 ns.Getaway = Getaway
@@ -125,40 +124,4 @@ function Getaway.Risk(bands, skill, base, t)
     result.skill, result.band, result.own, result.bandModel = skill, band, own, bandModel
     result.model = Getaway.Model(skill, base)
     return result
-end
-
-local function pct(x)
-    return floor(x * 100 + 0.5)
-end
-
--- Text lines of a risk (Getaway.Risk): the model (or "unknown" without a base level), the own
--- rate of the skill's band (a count below the display threshold), and "differs from Classic".
-function Getaway.Lines(risk)
-    local lines, model, own = {}, risk.model, risk.own
-    if not model then
-        lines[1] = format(L.GETAWAY_UNKNOWN, risk.skill)
-    elseif model.below then
-        lines[1] = format(L.GETAWAY_BELOW, risk.skill, model.stopsAt - Getaway.SPAN)
-    else
-        lines[1] = format(L.GETAWAY_MODEL, risk.skill, pct(model.getaway), model.stopsAt)
-    end
-    local from, to = risk.band, risk.band + Totals.SKILL_BAND - 1
-    if risk.shown then
-        lines[#lines + 1] = format(
-            L.GETAWAY_OWN,
-            from,
-            to,
-            HudModel.Percent(own),
-            pct(own.low),
-            pct(own.high),
-            own.k,
-            own.n
-        )
-    elseif own then
-        lines[#lines + 1] = format(L.GETAWAY_OWN_FEW, from, to, own.k, own.n)
-    end
-    if risk.differs then
-        lines[#lines + 1] = format(L.GETAWAY_DIFFERS, pct(risk.bandModel))
-    end
-    return lines
 end

@@ -1,10 +1,11 @@
--- Pure logic: the HUD's numbers and texts from the open session and the live game values
--- (rank, skill modifier, lure time, item name). Rates come from Stats with the session's
+-- Pure logic: the HUD's numbers from the open session and the live game values (rank, skill
+-- modifier, lure time, item name), their short formats, and the rate tooltip lines (minimap
+-- button); the HUD card is HudCardModel.lua. Rates come from Stats with the session's
 -- outcome counts; small samples show counts or are greyed by the Stats display rule. No frame
 -- or API calls.
 local _, ns = ...
 
-local format, floor, ceil, type = string.format, math.floor, math.ceil, type
+local format, floor, type = string.format, math.floor, type
 local L, Stats, Session = ns.L, ns.Stats, ns.Session
 
 local HudModel = {}
@@ -61,67 +62,6 @@ function HudModel.Rate(result)
         return "-"
     end
     return format(L.HUD_PER_HOUR, floor(result.rate + 0.5))
-end
-
-local function skillText(model)
-    if type(model.rank) ~= "number" then
-        return L.HUD_SKILL_NONE
-    end
-    if model.effective and model.effective ~= model.rank then
-        return format(L.HUD_SKILL_EFFECTIVE, model.rank, model.skillUps, model.effective)
-    end
-    return format(L.HUD_SKILL, model.rank, model.skillUps)
-end
-
-local function lureText(model)
-    if not model.lureSeconds then
-        return L.HUD_NO_LURE
-    end
-    return format(L.HUD_LURE, ceil(model.lureSeconds / 60))
-end
-
-local function lastText(model)
-    if not model.lastItem then
-        return L.HUD_NO_CATCH
-    end
-    local name = model.itemName or format(L.HUD_ITEM_LOADING, model.lastItem)
-    if type(model.lastBite) == "number" then
-        return format(L.HUD_LAST_BITE, name, model.lastBite / 10)
-    end
-    return name
-end
-
--- Texts of the full style: { session, rates, skill, lure, last, icon, grey }. grey marks the
--- rates line while the sample is small (Stats display "count" or "few").
-function HudModel.Lines(model)
-    return {
-        session = format(
-            L.HUD_SESSION,
-            HudModel.Duration(model.active),
-            model.casts,
-            model.catches
-        ),
-        rates = format(L.HUD_RATES, HudModel.Percent(model.success), HudModel.Rate(model.perHour)),
-        skill = skillText(model),
-        lure = lureText(model),
-        last = lastText(model),
-        icon = model.lastItem and model.itemIcon or nil,
-        grey = model.success.display ~= "full",
-    }
-end
-
--- The text style: one line with the session, rates, skill, and lure.
-function HudModel.Short(model)
-    return format(
-        L.HUD_SHORT,
-        HudModel.Duration(model.active),
-        model.catches,
-        model.casts,
-        HudModel.Percent(model.success),
-        HudModel.Rate(model.perHour),
-        skillText(model),
-        lureText(model)
-    )
 end
 
 local function percentRange(result)

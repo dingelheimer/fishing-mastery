@@ -50,6 +50,7 @@ JournalModel.lua
 RecipeModel.lua
 GearModel.lua
 RowTip.lua
+HudCardModel.lua
 StatsTables.lua
 JournalTable.lua
 RecipeTable.lua
@@ -94,6 +95,7 @@ Commands.lua
 DataCommands.lua
 HudZone.lua
 Hud.lua
+HudCommands.lua
 Summary.lua
 StatsListHeader.lua
 StatsList.lua
@@ -102,6 +104,7 @@ LineChart.lua
 Heatmap.lua
 Controls.lua
 OverviewPage.lua
+HudActions.lua
 HudCard.lua
 MainWindow.lua
 StatsWindow.lua

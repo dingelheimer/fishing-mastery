@@ -2,9 +2,17 @@
 
 ## Unreleased
 
+- Fixed: in places the game reports as the continent, such as the cave outside Wailing Caverns,
+  the HUD named "Kalimdor" and knew no risk or fish; new casts there were saved under Kalimdor.
+  Both now use the zone shown on screen (The Barrens). Casts saved before stay as they are.
 - Changed: statistics and journal are pages of one Fishing Mastery window with side tabs on its
   right edge, like the Professions window. It opens on the last page, moves by the title, and
   closes with Escape. Window positions saved before this version are reset once.
+- Changed: the HUD is a card in the tooltip look: the water with a risk tag, the skill bar with a
+  mark at your skill with lure and gear, the lure with a timer or the one that would help, three
+  headline numbers, the last catch, and the water's fish as icons. Its tooltip lists short labels
+  and values with the explanations behind Shift. The compact layout is one line. Two buttons on
+  the HUD switch between card and compact and stop the session now.
 - New: a Settings page in the window with every setting grouped, a live HUD preview, the data
   buttons, and Defaults. New HUD settings: layout (card or compact; your old style carries over)
   and opacity. The game's Options entry now opens this page. `/fm hud style` is now

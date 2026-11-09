@@ -110,6 +110,7 @@ L.STATS_SKILL_CHANGE = "%+d (%d -> %d)"
 L.STATS_SESSION_OPEN = "Open session"
 L.STATS_SESSION_idle = "Ended after 15 minutes without a cast"
 L.STATS_SESSION_logout = "Ended at logout"
+L.STATS_SESSION_stopped = "Ended with the stop button"
 L.STATS_NO_SESSIONS = "No sessions yet."
 
 -- Skill and Compare tabs, calendar heatmap (Story 3.9)

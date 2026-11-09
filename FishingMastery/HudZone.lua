@@ -1,4 +1,4 @@
--- The HUD zone line's data at the current spot: the resolved area and its client name (the map
+-- The HUD's water data at the current spot: the resolved area and its client name (the map
 -- name without data), the getaway risk at the effective skill (Getaway.lua) with the own rate of
 -- this area, and the own catches where the area's Classic list applies (ZoneRef.lua). Also the
 -- dev flag readout of the area lookup. Reads the game through Context; the numbers come from the
@@ -24,7 +24,7 @@ local function mapName(env, map)
 end
 
 -- { area, name, rows (Classic list or nil), items (own catches there), risk (nil without a
--- fishing rank), text and fish (the two HUD lines), tips (risk lines for the tooltip) }. char:
+-- fishing rank) }; the HUD card (HudCardModel) shows them. char:
 -- the character entry; areas: the Area resolver (nil: no zone data loaded).
 function HudZone.Read(env, areas, char, t)
     local map = Context.CurrentMap(env)
@@ -48,12 +48,6 @@ function HudZone.Read(env, areas, char, t)
         items = own.items,
         risk = risk,
     }
-    zone.text, zone.fish = ZoneRef.HudLine(zone)
-    zone.tips = risk and Getaway.Lines(risk) or {}
-    local lure = rank and ns.SmartLure.Line(env, areas, ns.Journal)
-    if lure then
-        zone.tips[#zone.tips + 1] = lure
-    end
     return zone
 end
 

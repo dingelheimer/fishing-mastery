@@ -1,6 +1,5 @@
--- Season windows, realm offset, and the hour histogram (Season.lua, Totals.Civil), the month
--- counts per item (Totals, StatsView), and the HUD zone lines against the HUD width with the
--- longest area name in the data (Hud.WIDTH, Hud.LETTER).
+-- Season windows, realm offset, and the hour histogram (Season.lua, Totals.Civil), and the month
+-- counts per item (Totals, StatsView).
 local addon = require("spec.helpers.addon")
 
 local HOUR, DAY = 3600, 86400
@@ -100,39 +99,5 @@ describe("FishingMastery seasons and day/night", function()
         local view =
             ns.StatsView.Build({ { totals = a, subzones = {} }, { totals = b, subzones = {} } })
         assert.are.same({ [1] = 1, [2] = 2 }, view.items[13755].months)
-    end)
-
-    it("fits the HUD zone lines with the longest area name in the data", function()
-        local longest = ""
-        for line in io.lines("tools/data/forever_AreaTable.csv") do
-            local name = line:match("^%d+,([^,]+),")
-            if name and #name > #longest then
-                longest = name
-            end
-        end
-        assert.are.equal("The Cape of Stranglethorn", longest)
-        -- The longest risk text: "getaway 85 % (you 100 %)".
-        local own = ns.Getaway.Risk(
-            { [150] = { hooked = 40, getaways = 40 } },
-            150,
-            140,
-            ns.Stats.Thresholds()
-        )
-        assert.is_true(own.shown)
-        local worst = {
-            { ns.ZoneRef.HudLine({ name = longest, risk = own }) },
-            { ns.ZoneRef.HudLine({ name = longest, risk = ns.Getaway.Risk(nil, 150, 205) }) },
-            { ns.ZoneRef.HudLine({ name = longest }) },
-        }
-        local room = ns.Hud.WIDTH - 12
-        for _, lines in ipairs(worst) do
-            for _, text in ipairs(lines) do
-                assert.is_true(#text * ns.Hud.LETTER <= room, text)
-            end
-        end
-        local fish = string.format(ns.L.HUD_ZONE_MISSING, 99, 99)
-        assert.is_true(#fish * ns.Hud.LETTER <= room)
-        -- The old one-line text did not fit.
-        assert.is_true(#(worst[2][1] .. ", " .. fish) * ns.Hud.LETTER > room)
     end)
 end)

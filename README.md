@@ -14,9 +14,9 @@ and open source (GPL-3.0). Developers: see the [development reference](docs/deve
   target), with bite time, loot, zone and subzone, skill, and lure. Your history is kept per
   character. The game writes it at logout or `/reload`, so a crash loses the casts since then; a
   reload reminder after two hours of fishing helps (`/fm reminder on|off`).
-- **HUD:** session casts, catches, success rate, catches per hour, skill, lure time left, the last
-  catch, and two zone lines: the getaway risk at your skill and the fish you have not caught there
-  yet. Movable, scalable, or one line of text.
+- **HUD card:** the water with its getaway risk, your skill bar, the lure with its time left or
+  the one that would help, catches, success rate, catches per hour, the last catch, and the
+  water's fish you have not caught there yet. Movable, scalable, see-through, or one compact line.
 - **Session summary** after a session ends, in a small window or the chat.
 - **One window** (left click on the minimap button) with a side tab per module, like the
   Professions window.

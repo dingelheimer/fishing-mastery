@@ -175,38 +175,39 @@ describe("FishingMastery smart lure", function()
         assert.are.equal("lure-wait", w.ns.doubleCast.last)
     end)
 
-    it("names the lure in the HUD tooltip, with the setting on or off", function()
-        local function line()
-            return w.ns.SmartLure.Line(_G, w.ns.area, w.ns.Journal)
+    it("tells the HUD which lure would help, with the setting on or off", function()
+        -- What the HUD card and tooltip show: the choice, its lure, and the goal.
+        local function now()
+            local result = w.ns.SmartLure.Now(_G, w.ns.area, w.ns.Journal)
+            local choice = result.choice
+            if not choice then
+                return nil
+            end
+            local name = choice.lure and result.name(choice.lure.id)
+            return choice.reason, name, choice.lure and choice.lure.bonus, choice.goal
         end
-        local BAUBLE_LINE = "Lure: Shiny Bauble (+25) would stop getaways here"
         assert.are.equal(25, goal)
-        assert.are.equal(BAUBLE_LINE, line())
+        assert.are.same({ "reaches", "Shiny Bauble", 25, 25 }, { now() })
         w.ns.Options.Set(w.ns.db.settings, "autoLure", false)
-        assert.are.equal(BAUBLE_LINE, line())
-        local tips = w.ns.HudZone.Read(_G, w.ns.area, w.ns.char, nil).tips
-        assert.are.equal(BAUBLE_LINE, tips[#tips])
+        assert.are.same({ "reaches", "Shiny Bauble", 25, 25 }, { now() })
 
-        -- A running +25 lure: skill 36 with it, 11 without; the line leaves it out.
+        -- A running +25 lure: skill 36 with it, 11 without; the suggestion leaves it out.
         game.enchant, game.ms, w.game.modifier = 263, 600000, 25
-        assert.are.equal(BAUBLE_LINE, line())
+        assert.are.same({ "reaches", "Shiny Bauble", 25, 25 }, { now() })
         game.enchant, w.game.modifier = nil, 0
 
         game.bags = {}
-        assert.are.equal("No usable lure in your bags; getaways stop at 25", line())
+        assert.are.same({ "no-lures", nil, nil, 25 }, { now() })
         game.area, w.game.rank = 405, 110
         game.bags = { [CRAWLERS] = 1, [BAUBLE] = 1 }
-        assert.are.equal("Lure: Nightcrawlers (+50) is your best; getaways stop at 225", line())
+        assert.are.same({ "strongest", "Nightcrawlers", 50, 225 }, { now() })
         w.game.rank = 225
-        assert.are.equal("No lure needed at your skill", line())
+        assert.are.equal("enough", (now()))
 
         _G.C_Item.GetItemInfo = function() end
         game.area, w.game.rank = 14, 11
-        assert.are.equal("Lure: item 6529 (+25) would stop getaways here", line())
-        game.area = nil -- no water data: no line
-        assert.is_nil(line())
-        _G.C_Item.GetItemCount = nil -- bags unknown: no line
-        game.area = 14
-        assert.is_nil(line())
+        assert.are.same({ "reaches", "item 6529", 25, 25 }, { now() })
+        _G.C_Item.GetItemCount = nil -- bags unknown: no choice
+        assert.is_nil(now())
     end)
 end)

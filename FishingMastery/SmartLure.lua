@@ -78,28 +78,6 @@ local function itemName(env, id)
     return name
 end
 
--- The HUD tooltip line: what a lure would do here (the running lure left out), or nil without
--- the water's base skill or the skill.
-function SmartLure.Line(env, areas, journal)
-    local input = SmartLure.Read(env, areas, journal)
-    if not input.lures then
-        return nil
-    end
-    input.active = nil
-    local choice = LureChoice.Choose(input)
-    local lure, reason = choice.lure, choice.reason
-    if reason == "enough" then
-        return L.LURE_ENOUGH
-    elseif reason == "reaches" then
-        return format(L.LURE_REACHES, itemName(env, lure.id), lure.bonus)
-    elseif reason == "strongest" then
-        return format(L.LURE_STRONGEST, itemName(env, lure.id), lure.bonus, choice.goal)
-    elseif reason == "no-lures" and choice.goal then
-        return format(L.LURE_NONE_OWNED, choice.goal)
-    end
-    return nil
-end
-
 -- The Helpers page's "Right now" facts: the choice without the running lure (nil when the bags
 -- cannot be read), the running lure, the water's name, and an item name reader.
 function SmartLure.Now(env, areas, journal)

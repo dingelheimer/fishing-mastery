@@ -144,6 +144,16 @@ function Session.SkillUps(session)
     return session.skill - session.skillStart
 end
 
+-- The HUD's stop button: ends the open session now. Returns the ended session, or nil.
+function Session.Stop(char, now)
+    local current = Session.Current(char)
+    if current then
+        current.ended = now
+        current.endReason = "stopped"
+    end
+    return current
+end
+
 -- PLAYER_LOGOUT (also fired by /reload): ends the open session now.
 function Session.Logout(char, now)
     local current = Session.Current(char)

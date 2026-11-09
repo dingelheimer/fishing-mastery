@@ -168,37 +168,7 @@ describe("FishingMastery zone reference", function()
         assert.are.equal(0, #detail.rows)
     end)
 
-    it("writes the two HUD zone lines", function()
-        local Getaway = ns.Getaway
-        local rows = Area:List(14)
-        local risk = Getaway.Risk({ [10] = { hooked = 20, getaways = 4 } }, 12, -70)
-        assert.are.same({ "Durotar: getaway 13 % (you 20 %)", "Fish: 1 of 2 not caught here" }, {
-            ZoneRef.HudLine({
-                name = "Durotar",
-                risk = risk,
-                rows = rows,
-                items = { [6303] = 3 },
-            }),
-        })
-        assert.are.same({ "Durotar: getaway 13 %", "Fish: all 2 caught here" }, {
-            ZoneRef.HudLine({
-                name = "Durotar",
-                risk = Getaway.Risk(nil, 12, -70),
-                rows = rows,
-                items = { [6303] = 1, [6356] = 1 },
-            }),
-        })
-        assert.are.same({ "Wetlands: no catch below skill 55", "Fish: 2 of 2 not caught here" }, {
-            ZoneRef.HudLine({
-                name = "Wetlands",
-                risk = Getaway.Risk(nil, 40, 55),
-                rows = rows,
-            }),
-        })
-        assert.are.same(
-            { "Here: getaway ?", "Fish: no Classic data" },
-            { ZoneRef.HudLine({ risk = Getaway.Risk(nil, 40, nil) }) }
-        )
+    it("counts the fish of a list still missing, without quest rows", function()
         -- Quest-only rows are not expected fish.
         local missing, total = ZoneRef.Missing(Area:List(148), {})
         assert.are.equal(#Area:List(148) - 1, total)

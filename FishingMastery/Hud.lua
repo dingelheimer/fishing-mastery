@@ -1,12 +1,12 @@
--- The HUD: a compact, movable bar with the session numbers, shown from the first cast until the
--- session ends (on by default). Updates when an attempt ends, on skill and zone changes and login,
--- and once per second only while a lure is shown (the zone line is kept on those ticks). Unnamed,
--- insecure frame; never touches protected frames. Texts come from HudModel.lua.
+-- The HUD (Draft 5, Story 9.8): the card or the compact line (HudCard.lua) in a movable frame,
+-- shown from the first cast until the session ends (on by default). Updates when an attempt ends,
+-- on skill and zone changes and login, and once per second only while a lure is shown (the water
+-- is read again only on those events, not on the ticks). Numbers from HudModel.lua, the card from
+-- HudCardModel.lua. Unnamed, insecure frames; never touches protected frames.
 local _, ns = ...
 
-local setmetatable, type, ipairs, pairs, tonumber = setmetatable, type, ipairs, pairs, tonumber
-local match, lower = string.match, string.lower
-local L, Frames, HudModel, Context = ns.L, ns.Frames, ns.HudModel, ns.Context
+local setmetatable, type, ipairs, pairs, select = setmetatable, type, ipairs, pairs, select
+local Frames, HudModel, Context, Style = ns.Frames, ns.HudModel, ns.Context, ns.Style
 
 local Hud = {}
 Hud.__index = Hud
@@ -18,14 +18,8 @@ Hud.LAYOUTS = { card = true, compact = true }
 Hud.MIN_SCALE, Hud.MAX_SCALE = 0.5, 2
 Hud.POSITION_KEY = "hud"
 Hud.FALLBACK = { point = "TOP", x = 0, y = -140 }
--- WIDTH fits the longest zone line (HudLine with the longest area name in the data) at LETTER
--- pixels per letter of GameFontHighlightSmall, an upper bound: on live 47 letters and "..." filled
--- the 268-pixel line (Epic 4 review). Checked in spec/fm/season_spec.lua.
-Hud.WIDTH, Hud.TEXT_WIDTH, Hud.LINE, Hud.LETTER = 340, 420, 14, 6
-Hud.LINES = { "session", "rates", "skill", "lure", "last", "zone", "fish" }
-Hud.ZONE_LINES = { zone = true, fish = true }
+Hud.QUALITY_HEX = 4 -- C_Item.GetItemQualityColor: hex color
 Hud.ZONE_EVENTS = { "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA" }
-Hud.GREY, Hud.WHITE = { 0.55, 0.55, 0.55 }, { 1, 1, 1 }
 Hud.TICK = 1 -- seconds between updates while a lure is shown
 
 -- settings.hud with every missing or invalid value set to its default; a style saved before Epic 9
@@ -57,6 +51,7 @@ function Hud.Start(deps)
         areas = deps.areas,
         ticking = false,
         forced = false, -- shown by /fm hud show without an open session
+        requested = {}, -- item IDs with a load callback
     }, Hud)
     local function refresh()
         self:Refresh()
@@ -89,65 +84,107 @@ local function build(self)
             self:ShowTooltip(f)
         end)
     )
-    frame:SetScript("OnLeave", function()
-        local tip = self.env.GameTooltip
-        if tip then
-            tip:Hide()
-        end
+    frame:SetScript("OnLeave", function(f)
+        ns.Tip.Close(self.env, f)
     end)
-    local background = frame:CreateTexture(nil, "BACKGROUND")
-    background:SetAllPoints(frame)
-    background:SetColorTexture(0, 0, 0, 0.55)
-    self.lines = {}
-    for i, name in ipairs(Hud.LINES) do
-        local line = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        line:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -5 - (i - 1) * Hud.LINE)
-        line:SetWidth(Hud.WIDTH - 12)
-        line:SetJustifyH("LEFT")
-        line:SetWordWrap(false)
-        self.lines[name] = line
+    self.card = ns.HudCard.Create(env, frame, {
+        layout = function()
+            self:ToggleLayout()
+        end,
+        stop = function()
+            self:StopSession()
+        end,
+    })
+    for _, view in ipairs({ self.card.card, self.card.compact }) do
+        view:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
     end
-    self.icon = frame:CreateTexture(nil, "ARTWORK")
-    self.icon:SetSize(Hud.LINE - 2, Hud.LINE - 2)
-    self.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -5 - 4 * Hud.LINE)
     self.frame = frame
     return frame
 end
 
--- Name and icon of the last caught item from the item cache; an uncached name is requested once
--- and the HUD refreshes when it arrives.
+-- Name, icon, and quality color of an item from the item cache; an uncached name is requested
+-- once and the HUD refreshes when it arrives.
 local function itemInfo(self, id)
     local items = self.castLog and self.castLog.items
     if not items or type(id) ~= "number" then
-        return nil, nil
+        return {}
     end
     local onLoad = nil
-    if self.requested ~= id then
+    if not self.requested[id] then
         onLoad = function()
             self:Refresh()
         end
     end
     local info = items:Info(id, onLoad)
     if not info.name then
-        self.requested = id
+        self.requested[id] = true
     end
-    return info.name, info.icon
+    local hex = info.quality
+        and select(
+            Hud.QUALITY_HEX,
+            Context.Call(self.env, "C_Item.GetItemQualityColor", info.quality)
+        )
+    return { name = info.name, icon = info.icon, hex = type(hex) == "string" and hex or nil }
 end
 
 function Hud:Model(session)
     local rank, modifier = Context.Fishing(self.env)
     local _, lureSeconds = Context.LureTime(self.env)
-    local name, icon = itemInfo(self, session.lastItem)
+    local info = itemInfo(self, session.lastItem)
     return HudModel.Build({
         session = session,
         now = self.serverTime(),
         rank = rank,
         modifier = modifier,
         lureSeconds = lureSeconds,
-        itemName = name,
-        itemIcon = icon,
+        itemName = info.name,
+        itemIcon = info.icon,
         thresholds = self.thresholds,
     })
+end
+
+-- The smart lure's suggestion for this water ({ name, bonus, icon }), or nil.
+local function suggestion(self)
+    local now = ns.SmartLure.Now(self.env, self.areas, ns.Journal)
+    local choice = now.choice
+    if
+        not (
+            choice
+            and choice.lure
+            and (choice.reason == "reaches" or choice.reason == "strongest")
+        )
+    then
+        return nil
+    end
+    local id = choice.lure.id
+    return {
+        name = now.name(id),
+        bonus = choice.lure.bonus,
+        icon = Context.Call(self.env, "C_Item.GetItemIconByID", id),
+    }
+end
+
+-- The HudCardModel input: the session model, the cap, the water, the lures, and the items.
+function Hud:CardInput(model)
+    local env = self.env
+    local _, _, max = Context.Fishing(env)
+    local enchant, seconds = Context.LureTime(env)
+    local zone = self.settings.zoneLine and self.zone or nil
+    local input = {
+        model = model,
+        max = max,
+        zone = zone,
+        lure = seconds
+            and { bonus = ((ns.Journal or {}).lureEnchants or {})[enchant], seconds = seconds },
+        last = itemInfo(self, model.lastItem),
+        info = function(id)
+            return itemInfo(self, id)
+        end,
+    }
+    if zone and not seconds then
+        input.suggestion = suggestion(self)
+    end
+    return input
 end
 
 -- An empty session for /fm hud show without an open session (to place the HUD).
@@ -156,30 +193,11 @@ local function emptySession(now)
 end
 
 local function draw(self, model)
-    local frame, full = self.frame, self.settings.layout == "card"
-    local texts = HudModel.Lines(model)
-    local zone = full and self.settings.zoneLine and self.zone ~= nil
-    texts.zone = zone and self.zone.text or nil
-    texts.fish = zone and self.zone.fish or nil
-    for i, name in ipairs(Hud.LINES) do
-        local line = self.lines[name]
-        line:SetShown(full and (not Hud.ZONE_LINES[name] or zone) or i == 1)
-        line:SetText(full and texts[name] or nil)
-    end
-    if full then
-        local color = texts.grey and Hud.GREY or Hud.WHITE
-        self.lines.rates:SetTextColor(color[1], color[2], color[3])
-        local last = self.lines.last
-        last:ClearAllPoints()
-        last:SetPoint("TOPLEFT", frame, "TOPLEFT", texts.icon and 22 or 6, -5 - 4 * Hud.LINE)
-        self.icon:SetTexture(texts.icon)
-        self.icon:SetShown(texts.icon ~= nil)
-        frame:SetSize(Hud.WIDTH, 10 + (#Hud.LINES - (zone and 0 or 2)) * Hud.LINE)
-    else
-        self.lines.session:SetText(HudModel.Short(model))
-        self.icon:SetShown(false)
-        frame:SetSize(Hud.TEXT_WIDTH, 10 + Hud.LINE)
-    end
+    local frame, layout = self.frame, self.settings.layout
+    self.input = self:CardInput(model)
+    ns.HudCard.Draw(self.card, ns.HudCardModel.Build(self.input), layout)
+    local view = ns.HudCard.Shown(self.card, layout)
+    frame:SetSize(view:GetWidth(), view:GetHeight())
     frame:SetScale(self.settings.scale)
     frame:SetAlpha(self.settings.opacity)
 end
@@ -226,61 +244,30 @@ function Hud:Refresh(keepZone)
     end
 end
 
+-- The HUD tooltip of Draft 6 (HudCardModel.Tip); the dev flag adds the resolved area line.
 function Hud:ShowTooltip(owner)
-    local tip = self.env.GameTooltip
-    if not tip or not self.model then
+    if not self.input then
         return
     end
-    tip:SetOwner(owner, "ANCHOR_BOTTOM")
-    tip:SetText(L.PREFIX)
-    for _, line in ipairs(HudModel.Tooltip(self.model)) do
-        tip:AddLine(line, 1, 1, 1, true)
-    end
-    if self.settings.zoneLine and self.zone then
-        for _, line in ipairs(self.zone.tips) do
-            tip:AddLine(line, 1, 1, 1, true)
-        end
-    end
+    local extra
     if ns.Dev and ns.Dev.Enabled(ns.db) then
-        tip:AddLine(ns.HudZone.DevAreaLine(self.env, self.areas), 0.6, 0.8, 1, true)
+        extra = function(tip)
+            tip:Line(ns.HudZone.DevAreaLine(self.env, self.areas), Style.ADDON)
+        end
     end
-    tip:Show()
+    ns.Tip.Open(self.env, owner, ns.HudCardModel.Tip(self.input, extra), "ANCHOR_BOTTOM")
 end
 
--- /fm hud commands. Returns the text to print.
-function Hud:Command(action, value)
-    local hud = self.settings
-    if action == "show" then
-        hud.enabled, self.forced = true, true
-    elseif action == "hide" then
-        hud.enabled, self.forced = false, false
-    elseif action == "lock" or action == "unlock" then
-        hud.locked = action == "lock"
-    elseif action == "reset" then
-        self.store[Hud.POSITION_KEY], hud.scale = nil, Hud.DEFAULTS.scale
-        if self.frame then
-            Frames.RestorePosition(self.frame, self.env, self.store, Hud.POSITION_KEY, Hud.FALLBACK)
-        end
-    elseif action == "scale" then
-        local scale = tonumber(value)
-        if not scale or scale < Hud.MIN_SCALE or scale > Hud.MAX_SCALE then
-            return L.HUD_USAGE
-        end
-        hud.scale = scale
-    elseif action == "layout" and Hud.LAYOUTS[value] then
-        hud.layout = value
-    else
-        return L.HUD_USAGE
-    end
+-- The layout button: the card or the compact line, saved like the Settings page does.
+function Hud:ToggleLayout()
+    local settings = self.settings
+    settings.layout = settings.layout == "card" and "compact" or "card"
     self:Refresh()
-    return L["HUD_DONE_" .. action]
 end
 
-ns.Commands.Register("hud", L.CMD_HUD, function(rest)
-    local action, value = match(rest or "", "^(%S*)%s*(.-)$")
-    if not ns.hud then
-        ns.Print(L.STATUS_NOT_READY)
-        return
+-- The stop button: ends the session now; the HUD hides until the next cast.
+function Hud:StopSession()
+    if self.castLog and self.castLog:StopSession() then
+        self:Refresh()
     end
-    ns.Print(ns.hud:Command(lower(action), lower(value)))
-end)
+end

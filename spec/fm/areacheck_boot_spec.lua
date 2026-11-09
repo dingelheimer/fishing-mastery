@@ -233,7 +233,7 @@ describe("FishingMastery area check boot", function()
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 
-    it("shows the resolved area in the check and the HUD dev and risk lines", function()
+    it("shows the resolved area in the check, the HUD dev line, and the water risk", function()
         stubAll(w, { subzone = "Sen'jin Village", minimap = "Sen'jin Village", areas = { 367 } })
         _G.SlashCmdList.FM("dev area")
         assert.are.equal(367, lastRun().resolved)
@@ -247,10 +247,10 @@ describe("FishingMastery area check boot", function()
         w.game.subzone = "Razor Hill" -- no own data: the zone
         assert.are.equal("Dev: area 14 Durotar (zone)", HudZone.DevAreaLine(_G, w.ns.area))
         -- Getaway risk at skill 11 (+ 0) in Durotar (base -70): catch 86 %; no hooked casts yet.
-        assert.are.same(
-            { "Getaway risk at skill 11: 14 % (Classic model; none from skill 25)" },
-            HudZone.Read(_G, w.ns.area, w.ns.char, nil).tips
-        )
+        local risk = HudZone.Read(_G, w.ns.area, w.ns.char, nil).risk
+        assert.are.same({ 11, 25 }, { risk.skill, risk.model.stopsAt })
+        assert.are.equal(14, math.floor(risk.model.getaway * 100 + 0.5))
+        assert.is_nil(risk.own) -- no hooked casts yet
 
         _G.GetInstanceInfo = function()
             return "The Deadmines", "party", 1, "Normal", 5, 0, false, 36
@@ -259,11 +259,35 @@ describe("FishingMastery area check boot", function()
 
         w.game.map = 9999
         _G.GetInstanceInfo = nil
+        _G.GetRealZoneText = function()
+            return "Somewhere New" -- a Forever zone without data
+        end
         assert.are.equal("Dev: no area data here", HudZone.DevAreaLine(_G, w.ns.area))
-        assert.are.same(
-            { "Getaway risk at skill 11: unknown (no Classic base level here)" },
-            HudZone.Read(_G, w.ns.area, w.ns.char, nil).tips
-        )
+        assert.is_nil(HudZone.Read(_G, w.ns.area, w.ns.char, nil).risk.model) -- no base here
+        assert.are.equal(0, w.ns.Guard.errors)
+    end)
+
+    it("finds the zone by its name where the client reports the continent (a cave)", function()
+        -- The cave outside Wailing Caverns (subzone "Cavern of Mists"): the client reports
+        -- Kalimdor; the area table has no "Cavern of Mists", so it is The Barrens.
+        stubAll(w, { subzone = "Cavern of Mists", minimap = "Cavern of Mists", areas = {} })
+        _G.C_Map.GetMapInfo = function(map)
+            local names = { [1411] = "Durotar", [1413] = "The Barrens", [1414] = "Kalimdor" }
+            return names[map] and { name = names[map] } or nil
+        end
+        _G.GetRealZoneText = function()
+            return "The Barrens"
+        end
+        w.game.map = 1414
+        local Context = w.ns.Context
+        assert.are.equal(1413, Context.ZoneMap(_G))
+        assert.are.equal(1413, Context.Read(_G).map) -- new casts are saved in The Barrens
+        local area = Context.CurrentArea(_G, w.ns.area)
+        assert.are.equal(w.ns.Zones.mapToArea[1413], area)
+        assert.are.equal("The Barrens", w.ns.HudZone.Read(_G, w.ns.area, w.ns.char, nil).name)
+        -- A known zone map is kept as the client gives it.
+        w.game.map = 1411
+        assert.are.equal(1411, Context.ZoneMap(_G))
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 end)

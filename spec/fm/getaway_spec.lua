@@ -89,10 +89,7 @@ describe("FishingMastery getaway model", function()
         assert.is_nil(risk.model)
         assert.is_true(risk.shown)
         assert.is_false(risk.differs)
-        local lines = Getaway.Lines(risk)
-        assert.truthy(lines[1]:find("unknown", 1, true))
-        assert.truthy(lines[2]:find("here: 25 %", 1, true))
-        assert.are.equal(2, #lines)
+        assert.are.same({ 3, 12 }, { risk.own.k, risk.own.n }) -- own 25 % here
     end)
 
     it("agrees with the Epic 2 Durotar sample (9 catches, 5 getaways at skill 1-10)", function()
@@ -103,29 +100,23 @@ describe("FishingMastery getaway model", function()
         assert.is_true(risk.shown)
         assert.is_false(risk.differs) -- own 36 %, range about 16-61 %
         assert.is_true(risk.own.low < 0.18 and risk.own.high > 0.18)
-        local lines = Getaway.Lines(risk)
-        assert.are.equal(
-            "Getaway risk at skill 7: 18 % (Classic model; none from skill 25)",
-            lines[1]
-        )
-        assert.are.equal(2, #lines)
+        assert.are.equal(25, risk.model.stopsAt) -- none from skill 25
     end)
 
     it("notes when the own range excludes the model, and hides small samples", function()
         -- 0 of 40 hooked where the model expects half to get away: differs.
         local risk = Getaway.Risk({ [100] = { hooked = 40, getaways = 0 } }, 102, 55)
         assert.is_true(risk.differs)
-        local lines = Getaway.Lines(risk)
-        assert.truthy(lines[3]:find("Differs from Classic (model 48 %", 1, true))
+        near(0.48, risk.bandModel)
         -- Below the count threshold: count only, never "differs".
         risk = Getaway.Risk({ [100] = { hooked = 5, getaways = 0 } }, 102, 55)
         assert.is_false(risk.shown)
         assert.is_false(risk.differs)
-        assert.truthy(Getaway.Lines(risk)[2]:find("0 of 5 hooked", 1, true))
+        assert.are.same({ 0, 5, "count" }, { risk.own.k, risk.own.n, risk.own.display })
         -- No hooked casts in the band: the model only.
         risk = Getaway.Risk({}, 50, 55)
         assert.is_nil(risk.own)
-        assert.truthy(Getaway.Lines(risk)[1]:find("no catches below skill 55", 1, true))
+        assert.is_true(risk.model.below) -- no catches below skill 55
     end)
 
     local function view()

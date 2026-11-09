@@ -2,7 +2,7 @@
 -- and skill modifier, and the lure enchant. Reads from an injected environment (_G in game).
 local _, ns = ...
 
-local type, pcall, select, unpack, maxn = type, pcall, select, unpack, table.maxn
+local type, pairs, pcall, select, unpack, maxn = type, pairs, pcall, select, unpack, table.maxn
 local isSecret = issecretvalue or function()
     return false
 end
@@ -124,7 +124,36 @@ end
 
 -- The UI map the player is on now, or nil.
 function Context.CurrentMap(env)
-    return number((Context.Call(env, "C_Map.GetBestMapForUnit", "player")))
+    return Context.ZoneMap(env)
+end
+
+local zoneMaps -- [client name] = UI map ID of every zone of the zone data, read once
+
+local function mapByName(env, name)
+    if not zoneMaps then
+        zoneMaps = {}
+        for map in pairs((ns.Zones or {}).mapToArea or {}) do
+            local mapName = Context.MapName(env, map)
+            if mapName and (zoneMaps[mapName] == nil or map < zoneMaps[mapName]) then
+                zoneMaps[mapName] = map
+            end
+        end
+    end
+    return zoneMaps[name]
+end
+
+-- The UI map the player fishes in: the client's best map when the zone data knows it, else the
+-- zone map whose client name equals the zone shown on screen (GetRealZoneText). Places without
+-- their own map, such as the cave outside Wailing Caverns, come back as the continent; this
+-- finds The Barrens for them (owner check, Story 9.8). Else the client's map, or nil.
+function Context.ZoneMap(env)
+    local map = number((Context.Call(env, "C_Map.GetBestMapForUnit", "player")))
+    if map and ((ns.Zones or {}).mapToArea or {})[map] then
+        return map
+    end
+    local zone = plain((Context.Call(env, "GetRealZoneText")))
+    local byName = type(zone) == "string" and zone ~= "" and mapByName(env, zone) or nil
+    return byName or map
 end
 
 -- The area the player stands in now (Area resolver), or nil without data.
@@ -134,7 +163,7 @@ function Context.CurrentArea(env, areas)
     end
     local subzone = plain((Context.Call(env, "GetSubZoneText")))
     return areas:Resolve(
-        number((Context.Call(env, "C_Map.GetBestMapForUnit", "player"))),
+        Context.ZoneMap(env),
         type(subzone) == "string" and subzone or nil,
         Context.Instance(env)
     )
@@ -146,7 +175,7 @@ function Context.Read(env)
     local subzone = plain((Context.Call(env, "GetSubZoneText")))
     return {
         time = number((Context.Call(env, "GetServerTime"))),
-        map = number((Context.Call(env, "C_Map.GetBestMapForUnit", "player"))),
+        map = Context.ZoneMap(env),
         subzone = type(subzone) == "string" and subzone ~= "" and subzone or nil,
         rank = rank,
         modifier = modifier,

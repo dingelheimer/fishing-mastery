@@ -38,8 +38,4 @@ L.HELPERS_IDLE = "idle"
 L.HIDEUI_CATCH = "+%d %s"
 
 -- Smart lure lines in the HUD tooltip (Story 8.3)
-L.LURE_REACHES = "Lure: %s (+%d) would stop getaways here"
-L.LURE_STRONGEST = "Lure: %s (+%d) is your best; getaways stop at %d"
-L.LURE_ENOUGH = "No lure needed at your skill"
-L.LURE_NONE_OWNED = "No usable lure in your bags; getaways stop at %d"
 L.LURE_ITEM = "item %d"

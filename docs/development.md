@@ -44,21 +44,22 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Db.lua`        | Schema version, migration walk, repair of missing fields, migration snapshot (pure) |
 | `Character.lua` | Character key `UnitGUID("player")` and the character entry           |
 | `Attempt.lua`   | Attempt classifier: cast, message, and loot events to one outcome per attempt (pure) |
-| `Context.lua`   | Cast context: server time, map, subzone text, fishing rank and modifier, lure enchant; area name, instance ID, current area; the client name of Fishing; a fishing pole in the main hand |
+| `Context.lua`   | Cast context: server time, map (the zone map: where the client reports a map the zone data does not know, such as the continent in the cave outside Wailing Caverns, the zone map with the name of the zone shown on screen), subzone text, fishing rank and modifier, lure enchant; area name, instance ID, current area; the client name of Fishing; a fishing pole in the main hand |
 | `Area.lua`      | Area lookup: instance ID, UI map, and subzone text to an area of the zone data; subzone names from `C_Map.GetAreaInfo`, cached per zone (pure) |
 | `Loot.lua`      | Loot slots (item ID, quantity, quality) and loot source type and object ID |
 | `Items.lua`     | Item cache: quality the loot window did not give, and name, icon, quality, sell price for the UI; uncached items requested once and filled in after `ITEM_DATA_LOAD_RESULT` |
 | `Tracker.lua`   | Game events to classifier input (fishing spell, message names, channel length, fishing loot), end-of-attempt timer, outcome counts |
 | `Records.lua`   | Saved cast record from an attempt; per-character subzone table (pure) |
-| `Session.lua`   | Sessions: start, 15-minute idle end, logout, `/reload` resume, skill before and after, active time, last catch (pure) |
+| `Session.lua`   | Sessions: start, 15-minute idle end, logout, the stop button, `/reload` resume, skill before and after, active time, last catch (pure) |
 | `Codec.lua`     | Day chunk format: packs casts into `<day>\|<cast>;<cast>;…` strings (pure) |
 | `CodecDecode.lua` | Parses a day chunk back into casts, field by field, without `loadstring` (pure) |
 | `History.lua`   | Packing the open day, load check with quarantine, on-demand history iterator (pure) |
 | `Season.lua`    | Classic season windows (in season now, realm time), the realm hour offset, catches per realm hour; date helpers (pure) |
 | `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours, months, and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
 | `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
-| `Getaway.lua`   | Getaway risk: Classic model at an effective skill and base, own rate per resolved area and skill band with its range, the comparison, and its text lines (pure) |
-| `HudModel.lua`  | HUD numbers and texts from the session, rank, lure, and item; count/grey rules and tooltip ranges (pure) |
+| `Getaway.lua`   | Getaway risk: Classic model at an effective skill and base, own rate per resolved area and skill band with its range, and the comparison (pure) |
+| `HudModel.lua`  | HUD numbers from the session, rank, lure, and item; short formats; count/grey rules and the rate tooltip lines of the minimap button (pure) |
+| `HudCardModel.lua` | The HUD card of Draft 5 (water and risk tag, skill bar with skill-ups and the effective-skill mark, risk line, lure row with timer or suggestion, three numbers, last catch, the water's fish), the compact line, and the HUD tooltip of Draft 6 (pure) |
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Scope model: per-character and merged numbers, favorite zone, session records, calendar days, the merged view (pure) |
 | `JournalModel.lua` | Journal model: entries of the four journal groups with own catches (account-wide or one character), places, base and no-getaway skill, recipes, season, quest-only flag, new-in-Forever items by Forever class, progress per group, gear for a skill gap (pure) |
@@ -66,7 +67,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `RecipeModel.lua` | Journal recipes: the bundled recipes merged with the ones read in game, the account store of read recipes (journal items only, capped), buff food, recipes per fish (pure) |
 | `RowTip.lua` | Row tooltip pieces for the tables: item title in its quality color, rates and rates per hour with grey ranges, Shift explanations (pure) |
 | `StatsTables.lua` | Fish table (Draft 2): name with icon, quality color, and season or night tag; caught, share, about every, dry streak, best water; hour and dates in the row tooltip; sorting, quality filter, kinds line; item text helpers (pure) |
-| `ZoneRef.lua`   | Classic reference next to own catches: own group per area, comparison rows (Classic estimate, season or quest flag, own share, fish not in the Classic data), note, the two HUD zone lines (pure) |
+| `ZoneRef.lua`   | Classic reference next to own catches: own group per area, comparison rows (Classic estimate, season or quest flag, own share, fish not in the Classic data), note, the count of the list's fish still missing (pure) |
 | `ZoneTable.lua` | Zones table: zones with their subzones (one row per resolved subzone area, else per text), casts, catches per hour, species, top items with shares; rows carry the area ID (pure) |
 | `OverviewTable.lua` | Record lines of the Sessions tab (pure) |
 | `OverviewModel.lua` | Overview page: skill bar, four headline numbers with ranges and grey rules, outcome rows, the five most caught items, the characters of the Catches tooltip (pure) |
@@ -90,7 +91,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Synthetic.lua` | Deterministic synthetic casts for the stress test and the storage specs (pure) |
 | `Stress.lua`    | Developer storage test: test entry filled in steps, line test chunks, load measurements (pure) |
 | `Capture.lua`   | Raw capture ring buffer; aura spell IDs and loot source readers |
-| `CastLog.lua`   | Saves each attempt as a cast record, counts sessions and totals, detects skill-ups, packs at logout and day change, runs the load check, ends idle sessions on time (session-end listeners) |
+| `CastLog.lua`   | Saves each attempt as a cast record, counts sessions and totals, detects skill-ups, packs at logout and day change, runs the load check, ends idle sessions on time and a session on the HUD's stop button (session-end listeners) |
 | `Frames.lua`    | Frame helpers: template fallback (one template or the first of a list), saved position, movable (optionally by a handle), guarded buttons |
 | `TextWindow.lua` | Export (read-only pages, Select all) and import (paste box, Import button) window |
 | `Confirm.lua`   | Confirmation dialog (backup restore) |
@@ -104,8 +105,10 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `GearInputs.lua` | Gear tab reads: item counts with and without the bank, the equipped slots, the fishing bonus on item tooltips and on the equipped gloves, race, level, rank, cap, skill modifier, active lure, quest names (all protected; missing APIs give "?") |
 | `Commands.lua`  | `/fm` command registry and help                                        |
 | `DataCommands.lua` | `/fm backup`, `/fm export`, `/fm import`, `/fm reminder` |
-| `HudZone.lua`   | HUD zone lines' data at the current spot: resolved area and name, getaway risk at the effective skill, own catches where the area's list applies; the smart lure tooltip line; dev area readout |
-| `Hud.lua`       | HUD frame: shown from the first cast to the session end, two zone lines, lure tick, tooltip (risk lines; dev flag: resolved area line), `/fm hud` |
+| `HudZone.lua`   | The HUD's water at the current spot: resolved area and name, getaway risk at the effective skill, the Classic list and own catches where it applies; dev area readout |
+| `Hud.lua`       | HUD: the card or the compact line in a movable frame, shown from the first cast to the session end; gathers the cap, the running and suggested lure, and the items; lure tick; Draft 6 tooltip (dev flag: resolved area line); scale and opacity; the layout and stop buttons |
+| `HudCommands.lua` | `/fm hud`: show, hide, lock, unlock, reset, scale, layout |
+| `HudActions.lua` | The two HUD buttons at the top right (the line: right end): card or compact, and stop the session; tooltips |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
 | `Tip.lua` | Tooltip builder: title, gold label and white value pairs, gaps, headers, lines and wrapped text, green hints, explanations only while Shift is held (redraws on `MODIFIER_STATE_CHANGED`); `Tip.Lines` for plain line lists (charts) |
 | `StatsListHeader.lua` | Table header: gold bar with sort buttons and arrow, or labels |
@@ -133,11 +136,11 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click main window, Shift + left click its Journal page, right click settings, session tooltip, hide setting |
 | `SettingsPanel.lua` | The game's Options entry as a launcher: one button that opens the Settings page (canvas category, else a button initializer); `/fm settings`, `/fm minimap` |
-| `HudCard.lua` | HUD views of Draft 5: the card (water and risk tag, skill bar, three numbers) in the tooltip look and the compact line; the sample for the preview |
+| `HudCard.lua` | HUD views of Draft 5 in the tooltip look: the card with stacked rows (fish icons with names on hover; a long water name cut before the tag) and the compact line; the sample for the Settings preview |
 | `SettingsPage.lua` | Settings page of the main window: HUD (with the live preview), Information, Advanced statistics with the data buttons, Defaults with a confirmation |
 | `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing; a chooser (the smart lure) may make the next press a lure use or nothing, asked again in `PreClick`; `OnRelease` listeners (double-click, smart lure) |
 | `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, a lure being applied, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
-| `LureChoice.lua`, `SmartLure.lua` | Smart lure (module 5, setting `autoLure`, off): pure `LureChoice` picks no lure when the skill without a lure reaches base + 95, else the cheapest usable lure in the bags that does, else the strongest (also in water without data); nothing while a lure with more than 30 s runs, only a same-kind renewal at 30 s or less, a wait while a lure is applied. `SmartLure` reads the inputs, is the casting key's chooser (`type=item`, `target-slot` 16, decided in `PreClick` out of combat), waits after a lure click until the enchant shows up (at most 10 s, or a failed cast), and gives the HUD tooltip line |
+| `LureChoice.lua`, `SmartLure.lua` | Smart lure (module 5, setting `autoLure`, off): pure `LureChoice` picks no lure when the skill without a lure reaches base + 95, else the cheapest usable lure in the bags that does, else the strongest (also in water without data); nothing while a lure with more than 30 s runs, only a same-kind renewal at 30 s or less, a wait while a lure is applied. `SmartLure` reads the inputs, is the casting key's chooser (`type=item`, `target-slot` 16, decided in `PreClick` out of combat), waits after a lure click until the enchant shows up (at most 10 s, or a failed cast), and gives the Helpers page and the HUD the choice for this water (`SmartLure.Now`) |
 | `SoundBoost.lua` | Louder splash (module 5, setting `loudSplash`, off): with a pole in hand `Sound_EnableSFX` 1, `Sound_SFXVolume` 1, `Sound_MusicVolume` 0, `Sound_AmbienceVolume` 0; the old values in `FishingMasteryCharDB.sounds`, restored when the pole leaves the hand, the setting goes off, at `PLAYER_LOGOUT`, and at the next login without a pole (a copy is never saved over) |
 | `HideUI.lua` | Hidden interface (module 5, setting `hideUI`, off): `SetUIVisibility(false)` at the fishing channel start (not in combat, dead, or when the player hid it); back on moving, combat, death, target, whispers, dialogs, mount, a loot window without auto loot, the pole leaving the hand, loading screens, logout, the setting off; the player's own Alt+Z is left alone; catch lines on `WorldFrame` for 5 s |
 | `HelperStatus.lua` | `/fm helpers`: this login's casting key presses by mode (cast, lure, wait), double-click presses, casts the tracker saved, and each helper setting (memory only); opens the Helpers page |
@@ -168,7 +171,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
   catches), `click` (tenths of a second after the channel start, early clicks and getaways),
   `auto` (auto loot), `loot` (`{ id, qty, q }` per item slot), `srcType` and `srcId`
   (loot source, e.g. `GameObject` 35591 = the bobber). Empty fields are left out.
-- Session: `start`, `last` (last cast), `ended` and `endReason` (`idle` or `logout`), `casts`,
+- Session: `start`, `last` (last cast), `ended` and `endReason` (`idle`, `logout`, or `stopped`:
+  the HUD's stop button), `casts`,
   `catches`, `counts` per outcome, `zones` (map IDs), `skillStart` and `skill` (rank at the first
   cast and the latest rank), `active` (seconds: gaps between casts, each at most 60 s; the time
   since the last cast is added when shown), `lastItem` and `lastBite` (latest catch), `items`
@@ -269,17 +273,24 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
 | `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch, click time for an early click or getaway) |
 
-### HUD Zone Lines
+### HUD Card
 
-The last two HUD lines (full style only) name the water you stand in (resolved area, else the
-map name) with its getaway risk at your effective skill from the Classic model ("?" without a
-base level; "(you N %)" once your own rate there is shown; "no catch below skill N" under the
-base), and how many of its expected fish (quest rows left out) you have not caught there yet
-("Fish: 1 of 2 not caught here"). The HUD is 340 pixels wide, so the longest area name in the
-data fits with the longest risk text (checked in `spec/fm/season_spec.lua`). It updates on `ZONE_CHANGED`,
-`ZONE_CHANGED_INDOORS`, `ZONE_CHANGED_NEW_AREA`, skill changes, and attempt ends (the lure tick
-keeps it). The HUD tooltip adds the risk lines ("Differs from Classic" when your range excludes
-the model). The setting "HUD zone line" hides it.
+The HUD card names the water you stand in (resolved area, else the map name) with a risk tag at
+your effective skill from the Classic model (green "no getaways", orange "18 % get away", grey "?"
+without a base level). The skill bar shows "Fishing 154 / 225" with the skill-ups and a white mark
+at the effective skill with lure and gear; while fish still get away a line shows "with lure 176"
+and "getaways stop at 225". The lure row shows the running lure with a mm:ss timer, "No lure needed
+here", or the smart lure's suggestion. Then catches, success, and catches per hour (grey while the
+sample is small), the last catch with icon, quality color, and bite time, and the water's fish as
+icons (bright when caught here, dark when missing, names on hover) with "N missing". The compact
+layout is one line: water, risk, catches, success, skill. A long water name ends in "..." before
+the tag. The water is read again on `ZONE_CHANGED`, `ZONE_CHANGED_INDOORS`, `ZONE_CHANGED_NEW_AREA`,
+skill changes, and attempt ends (the lure tick keeps it). The tooltip (Draft 6): the session, its
+casts and rates with ranges, getaways here (Classic at your skill, yours in the skill band, none
+from skill), the best lure, and the explanations with Shift. The setting "Water line" leaves the
+water out. Two small buttons at the top right (at the right end of the compact line) switch
+between the card and the compact line (saved like the Settings page) and stop the session now
+(the summary shows as after an idle end; the next cast starts a new session).
 
 ### Main Window
 
