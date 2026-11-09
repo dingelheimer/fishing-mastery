@@ -63,8 +63,8 @@ Your data stays when you update.
 | `/fm summary` | Summary of the open or last session |
 | `/fm status` | The current session in the chat |
 | `/fm hud show`, `hide`, `lock`, `unlock`, `reset` | Show, hide, lock, or reset the HUD |
-| `/fm hud scale <0.5-2>`, `/fm hud style full` or `text` | HUD size and style |
-| `/fm settings` | Settings panel (also right click on the minimap button) |
+| `/fm hud scale <0.5-2>`, `/fm hud layout card` or `compact` | HUD size and layout |
+| `/fm settings` | Settings page (also right click on the minimap button) |
 | `/fm contribute` | Your catch counts as text to share (no names, IDs, or times) |
 | `/fm helpers` | Helpers page; also prints what the helpers did since login |
 | `/fm minimap show` or `hide` | The minimap button |

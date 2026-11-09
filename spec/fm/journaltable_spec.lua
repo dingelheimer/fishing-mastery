@@ -29,6 +29,7 @@ describe("FishingMastery journal table", function()
             "CodecDecode.lua",
             "History.lua",
             "Options.lua",
+            "OptionsControls.lua",
             "Totals.lua",
             "Season.lua",
             "Stats.lua",

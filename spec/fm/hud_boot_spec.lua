@@ -89,13 +89,17 @@ describe("FishingMastery HUD boot", function()
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 
-    it("handles /fm hud show, hide, lock, unlock, scale, style, and reset", function()
+    it("handles /fm hud show, hide, lock, unlock, scale, layout, and reset", function()
         login()
         local settings = _G.FishingMasteryDB.settings.hud
-        assert.are.same(
-            { enabled = true, locked = false, scale = 1, style = "full", zoneLine = true },
-            settings
-        )
+        assert.are.same({
+            enabled = true,
+            locked = false,
+            scale = 1,
+            layout = "card",
+            opacity = 1,
+            zoneLine = true,
+        }, settings)
 
         -- show without a session: shown with zeros so it can be placed.
         _G.SlashCmdList.FM("hud show")
@@ -129,11 +133,11 @@ describe("FishingMastery HUD boot", function()
         assert.truthy(w.output():find("Usage: /fm hud", 1, true))
         assert.are.equal(1.25, settings.scale)
 
-        _G.SlashCmdList.FM("hud style text")
-        assert.are.equal("text", settings.style)
+        _G.SlashCmdList.FM("hud layout compact")
+        assert.are.equal("compact", settings.layout)
         assert.truthy(text("session"):find("0/0, -, -, Fishing 11 (+0), No lure", 1, true))
         assert.is_false(hud().lines.rates:IsShown())
-        _G.SlashCmdList.FM("hud style FULL")
+        _G.SlashCmdList.FM("hud layout CARD")
         assert.is_true(hud().lines.rates:IsShown())
 
         _G.SlashCmdList.FM("hud reset")

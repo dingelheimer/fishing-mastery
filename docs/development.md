@@ -31,7 +31,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | File            | Responsibility                                                         |
 |-----------------|------------------------------------------------------------------------|
 | `Locale.lua`    | User-facing strings (`ns.L`), English fallback                         |
-| `Options.lua`   | Every setting's default in one table; controls with ranges (helpers marked for the Helpers page); the proxy the panel writes through (pure) |
+| `Options.lua`   | Every setting's default in one table, the HUD layout reader (an old `style` read as its layout), reads, defaults, and validated writes (pure) |
+| `OptionsControls.lua` | The controls in page order: checkbox, slider, or choice, range, getter and setter, and the page that shows them (pure) |
 | `LocaleStats.lua` | User-facing strings of the Statistics page                           |
 | `LocaleJournal.lua` | User-facing strings of the Journal page |
 | `LocaleHelpers.lua` | User-facing strings of the helpers (casting key, the helpers' long explanations, smart lure, catch line) |
@@ -131,7 +132,9 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click main window, Shift + left click its Journal page, right click settings, session tooltip, hide setting |
-| `SettingsPanel.lua` | Settings panel (Settings API): one checkbox or slider per setting (not the helpers, which are on the Helpers page), section headings, `/fm settings`, `/fm minimap` |
+| `SettingsPanel.lua` | The game's Options entry as a launcher: one button that opens the Settings page (canvas category, else a button initializer); `/fm settings`, `/fm minimap` |
+| `HudCard.lua` | HUD views of Draft 5: the card (water and risk tag, skill bar, three numbers) in the tooltip look and the compact line; the sample for the preview |
+| `SettingsPage.lua` | Settings page of the main window: HUD (with the live preview), Information, Advanced statistics with the data buttons, Defaults with a confirmation |
 | `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing; a chooser (the smart lure) may make the next press a lure use or nothing, asked again in `PreClick`; `OnRelease` listeners (double-click, smart lure) |
 | `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, a lure being applied, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
 | `LureChoice.lua`, `SmartLure.lua` | Smart lure (module 5, setting `autoLure`, off): pure `LureChoice` picks no lure when the skill without a lure reaches base + 95, else the cheapest usable lure in the bags that does, else the strongest (also in water without data); nothing while a lure with more than 30 s runs, only a same-kind renewal at 30 s or less, a wait while a lure is applied. `SmartLure` reads the inputs, is the casting key's chooser (`type=item`, `target-slot` 16, decided in `PreClick` out of combat), waits after a lure click until the enchant shows up (at most 10 s, or a failed cast), and gives the HUD tooltip line |
@@ -222,7 +225,9 @@ copied and adapted, and the probe folder is never loaded or referenced.
   HUD positions; `ui.main` is the main window, `ui.page` its last page, `ui.minimap.angle` the minimap button, degrees,
   default 220).
 - `FishingMasteryDB.settings` (account; every default in `Options.DEFAULTS`): `hud` = `enabled`
-  (default on), `locked`, `scale` (0.5-2, default 1), `style` (`full` or `text`), `zoneLine` (default on);
+  (default on), `locked`, `scale` (0.5-2, default 1), `layout` (`card` or `compact`; a `style` saved
+  before 1.1.0 becomes its layout: full card, text compact), `opacity` (0.3-1, default 1), `zoneLine`
+  (default on);
   `summary.style` = `window` (default) or `chat`; `minimap.shown` (default on);
   `tooltip.shown` (item tooltip line, default on);
   `reloadReminder` (default on); `thresholds` = `countBelow` (5-30, default 10), `greyBelow`
@@ -254,12 +259,12 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm hud show\|hide`       | Turns the HUD on (shown now, so it can be placed) or off |
 | `/fm hud lock\|unlock\|reset` | Locks or unlocks dragging; reset puts it back at the top center with scale 1 |
 | `/fm hud scale <0.5-2>`    | HUD size                                                     |
-| `/fm hud style full\|text` | Five lines, or one line of text                              |
+| `/fm hud layout card\|compact` | The card, or one compact line                          |
 | `/fm summary`              | Summary of the open session, or of the last one (also shown when a session ends after 15 minutes without a cast) |
 | `/fm summary window\|chat` | Where summaries appear: a small window (default) or your chat frame |
 | `/fm stats`                | Statistics page of the main window, see below (the minimap button's left click and the addon compartment entry open the window on its last page) |
 | `/fm journal`              | Journal page of the main window, see below (also Shift + left click on the minimap button or the compartment entry) |
-| `/fm settings`             | Settings panel (also the minimap button's right click); lists any control the client could not show |
+| `/fm settings`             | Settings page of the main window (also the minimap button's right click and the game's Options entry) |
 | `/fm minimap show\|hide`   | Shows or hides the minimap button |
 | `/fm rebuild`              | Counts the totals again from the whole history, prints casts, catches, and days, and says whether they equal the live totals |
 | `/fm status`               | "Counting your history" while the totals are counted after login; current session: length, casts, catches, count per failure outcome, fishing skill before and after, and the last outcome (with bite time for a catch, click time for an early click or getaway) |
@@ -353,12 +358,12 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
 
 ### Settings and Minimap Button
 
-- **Settings panel** (game menu Options > AddOns > Fishing Mastery, `/fm settings`, or a right
-  click on the minimap button): HUD on/off, lock, one text line, zone line, scale; summary in the chat;
-  minimap button; item tooltip line; reload reminder; the count-only and grey sample sizes; the idle cap T (the
-  helpers are on the Helpers page). Changes
-  apply at once (T at the next login). Checkboxes use the Settings API confirmed on live; sliders
-  appear only when the client has `Settings.CreateSlider`, else `/fm settings` names them.
+- **Settings page** (`/fm settings`, a right click on the minimap button, or the button of the
+  game's Options > AddOns > Fishing Mastery entry): HUD on/off, lock, water line, layout (card or
+  compact), scale, opacity, with a live preview; item tooltip line, summary in the chat, minimap
+  button, reload reminder; the count-only and grey sample sizes and the idle cap T; export,
+  backups, contribute; Defaults (asks first; the helpers and positions stay). Changes apply at
+  once (T at the next login). The helpers are on the Helpers page.
 - **Minimap button** (own, no libraries): drag it around the minimap edge (square minimaps
   follow their corners); the angle is saved per character. Left click opens or closes the main
   window, Shift + left click its Journal page, right click opens the settings; the tooltip shows the open session's rates. Hide it in

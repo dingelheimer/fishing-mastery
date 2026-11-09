@@ -23,6 +23,7 @@ describe("FishingMastery gear model", function()
             "CodecDecode.lua",
             "History.lua",
             "Options.lua",
+            "OptionsControls.lua",
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",

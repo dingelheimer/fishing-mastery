@@ -7,6 +7,7 @@ local FILES = {
     "CodecDecode.lua",
     "History.lua",
     "Options.lua",
+    "OptionsControls.lua",
     "Totals.lua",
     "Synthetic.lua",
     "Stress.lua",

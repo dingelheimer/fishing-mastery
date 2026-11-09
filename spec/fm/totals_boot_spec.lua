@@ -11,11 +11,14 @@ describe("FishingMastery totals rebuild boot", function()
     local w, pure
 
     before_each(function()
-        pure = addon.load(
-            { "Codec.lua", "CodecDecode.lua", "History.lua", "Options.lua", "Totals.lua" },
-            nil,
-            "FishingMastery"
-        )
+        pure = addon.load({
+            "Codec.lua",
+            "CodecDecode.lua",
+            "History.lua",
+            "Options.lua",
+            "OptionsControls.lua",
+            "Totals.lua",
+        }, nil, "FishingMastery")
         w = fmboot.new()
     end)
 

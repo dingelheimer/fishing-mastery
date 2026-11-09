@@ -29,6 +29,7 @@ describe("FishingMastery area lookup", function()
             "History.lua",
             "Session.lua",
             "Options.lua",
+            "OptionsControls.lua",
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",

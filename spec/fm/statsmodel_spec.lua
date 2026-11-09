@@ -16,6 +16,7 @@ describe("FishingMastery StatsModel", function()
             "History.lua",
             "Session.lua",
             "Options.lua",
+            "OptionsControls.lua",
             "Totals.lua",
             "Stats.lua",
             "StatsView.lua",

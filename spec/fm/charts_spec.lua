@@ -19,6 +19,7 @@ describe("FishingMastery charts and failure tables", function()
             "History.lua",
             "Session.lua",
             "Options.lua",
+            "OptionsControls.lua",
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",

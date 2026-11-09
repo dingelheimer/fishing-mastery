@@ -10,6 +10,7 @@ describe("FishingMastery HUD model", function()
             "LocaleStats.lua",
             "Session.lua",
             "Options.lua",
+            "OptionsControls.lua",
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",

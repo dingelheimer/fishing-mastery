@@ -1,149 +1,80 @@
--- The settings panel (Settings API, vertical layout, confirmed on live in Story 3.1): one control
--- per Options.CONTROLS entry, bound through RegisterAddOnSetting to an Options proxy, so every
--- change is validated and applied at once; a "header" entry is a section heading (listed as
--- missing without CreateSettingsListSectionHeaderInitializer). Checkboxes are confirmed on live; a
--- slider is added only when CreateSlider and CreateSliderOptions exist, else the control is listed
--- as missing
--- (/fm settings prints it). Each control is created protected; one failing control does not stop
--- the others. Also /fm settings and /fm minimap.
+-- The game's Options > AddOns entry (Story 9.7): a launcher with one button that opens the
+-- Settings page of the main window, where every setting lives now. A canvas category with an own
+-- frame when the client has RegisterCanvasLayoutCategory, else a vertical category with a button
+-- initializer, else none. Also /fm settings (opens the page) and /fm minimap.
 local _, ns = ...
 
-local setmetatable, type, ipairs, pcall, format, tostring, floor =
-    setmetatable, type, ipairs, pcall, string.format, tostring, math.floor
+local setmetatable, type, pcall = setmetatable, type, pcall
 local L, Options = ns.L, ns.Options
 
 local SettingsPanel = {}
 SettingsPanel.__index = SettingsPanel
 ns.SettingsPanel = SettingsPanel
 
-SettingsPanel.VARIABLE = "FishingMastery_%s" -- setting IDs (strings, not globals)
-
--- Slider label texts per control.
-local FORMATS = {
-    hudScale = function(value)
-        return format("%d %%", floor(value * 100 + 0.5))
-    end,
-    activeCap = function(value)
-        return format(L.OPT_SECONDS, value)
-    end,
-}
-
-local function sliderOptions(env, S, control)
-    local options = S.CreateSliderOptions(control.min, control.max, control.step)
-    local mixin = env.MinimalSliderWithSteppersMixin
-    local labels = type(mixin) == "table" and type(mixin.Label) == "table" and mixin.Label
-    if type(options.SetLabelFormatter) == "function" and labels and labels.Right then
-        options:SetLabelFormatter(labels.Right, FORMATS[control.key] or tostring)
-    end
-    return options
+local function canvas(self, S)
+    local env = self.env
+    local frame = env.CreateFrame("Frame")
+    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -16)
+    title:SetText(L.PREFIX)
+    local note = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    note:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
+    note:SetText(L.LAUNCHER_NOTE)
+    local button = ns.Frames.Button(env, frame, L.LAUNCHER_BUTTON, 220, function()
+        self:Launch()
+    end)
+    button:SetPoint("TOPLEFT", note, "BOTTOMLEFT", 0, -14)
+    self.frame, self.button = frame, button
+    return S.RegisterCanvasLayoutCategory(frame, L.PREFIX)
 end
 
--- A section heading with its note as tooltip (CreateSettingsListSectionHeaderInitializer).
-local function addHeader(self, control)
-    local make = self.env.CreateSettingsListSectionHeaderInitializer
-    local layout = self.layout
-    if
-        type(make) ~= "function"
-        or type(layout) ~= "table"
-        or type(layout.AddInitializer) ~= "function"
-    then
-        return "missing"
+local function vertical(self, S)
+    local category, layout = S.RegisterVerticalLayoutCategory(L.PREFIX)
+    local make = self.env.CreateSettingsButtonInitializer
+    if type(make) == "function" and type(layout) == "table" and layout.AddInitializer then
+        layout:AddInitializer(make(L.PREFIX, L.LAUNCHER_BUTTON, function()
+            self:Launch()
+        end, L.LAUNCHER_NOTE, true))
+        self.kind = "button"
     end
-    layout:AddInitializer(make(L["OPT_" .. control.key], L["OPT_TIP_" .. control.key]))
-    return "ok"
+    return category
 end
 
-local function addControl(self, S, control)
-    if control.kind == "header" then
-        return addHeader(self, control)
-    end
-    if control.kind == "slider" then
-        if type(S.CreateSlider) ~= "function" or type(S.CreateSliderOptions) ~= "function" then
-            return "missing"
-        end
-    elseif type(S.CreateCheckbox) ~= "function" then
-        return "missing"
-    end
-    local varTypes = type(S.VarType) == "table" and S.VarType or {}
-    local isBox = control.kind == "checkbox"
-    local setting = S.RegisterAddOnSetting(
-        self.category,
-        format(SettingsPanel.VARIABLE, control.key),
-        control.key,
-        self.proxy,
-        isBox and (varTypes.Boolean or "boolean") or (varTypes.Number or "number"),
-        L["OPT_" .. control.key],
-        Options.Default(control.key)
-    )
-    local tooltip = L["OPT_TIP_" .. control.key]
-    if isBox then
-        S.CreateCheckbox(self.category, setting, tooltip)
-    else
-        S.CreateSlider(self.category, setting, sliderOptions(self.env, S, control), tooltip)
-    end
-    return "ok"
-end
-
--- deps: { env, settings (db.settings), onChange(key) }. Registers the category once; results per
--- control key ("ok", "missing", or "error ..."); controls of a main window page (control.page) are
--- left out. Without the Settings API, panel.category is nil.
+-- deps: { env, open() (opens the Settings page) }. Without the Settings API, panel.category is
+-- nil; panel.kind is "canvas", "button", or "none".
 function SettingsPanel.Start(deps)
-    local self = setmetatable({
-        env = deps.env,
-        settings = deps.settings,
-        results = {},
-        proxy = Options.Proxy(deps.settings, deps.onChange),
-    }, SettingsPanel)
+    local self = setmetatable({ env = deps.env, open = deps.open, kind = "none" }, SettingsPanel)
     local S = deps.env.Settings
-    if
-        type(S) ~= "table"
-        or type(S.RegisterVerticalLayoutCategory) ~= "function"
-        or type(S.RegisterAddOnSetting) ~= "function"
-    then
+    if type(S) ~= "table" or type(S.RegisterAddOnCategory) ~= "function" then
         return self
     end
-    self.category, self.layout = S.RegisterVerticalLayoutCategory(L.PREFIX)
-    for _, control in ipairs(Options.CONTROLS) do
-        if not control.page then
-            local ok, result = pcall(addControl, self, S, control)
-            self.results[control.key] = ok and result or ("error " .. tostring(result))
-        end
+    if type(S.RegisterCanvasLayoutCategory) == "function" then
+        self.category, self.kind = canvas(self, S), "canvas"
+    elseif type(S.RegisterVerticalLayoutCategory) == "function" then
+        self.category = vertical(self, S)
     end
-    S.RegisterAddOnCategory(self.category)
+    if self.category then
+        S.RegisterAddOnCategory(self.category)
+    end
     return self
 end
 
--- Controls that could not be created: { "key: status" }.
-function SettingsPanel:Problems()
-    local list = {}
-    for _, control in ipairs(Options.CONTROLS) do
-        local result = self.results[control.key]
-        if result and result ~= "ok" then
-            list[#list + 1] = control.key .. ": " .. result
-        end
+-- The launcher button: closes the game's settings window (out of combat) and opens the page.
+function SettingsPanel:Launch()
+    local panel = self.env.SettingsPanel
+    local combat = ns.Context.Call(self.env, "InCombatLockdown") == true
+    if not combat and type(panel) == "table" and type(panel.Close) == "function" then
+        pcall(panel.Close, panel)
     end
-    return list
-end
-
--- Opens the panel. Returns false without a category or when opening failed.
-function SettingsPanel:Open()
-    local category = self.category
-    if not category then
-        return false
-    end
-    local id = type(category.GetID) == "function" and category:GetID() or category
-    return (pcall(self.env.Settings.OpenToCategory, id))
+    self.open()
 end
 
 ns.Commands.Register("settings", L.CMD_SETTINGS, function()
-    local panel = ns.settingsPanel
-    if not (panel and panel:Open()) then
-        ns.Print(L.OPT_UNAVAILABLE)
+    if not ns.mainWindow then
+        ns.Print(L.STATUS_NOT_READY)
         return
     end
-    for _, problem in ipairs(panel:Problems()) do
-        ns.Print(format(L.OPT_PROBLEM, problem))
-    end
+    ns.mainWindow:Open(ns.SettingsPage.KEY)
 end)
 
 ns.Commands.Register("minimap", L.CMD_MINIMAP, function(rest)

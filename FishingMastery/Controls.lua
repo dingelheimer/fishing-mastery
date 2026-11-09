@@ -1,8 +1,8 @@
 -- Small controls in the Forever look, shared by the pages of the main window (Epic 9): a
 -- dropdown-styled button (an inset box with the value and a down arrow, as in Draft 2; a click
 -- runs onClick, the pages cycle the value, no menu), the same look without the arrow for actions,
--- a framed box with a gold title (Draft 1), a small status bar, and a check box. Unnamed, insecure
--- frames only.
+-- a framed box with a gold title (Draft 1), a small status bar, a check box, and a slider.
+-- Unnamed, insecure frames only.
 local _, ns = ...
 
 local Frames, Style = ns.Frames, ns.Style
@@ -103,4 +103,29 @@ function Controls.Check(env, parent, onClick)
         end)
     )
     return box
+end
+
+-- A horizontal slider from Classic art (no template): a dark track and the slider thumb. Moving it
+-- calls onChange(value); the value is on its step (SetObeyStepOnDrag).
+Controls.THUMB = "InterfaceButtonsUI-SliderBar-Button-Horizontal"
+function Controls.Slider(env, parent, width, low, high, step, onChange)
+    local slider = env.CreateFrame("Slider", nil, parent)
+    slider:SetSize(width, 16)
+    slider:SetOrientation("HORIZONTAL")
+    slider:SetMinMaxValues(low, high)
+    slider:SetValueStep(step)
+    slider:SetObeyStepOnDrag(true)
+    slider:EnableMouse(true)
+    local track = slider:CreateTexture(nil, "BACKGROUND")
+    track:SetPoint("TOPLEFT", slider, "TOPLEFT", 0, -5)
+    track:SetPoint("BOTTOMRIGHT", slider, "BOTTOMRIGHT", 0, 5)
+    tint(track, Style.TRACK)
+    slider:SetThumbTexture(Controls.THUMB)
+    slider:SetScript(
+        "OnValueChanged",
+        ns.Guard.Wrap("slider:change", function(_, value)
+            onChange(value)
+        end)
+    )
+    return slider
 end

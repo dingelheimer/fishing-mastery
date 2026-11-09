@@ -125,6 +125,12 @@ Frame.__index = Frame
 function Frame:SetScale(scale)
     self.scale = scale
 end
+function Frame:SetAlpha(alpha)
+    self.alpha = alpha
+end
+function Frame:GetAlpha()
+    return self.alpha or 1
+end
 function Frame:GetScale()
     return self.scale or 1
 end

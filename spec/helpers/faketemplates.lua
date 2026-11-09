@@ -92,12 +92,53 @@ local STATUS_BAR = {
     end,
 }
 
+-- Slider methods: range, step, thumb, and a value whose change calls OnValueChanged, as in the
+-- client (also when the value is set by code).
+local SLIDER = {
+    SetOrientation = function(slider, orientation)
+        slider.orientation = orientation
+    end,
+    SetMinMaxValues = function(slider, low, high)
+        slider.min, slider.max = low, high
+    end,
+    GetMinMaxValues = function(slider)
+        return slider.min or 0, slider.max or 1
+    end,
+    SetValueStep = function(slider, step)
+        slider.step = step
+    end,
+    SetObeyStepOnDrag = function(slider, value)
+        slider.obeyStep = value
+    end,
+    SetThumbTexture = function(slider, asset)
+        slider.thumb = asset
+    end,
+    SetValue = function(slider, value)
+        local changed = slider.value ~= value
+        slider.value = value
+        if changed and slider.scripts.OnValueChanged then
+            slider.scripts.OnValueChanged(slider, value, false)
+        end
+    end,
+    GetValue = function(slider)
+        return slider.value or 0
+    end,
+}
+
+-- Test helper on sliders: the player drags the thumb to value.
+SLIDER.Drag = function(slider, value)
+    slider.value = value
+    if slider.scripts.OnValueChanged then
+        slider.scripts.OnValueChanged(slider, value, true)
+    end
+end
+
+local KINDS = { StatusBar = STATUS_BAR, Slider = SLIDER }
+
 -- Called by fakeui's CreateFrame for every new frame.
 function M.apply(env, frame, frameType, template)
-    if frameType == "StatusBar" then
-        for name, fn in pairs(STATUS_BAR) do
-            frame[name] = fn
-        end
+    for name, fn in pairs(KINDS[frameType] or {}) do
+        frame[name] = fn
     end
     for name in (template or ""):gmatch("[^,%s]+") do
         if BUILD[name] then

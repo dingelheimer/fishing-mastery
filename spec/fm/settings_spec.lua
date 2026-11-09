@@ -1,4 +1,5 @@
--- Settings defaults, controls, and proxy; minimap button angle math; the idle cap T in the totals.
+-- Settings defaults, controls, and the HUD layout migration; minimap button angle math; the idle
+-- cap T in the totals.
 local addon = require("spec.helpers.addon")
 
 describe("FishingMastery settings and minimap math", function()
@@ -8,6 +9,7 @@ describe("FishingMastery settings and minimap math", function()
         ns = addon.load({
             "Locale.lua",
             "Options.lua",
+            "OptionsControls.lua",
             "Codec.lua",
             "CodecDecode.lua",
             "History.lua",
@@ -27,9 +29,10 @@ describe("FishingMastery settings and minimap math", function()
             local expected = {
                 hudEnabled = true,
                 hudLocked = false,
-                hudText = false,
+                hudLayout = "card",
                 hudZone = true,
                 hudScale = 1,
+                hudOpacity = 1,
                 summaryChat = false,
                 minimapShown = true,
                 tooltipLine = true,
@@ -48,12 +51,18 @@ describe("FishingMastery settings and minimap math", function()
                     assert.are.equal(expected[control.key], ns.Options.Default(control.key))
                 end
             end
-            assert.are.equal(16, #ns.Options.CONTROLS)
-            -- The helpers live on the Helpers page of the main window (Story 9.6).
-            for _, key in ipairs({ "doubleClick", "autoLure", "loudSplash", "hideUI" }) do
-                assert.are.equal("helpers", ns.Options.BY_KEY[key].page)
+            assert.are.equal(17, #ns.Options.CONTROLS)
+            -- Every control is on a page of the main window: Helpers (Story 9.6) or Settings.
+            for _, control in ipairs(ns.Options.CONTROLS) do
+                local helper = expected[control.key] ~= nil
+                    and (
+                        control.key == "doubleClick"
+                        or control.key == "autoLure"
+                        or control.key == "loudSplash"
+                        or control.key == "hideUI"
+                    )
+                assert.are.equal(helper and "helpers" or "settings", control.page)
             end
-            assert.is_nil(ns.Options.BY_KEY.hudEnabled.page)
             assert.is_false(ns.Options.Set(settings, "helpers", true))
             -- Hud, Summary, Stats, and Totals take their defaults from the same table.
             assert.are.equal(10, ns.Stats.DEFAULTS.countBelow)
@@ -62,8 +71,12 @@ describe("FishingMastery settings and minimap math", function()
 
         it("sets values in the saved shapes, clamps sliders, and ignores wrong types", function()
             local settings = { hud = { style = "full" } }
-            assert.is_true(ns.Options.Set(settings, "hudText", true))
-            assert.are.equal("text", settings.hud.style)
+            assert.are.equal("card", ns.Options.Get(settings, "hudLayout")) -- the old style
+            assert.is_true(ns.Options.Set(settings, "hudLayout", "compact"))
+            assert.are.same({ layout = "compact" }, settings.hud) -- style gone
+            assert.is_false(ns.Options.Set(settings, "hudLayout", "full")) -- not a layout
+            assert.is_true(ns.Options.Set(settings, "hudOpacity", 0.1))
+            assert.are.equal(0.3, settings.hud.opacity)
             assert.is_true(ns.Options.Set(settings, "summaryChat", true))
             assert.are.same({ style = "chat" }, settings.summary)
             assert.is_true(ns.Options.Set(settings, "reloadReminder", false))
@@ -80,20 +93,13 @@ describe("FishingMastery settings and minimap math", function()
             assert.is_false(ns.Options.Set(settings, "nothing", true))
         end)
 
-        it("reports changes made through the proxy", function()
-            local settings, changed = {}, {}
-            local proxy = ns.Options.Proxy(settings, function(key)
-                changed[#changed + 1] = key
-            end)
-            assert.is_true(proxy.minimapShown)
-            assert.is_false(proxy.hudLocked) -- false stays false
-            proxy.minimapShown = false
-            proxy.minimapShown = false -- no change, no report
-            proxy.greyBelow = 41
-            assert.are.same({ "minimapShown", "greyBelow" }, changed)
-            assert.are.equal(40, settings.thresholds.greyBelow)
-            assert.is_nil(proxy.unknown)
-            assert.is_nil(rawget(proxy, "greyBelow"))
+        it("reads a HUD style saved before Epic 9 as its layout", function()
+            local Layout = ns.Options.Layout
+            assert.are.equal("compact", Layout({ style = "text" }))
+            assert.are.equal("card", Layout({ style = "full" }))
+            assert.are.equal("card", Layout({}))
+            assert.are.equal("compact", Layout({ layout = "compact", style = "full" }))
+            assert.are.equal("card", Layout({ layout = "huge" }))
         end)
     end)
 

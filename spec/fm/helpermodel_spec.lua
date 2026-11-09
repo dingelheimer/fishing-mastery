@@ -6,11 +6,14 @@ describe("FishingMastery helper model", function()
     local ns, HelperModel
 
     before_each(function()
-        ns = addon.load(
-            { "Locale.lua", "LocaleHelpers.lua", "LocaleUI.lua", "Options.lua", "HelperModel.lua" },
-            nil,
-            "FishingMastery"
-        )
+        ns = addon.load({
+            "Locale.lua",
+            "LocaleHelpers.lua",
+            "LocaleUI.lua",
+            "Options.lua",
+            "OptionsControls.lua",
+            "HelperModel.lua",
+        }, nil, "FishingMastery")
         HelperModel = ns.HelperModel
     end)
 

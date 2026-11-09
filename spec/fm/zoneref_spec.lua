@@ -21,6 +21,7 @@ describe("FishingMastery zone reference", function()
             "CodecDecode.lua",
             "History.lua",
             "Options.lua",
+            "OptionsControls.lua",
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",

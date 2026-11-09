@@ -44,6 +44,7 @@ Style.FONTS = {
     smallLabel = "GameFontNormalSmall", -- table headers, tags
     secondary = "GameFontDisableSmall", -- legends, notes (grey)
     big = "GameFontHighlightHuge", -- headline numbers
+    number = "GameFontHighlightLarge", -- numbers of the HUD card
 }
 
 -- "ffrrggbb" of a color.

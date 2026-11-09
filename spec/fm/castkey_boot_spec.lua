@@ -161,11 +161,8 @@ describe("FishingMastery casting key", function()
             return { name = name, tooltip = tooltip }
         end
         w.boot(nil, nil)
-        assert.are.equal(0, #headers)
-        for _, name in ipairs({ "helpers", "doubleClick", "autoLure", "loudSplash", "hideUI" }) do
-            assert.is_nil(w.ns.settingsPanel.results[name])
-        end
-        assert.are.equal("ok", w.ns.settingsPanel.results.hudEnabled)
+        assert.are.equal(0, #headers) -- the Options entry is only a launcher (Story 9.7)
+        assert.are.equal("none", w.ns.settingsPanel.kind)
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 end)

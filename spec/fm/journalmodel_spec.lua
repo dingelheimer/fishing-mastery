@@ -19,6 +19,7 @@ describe("FishingMastery journal model", function()
             "CodecDecode.lua",
             "History.lua",
             "Options.lua",
+            "OptionsControls.lua",
             "Totals.lua",
             "Stats.lua",
             "StatsView.lua",

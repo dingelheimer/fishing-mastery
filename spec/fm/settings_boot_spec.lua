@@ -1,54 +1,52 @@
--- Settings panel and minimap button boot tests through every TOC file: the panel registers one
--- control per setting, changes apply at once (HUD, thresholds, minimap button), sliders are left
--- out without the slider API, the button is dragged around the minimap and keeps its angle over
--- a /reload, its clicks open the stats window and the settings, the compartment opens the
--- window, and a new idle cap T counts the totals again at the next login.
+-- The Options launcher and the minimap button through every TOC file: the game's Options entry
+-- is a launcher whose button opens the Settings page (a canvas, else a button initializer, else
+-- nothing), the minimap button is dragged around the minimap and keeps its angle over a /reload,
+-- its clicks open the window and the Settings page, the compartment opens the window, and a new
+-- idle cap T set on the page counts the totals again at the next login.
 local fakeui = require("spec.helpers.fakeui")
 local fmboot = require("spec.helpers.fmboot")
 local statsui = require("spec.helpers.statsui")
 
 -- Globals the stubs set; removed after each test.
-local STUBS = { "Settings", "Minimap", "GetCursorPosition", "GetMinimapShape" }
+local STUBS = {
+    "Settings",
+    "SettingsPanel",
+    "CreateSettingsButtonInitializer",
+    "Minimap",
+    "GetCursorPosition",
+    "GetMinimapShape",
+}
 
--- A Settings API that records categories, settings, and controls.
+-- A Settings API that records the launcher: a canvas category unless opts.noCanvas.
 local function stubSettings(opts)
-    local log = { settings = {}, checkboxes = {}, sliders = {}, opened = {} }
+    local log = { initializers = {} }
+    local function category(name, frame)
+        log.category = { name = name, frame = frame }
+        return log.category
+    end
     _G.Settings = {
-        VarType = { Boolean = "boolean", Number = "number" },
         RegisterVerticalLayoutCategory = function(name)
-            log.category = {
-                name = name,
-                GetID = function()
-                    return 77
+            local layout = {
+                AddInitializer = function(_, initializer)
+                    log.initializers[#log.initializers + 1] = initializer
                 end,
             }
-            return log.category
+            return category(name), layout
         end,
-        RegisterAddOnSetting = function(_, variable, key, tbl, varType, name, default)
-            local setting = { variable = variable, key = key, tbl = tbl, varType = varType }
-            setting.name, setting.default = name, default
-            log.settings[key] = setting
-            return setting
-        end,
-        CreateCheckbox = function(_, setting)
-            log.checkboxes[#log.checkboxes + 1] = setting.key
-        end,
-        RegisterAddOnCategory = function(category)
-            category.registered = true
-        end,
-        OpenToCategory = function(id)
-            log.opened[#log.opened + 1] = id
+        RegisterAddOnCategory = function(c)
+            c.registered = true
         end,
     }
-    if not (opts and opts.noSliders) then
-        _G.Settings.CreateSliderOptions = function(lo, hi, step)
-            return { range = { lo, hi, step } }
-        end
-        _G.Settings.CreateSlider = function(_, setting, options)
-            log.sliders[#log.sliders + 1] = setting.key
-            setting.range = options.range
+    if not (opts and opts.noCanvas) then
+        _G.Settings.RegisterCanvasLayoutCategory = function(frame, name)
+            return category(name, frame)
         end
     end
+    _G.SettingsPanel = {
+        Close = function()
+            log.closed = (log.closed or 0) + 1
+        end,
+    }
     return log
 end
 
@@ -99,55 +97,44 @@ describe("FishingMastery settings and minimap boot", function()
         end
     end)
 
-    it("registers one control per setting; changes apply at once", function()
+    it("registers the launcher; its button and /fm settings open the Settings page", function()
+        local panel = w.ns.settingsPanel
+        assert.are.equal("canvas", panel.kind)
         assert.are.equal("Fishing Mastery", log.category.name)
         assert.is_true(log.category.registered)
-        assert.are.same({
-            "hudEnabled",
-            "hudLocked",
-            "hudText",
-            "hudZone",
-            "summaryChat",
-            "minimapShown",
-            "tooltipLine",
-            "reloadReminder",
-        }, log.checkboxes) -- the helpers are on the Helpers page (Story 9.6)
-        assert.are.same({ "hudScale", "countBelow", "greyBelow", "activeCap" }, log.sliders)
-        assert.are.same({ 30, 120, 5 }, log.settings.activeCap.range)
-        assert.are.equal("FishingMastery_hudScale", log.settings.hudScale.variable)
-        assert.are.equal(true, log.settings.hudEnabled.default)
-
-        -- The panel writes through the proxy into the saved settings.
-        w.catch(5000, 9)
-        local settings = _G.FishingMasteryDB.settings
-        local hud = w.ns.hud
-        log.settings.hudScale.tbl.hudScale = 1.5
-        assert.are.equal(1.5, settings.hud.scale)
-        assert.are.equal(1.5, hud.frame:GetScale())
-        log.settings.hudText.tbl.hudText = true
-        assert.are.equal("text", settings.hud.style)
-        log.settings.countBelow.tbl.countBelow = 20
-        assert.are.equal(20, hud.thresholds.countBelow)
-        assert.are.equal(20, w.ns.stats.thresholds.countBelow)
-        log.settings.hudEnabled.tbl.hudEnabled = false
-        assert.is_false(hud.frame:IsShown())
-        assert.is_false(log.settings.hudEnabled.tbl.hudLocked) -- reads the saved value
-
+        assert.are.equal(panel.frame, log.category.frame)
+        assert.are.equal("Open Fishing Mastery settings", panel.button:GetText())
+        panel.button:Click()
+        assert.are.equal(1, log.closed) -- the game's settings window closes first
+        assert.is_true(w.ns.mainWindow:IsShown("settings"))
+        w.ns.mainWindow.frame:Hide()
         _G.SlashCmdList.FM("settings")
-        assert.are.same({ 77 }, log.opened)
+        assert.is_true(w.ns.mainWindow:IsShown("settings"))
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 
-    it("leaves sliders out without the slider API and says so", function()
+    it("falls back to a button initializer, and to nothing without one", function()
         w.cleanup()
-        log = stubSettings({ noSliders = true })
+        log = stubSettings({ noCanvas = true })
+        _G.CreateSettingsButtonInitializer = function(name, label, click, tip)
+            return { name = name, label = label, click = click, tip = tip }
+        end
         stubMinimap(w)
         boot(nil, nil)
-        assert.are.equal(8, #log.checkboxes)
-        assert.is_nil(log.settings.hudScale)
-        w.printed = {}
-        _G.SlashCmdList.FM("settings")
-        assert.truthy(w.output():find("Setting not shown: hudScale: missing", 1, true))
+        assert.are.equal("button", w.ns.settingsPanel.kind)
+        local initializer = log.initializers[1]
+        assert.are.equal("Open Fishing Mastery settings", initializer.label)
+        initializer.click()
+        assert.is_true(w.ns.mainWindow:IsShown("settings"))
+
+        w.cleanup()
+        log = stubSettings({ noCanvas = true })
+        _G.CreateSettingsButtonInitializer = nil
+        stubMinimap(w)
+        boot(nil, nil)
+        assert.are.equal("none", w.ns.settingsPanel.kind)
+        assert.is_true(log.category.registered)
+        assert.are.same({}, log.initializers)
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 
@@ -197,9 +184,10 @@ describe("FishingMastery settings and minimap boot", function()
         button:GetScript("OnClick")(button, "LeftButton")
         assert.is_false(w.ns.stats.frame:IsVisible())
         button:GetScript("OnClick")(button, "RightButton")
-        assert.are.same({ 77 }, log.opened)
+        assert.is_true(w.ns.mainWindow:IsShown("settings"))
+        w.ns.mainWindow.frame:Hide()
         _G.FishingMastery_OnAddonCompartmentClick("FishingMastery", "LeftButton")
-        assert.is_true(w.ns.stats.frame:IsVisible())
+        assert.is_true(w.ns.mainWindow:IsShown("settings")) -- the last page
 
         button:GetScript("OnEnter")(button)
         assert.are.equal("Fishing Mastery", _G.GameTooltip.lines[1])
@@ -218,7 +206,8 @@ describe("FishingMastery settings and minimap boot", function()
         local totals = _G.FishingMasteryDB.chars[w.ns.stats.charKey].totals
         local before = totals.active[1411]
         w.printed = {}
-        log.settings.activeCap.tbl.activeCap = 20
+        _G.SlashCmdList.FM("settings")
+        w.ns.settingsPage.controls.activeCap:Drag(20)
         assert.truthy(w.output():find("Idle cap set to 30 s", 1, true)) -- clamped to 30
         assert.are.equal(60, w.ns.Totals.cap) -- this login keeps its T
 

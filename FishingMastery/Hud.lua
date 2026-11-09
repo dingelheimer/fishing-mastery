@@ -14,7 +14,7 @@ ns.Hud = Hud
 
 -- Account-wide HUD settings (FishingMasteryDB.settings.hud); the position is per character.
 Hud.DEFAULTS = ns.Options.DEFAULTS.hud
-Hud.STYLES = { full = true, text = true }
+Hud.LAYOUTS = { card = true, compact = true }
 Hud.MIN_SCALE, Hud.MAX_SCALE = 0.5, 2
 Hud.POSITION_KEY = "hud"
 Hud.FALLBACK = { point = "TOP", x = 0, y = -140 }
@@ -28,18 +28,18 @@ Hud.ZONE_EVENTS = { "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AR
 Hud.GREY, Hud.WHITE = { 0.55, 0.55, 0.55 }, { 1, 1, 1 }
 Hud.TICK = 1 -- seconds between updates while a lure is shown
 
--- settings.hud with every missing or invalid value set to its default.
+-- settings.hud with every missing or invalid value set to its default; a style saved before Epic 9
+-- becomes its layout (full: card, text: compact) once.
 function Hud.Settings(settings)
     local hud = type(settings.hud) == "table" and settings.hud or {}
     settings.hud = hud
+    local layout = ns.Options.Layout(hud)
     for key, value in pairs(Hud.DEFAULTS) do
         if type(hud[key]) ~= type(value) then
             hud[key] = value
         end
     end
-    if not Hud.STYLES[hud.style] then
-        hud.style = Hud.DEFAULTS.style
-    end
+    hud.layout, hud.style = layout, nil
     return hud
 end
 
@@ -156,7 +156,7 @@ local function emptySession(now)
 end
 
 local function draw(self, model)
-    local frame, full = self.frame, self.settings.style == "full"
+    local frame, full = self.frame, self.settings.layout == "card"
     local texts = HudModel.Lines(model)
     local zone = full and self.settings.zoneLine and self.zone ~= nil
     texts.zone = zone and self.zone.text or nil
@@ -181,6 +181,7 @@ local function draw(self, model)
         frame:SetSize(Hud.TEXT_WIDTH, 10 + Hud.LINE)
     end
     frame:SetScale(self.settings.scale)
+    frame:SetAlpha(self.settings.opacity)
 end
 
 local function scheduleTick(self)
@@ -266,8 +267,8 @@ function Hud:Command(action, value)
             return L.HUD_USAGE
         end
         hud.scale = scale
-    elseif action == "style" and Hud.STYLES[value] then
-        hud.style = value
+    elseif action == "layout" and Hud.LAYOUTS[value] then
+        hud.layout = value
     else
         return L.HUD_USAGE
     end

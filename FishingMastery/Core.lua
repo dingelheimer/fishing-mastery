@@ -93,13 +93,12 @@ function ns.ApplySetting(key)
     ns.Guard.Call("settings:apply", applySetting, key)
 end
 
--- Settings panel and minimap button (after the main window, which they open).
+-- The Options launcher and the minimap button (after the main window, which they open).
 local function startSettings()
     ns.settingsPanel = ns.SettingsPanel.Start({
         env = _G,
-        settings = ns.db.settings,
-        onChange = function(key)
-            ns.Guard.Call("settings:apply", applySetting, key)
+        open = function()
+            ns.mainWindow:Open(ns.SettingsPage.KEY)
         end,
     })
     ns.minimap = ns.MinimapButton.Start({
@@ -118,9 +117,7 @@ local function startSettings()
             end
         end,
         openSettings = function()
-            if not ns.settingsPanel:Open() then
-                ns.Print(L.OPT_UNAVAILABLE)
-            end
+            ns.mainWindow:Open(ns.SettingsPage.KEY)
         end,
     })
 end

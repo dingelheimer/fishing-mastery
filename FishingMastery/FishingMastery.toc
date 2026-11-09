@@ -20,6 +20,7 @@ LocaleUI.lua
 Data\Zones.lua
 Data\Journal.lua
 Options.lua
+OptionsControls.lua
 Guard.lua
 Style.lua
 Tip.lua
@@ -101,6 +102,7 @@ LineChart.lua
 Heatmap.lua
 Controls.lua
 OverviewPage.lua
+HudCard.lua
 MainWindow.lua
 StatsWindow.lua
 StatsScope.lua
@@ -125,6 +127,7 @@ DoubleClick.lua
 DoubleCast.lua
 KeyButton.lua
 HelpersPage.lua
+SettingsPage.lua
 ItemTooltip.lua
 Dev.lua
 Compartment.lua

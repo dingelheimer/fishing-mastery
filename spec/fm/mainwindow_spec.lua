@@ -199,7 +199,7 @@ describe("FishingMastery main window boot", function()
         _G.SlashCmdList.FM("journal")
         assert.is_true(main:IsShown("journal"))
         assert.are.equal("Journal", main.pageName:GetText())
-        assert.are.equal(3, #main.tabs) -- Statistics, Journal, Helpers
+        assert.are.equal(4, #main.tabs) -- Statistics, Journal, Helpers, Settings
         assert.is_true(w.ns.journalWindow.frame.Tabs[1]:IsVisible())
         _G.SlashCmdList.FM("stats")
         assert.is_true(main:IsShown("stats"))
