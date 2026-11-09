@@ -44,7 +44,7 @@ and open source (GPL-3.0). Developers: see the [development reference](docs/deve
   and ambience off; your own volumes come back when you put the pole away or log out.
 - **Hide the interface while fishing** (off by default): like Alt+Z when your line goes out; it
   comes back when you move, fight, get a whisper, and more. Your catches show at the top.
-- **Item tooltips** show "caught 37x (best: Darkspear Strand)" for items you caught.
+- **Item tooltips** show "Fishing Mastery: caught 37" and your best water for items you caught.
 - **Backups:** daily snapshots, `/fm export` and `/fm import` as copyable text.
 
 ## Install

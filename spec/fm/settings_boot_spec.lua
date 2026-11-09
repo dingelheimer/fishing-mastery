@@ -191,12 +191,12 @@ describe("FishingMastery settings and minimap boot", function()
 
         button:GetScript("OnEnter")(button)
         assert.are.equal("Fishing Mastery", _G.GameTooltip.lines[1])
-        assert.are.equal("No open fishing session.", _G.GameTooltip.lines[2])
+        assert.are.equal("Session = none open", _G.GameTooltip.lines[2])
+        assert.are.equal("Left-click: open", _G.GameTooltip.lines[#_G.GameTooltip.lines - 3])
         w.catch(5000, 9)
         button:GetScript("OnEnter")(button)
-        assert.truthy(
-            table.concat(_G.GameTooltip.lines, "\n"):find("Success: 1 of 1 fair casts", 1, true)
-        )
+        assert.are.equal("Session = 1 catches, 0 min", _G.GameTooltip.lines[2])
+        assert.are.equal("ANCHOR_LEFT", _G.GameTooltip.anchor)
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 

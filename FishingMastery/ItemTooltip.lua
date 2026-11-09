@@ -1,8 +1,8 @@
--- Item tooltip line: one TooltipDataProcessor post-call for items (confirmed on live in Story 3.1)
--- adds "Fishing Mastery: caught Nx (best: <zone>)" for items the character caught. One lookup in
--- the item totals per tooltip, never a history scan; only appends its own line (other lines are
--- never changed). Switched off with the tooltip setting. Post-calls cannot be removed, so the
--- handler checks the setting on every call.
+-- Item tooltip lines: one TooltipDataProcessor post-call for items (confirmed on live in Story 3.1)
+-- adds "Fishing Mastery  caught N" and "Best water" (Draft 6, TooltipModel) for items the
+-- character caught, through Tip.Into. One lookup in the item totals per tooltip, never a history
+-- scan; only appends its own lines (other lines are never changed). Switched off with the tooltip
+-- setting. Post-calls cannot be removed, so the handler checks the setting on every call.
 local _, ns = ...
 
 local type = type
@@ -14,8 +14,9 @@ end
 local ItemTooltip = {}
 ns.ItemTooltip = ItemTooltip
 
--- The line for tooltip data { id }, or nil. deps: { settings, char (character entry), mapName }.
-function ItemTooltip.LineFor(deps, data)
+-- The draw(tip) for tooltip data { id }, or nil. deps: { settings, char (character entry),
+-- mapName }.
+function ItemTooltip.DrawFor(deps, data)
     if not ns.Options.Get(deps.settings, "tooltipLine") or type(data) ~= "table" then
         return nil
     end
@@ -26,7 +27,7 @@ function ItemTooltip.LineFor(deps, data)
     local char = deps.char
     local totals = type(char) == "table" and char.totals
     local items = type(totals) == "table" and totals.items
-    return TooltipModel.Line(type(items) == "table" and items[id] or nil, deps.mapName)
+    return TooltipModel.Draw(type(items) == "table" and items[id] or nil, deps.mapName)
 end
 
 -- deps: { env, settings (db.settings), char }. Registers the post-call once; returns false when
@@ -58,10 +59,9 @@ function ItemTooltip.Start(deps)
     processor.AddTooltipPostCall(
         itemType,
         ns.Guard.Wrap("tooltip:item", function(tooltip, data)
-            local line = ItemTooltip.LineFor(lineDeps, data)
-            if line then
-                local c = TooltipModel.COLOR
-                tooltip:AddLine(line, c[1], c[2], c[3])
+            local draw = ItemTooltip.DrawFor(lineDeps, data)
+            if draw then
+                draw(ns.Tip.Into(tooltip))
             end
         end)
     )

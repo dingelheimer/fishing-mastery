@@ -58,7 +58,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours, months, and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
 | `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
 | `Getaway.lua`   | Getaway risk: Classic model at an effective skill and base, own rate per resolved area and skill band with its range, and the comparison (pure) |
-| `HudModel.lua`  | HUD numbers from the session, rank, lure, and item; short formats; count/grey rules and the rate tooltip lines of the minimap button (pure) |
+| `HudModel.lua`  | HUD numbers from the session, rank, lure, and item; short formats; count/grey rules (pure) |
 | `HudCardModel.lua` | The HUD card of Draft 5 (water and risk tag, skill bar with skill-ups and the effective-skill mark, risk line, lure row with timer or suggestion, three numbers, last catch, the water's fish), the compact line, and the HUD tooltip of Draft 6 (pure) |
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Scope model: per-character and merged numbers, favorite zone, session records, calendar days, the merged view (pure) |
@@ -79,8 +79,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `SkillModel.lua` | Skill numbers: rank over time, catches per skill point with range, forecast to the next rank cap and to 300 (pure) |
 | `SkillTable.lua` | Skill tab texts, rank line chart, catches-per-point bars by rank band (pure) |
 | `CompareTable.lua` | Compare tab: groups (lure, day/night, zone, character), rates with the Newcombe difference, median bite time (pure) |
-| `MinimapModel.lua` | Minimap button position for an angle (round minimap or `GetMinimapShape` shapes), drag angle, saved angle (pure) |
-| `TooltipModel.lua` | Item tooltip line "caught Nx (best: zone)" from one item total (pure) |
+| `MinimapModel.lua` | Minimap button position for an angle (round minimap or `GetMinimapShape` shapes), drag angle, saved angle; the button's tooltip (session, skill, click hints) (pure) |
+| `TooltipModel.lua` | Item tooltip lines of Draft 6 ("Fishing Mastery" with "caught N", "Best water") from one item total (pure) |
 | `Style.lua` | Colors, fonts by role, thousands separators, grey ranges "66 % (52 - 78)", "~" estimates (pure) |
 | `CalendarModel.lua` | Calendar heatmap: 53 weeks of days, rows Monday to Sunday, color levels by catches (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
@@ -110,10 +110,10 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `HudCommands.lua` | `/fm hud`: show, hide, lock, unlock, reset, scale, layout |
 | `HudActions.lua` | The two HUD buttons at the top right (the line: right end): card or compact, and stop the session; tooltips |
 | `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
-| `Tip.lua` | Tooltip builder: title, gold label and white value pairs, gaps, headers, lines and wrapped text, green hints, explanations only while Shift is held (redraws on `MODIFIER_STATE_CHANGED`); `Tip.Lines` for plain line lists (charts) |
+| `Tip.lua` | Tooltip builder: title, label and value pairs (gold label unless a color is given), gaps, headers, short lines, green hints, explanations only while Shift is held (redraws on `MODIFIER_STATE_CHANGED`; the only wrapped lines); `Tip.Into` writes below a shown tooltip (item post-call). The only file that writes tooltip lines (a spec checks it) |
 | `StatsListHeader.lua` | Table header: gold bar with sort buttons and arrow, or labels |
-| `StatsList.lua` | Table widget: header (`StatsListHeader`) over a ScrollBox list; striped rows, hover highlight, number cells with separators, item icons, cell colors, season and night tags, grey cells, legend line, `Tip` or line tooltips |
-| `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
+| `StatsList.lua` | Table widget: header (`StatsListHeader`) over a ScrollBox list; striped rows, hover highlight, number cells with separators, item icons, cell colors, season and night tags, grey cells, legend line, `Tip` tooltips |
+| `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar (`Tip` draw from the chart model) |
 | `LineChart.lua` | Line chart widget: pooled `CreateLine` segments (squares without it), grid and axis labels, hover tooltip per point |
 | `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |
 | `Controls.lua` | Shared controls of the pages: dropdown-styled button, the same look without the arrow for actions, framed box, small status bar, check box |
@@ -134,7 +134,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `FailureTabs.lua` | Build and draw of the Failures, Bite times, and Sessions tabs |
 | `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
-| `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click main window, Shift + left click its Journal page, right click settings, session tooltip, hide setting |
+| `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click main window, Shift + left click its Journal page, right click settings, tooltip of Draft 6, hide setting |
 | `SettingsPanel.lua` | The game's Options entry as a launcher: one button that opens the Settings page (canvas category, else a button initializer); `/fm settings`, `/fm minimap` |
 | `HudCard.lua` | HUD views of Draft 5 in the tooltip look: the card with stacked rows (fish icons with names on hover; a long water name cut before the tag) and the compact line; the sample for the Settings preview |
 | `SettingsPage.lua` | Settings page of the main window: HUD (with the live preview), Information, Advanced statistics with the data buttons, Defaults with a confirmation |
@@ -148,7 +148,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `KeyButton.lua` | Key-binding button: binds the next key (with modifiers) to "Cast Fishing", Escape cancels, right-click clears; disabled in combat |
 | `HelpersPage.lua` | Helpers page of the main window: helper rows with check boxes and state tags, the casting key, "Right now", "This login", the other-addon warning; redraws every second while shown |
 | `Helpers.lua` | Starts the helpers at login in order (casting key, smart lure, louder splash, hidden interface, double-click, status) and passes each saved cast to the catch line and the status |
-| `ItemTooltip.lua` | Item tooltip post-call: adds the line for items this character caught, one lookup per tooltip, tooltip setting |
+| `ItemTooltip.lua` | Item tooltip post-call: adds the lines for items this character caught through `Tip.Into`, one lookup per tooltip, tooltip setting |
 | `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; opens or closes the main window, with Shift its Journal page |
 | `Core.lua`      | Event frame, setup on `ADDON_LOADED`, character entry on `PLAYER_LOGIN`, slash command |
 
@@ -319,8 +319,10 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   time), and the first and last catch. Small samples are grey with "~" (legend under the list).
   Click a header to sort, again to flip the order; the quality dropdown filters, the line next to
   it counts kinds and catches.
-- Every row tooltip is a title with gold labels and white values; ranges in a grey bracket "66 %
-  (52 - 78)"; explanations only while Shift is held. Charts use the same fonts and colors.
+- Every tooltip (table rows, chart bars, calendar days, the HUD, the item tooltip, the minimap
+  button, settings, helpers) is a title with gold labels and white values; ranges in a grey
+  bracket "66 % (52 - 78)"; explanations only while Shift is held; click hints in green. Charts
+  use the same fonts and colors.
 - **Zones:** every zone (most casts first) and its subzones: casts, catches per hour, species,
   the top 3 items with their shares; all items with ranges in the tooltip. Subzones with their
   own zone data get one row per area; other subzone texts keep their own row. A click on a row
@@ -377,8 +379,9 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   once (T at the next login). The helpers are on the Helpers page.
 - **Minimap button** (own, no libraries): drag it around the minimap edge (square minimaps
   follow their corners); the angle is saved per character. Left click opens or closes the main
-  window, Shift + left click its Journal page, right click opens the settings; the tooltip shows the open session's rates. Hide it in
-  the settings or with `/fm minimap hide`.
+  window, Shift + left click its Journal page, right click opens the settings. The tooltip
+  (Draft 6) shows the open session (catches and active time), the Fishing skill, and the click
+  hints. Hide it in the settings or with `/fm minimap hide`.
 - **Addon compartment:** the Fishing Mastery entry opens or closes the main window (with Shift
   held: its Journal page).
 - **Journal page** (`/fm journal`): a page of the main window with the tabs Fish, Waters,

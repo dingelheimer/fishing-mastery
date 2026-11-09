@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Changed: every tooltip of the addon uses short labels and values in the game's style. The item
+  tooltip shows "Fishing Mastery" with "caught N" and your best water; the minimap button shows
+  the session, your Fishing skill, and the click hints; chart bars and calendar days list their
+  numbers as pairs. Longer explanations (settings, helpers, comparisons) appear while Shift is
+  held.
 - Fixed: in places the game reports as the continent, such as the cave outside Wailing Caverns,
   the HUD named "Kalimdor" and knew no risk or fish; new casts there were saved under Kalimdor.
   Both now use the zone shown on screen (The Barrens). Casts saved before stay as they are.

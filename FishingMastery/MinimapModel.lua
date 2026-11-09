@@ -1,11 +1,21 @@
 -- Pure logic: where the own minimap button sits for an angle (degrees, 0 = right,
 -- counterclockwise), on the edge of a round minimap or of the shape GetMinimapShape names (square
--- corners are followed along the edge), and the cursor's angle around the center while dragging.
--- No frame or API calls.
+-- corners are followed along the edge), the cursor's angle around the center while dragging, and
+-- the button's tooltip (Draft 6). No frame or API calls.
 local _, ns = ...
 
-local cos, sin, rad, deg, atan2, sqrt, min, max, type =
-    math.cos, math.sin, math.rad, math.deg, math.atan2, math.sqrt, math.min, math.max, type
+local cos, sin, rad, deg, atan2, sqrt, min, max, type, format =
+    math.cos,
+    math.sin,
+    math.rad,
+    math.deg,
+    math.atan2,
+    math.sqrt,
+    math.min,
+    math.max,
+    type,
+    string.format
+local L, Style = ns.L, ns.Style
 
 local MinimapModel = {}
 ns.MinimapModel = MinimapModel
@@ -66,4 +76,33 @@ function MinimapModel.Saved(store)
         return angle % 360
     end
     return ns.Options.DEFAULTS.ui.minimapAngle
+end
+
+-- The tooltip as draw(tip): the title, the open session ("8 catches, 4 min", grey "none"), the
+-- Fishing skill ("154 / 225"; the rank alone without a cap), and green click hints.
+-- input: { catches (nil without an open session), active (seconds), rank, cap }.
+function MinimapModel.Tip(input)
+    return function(tip)
+        tip:Title(L.PREFIX)
+        if input.catches then
+            local value = format(
+                L.MTIP_SESSION_VALUE,
+                Style.Number(input.catches),
+                ns.HudModel.Duration(input.active)
+            )
+            tip:Pair(L.MTIP_SESSION, value)
+        else
+            tip:Pair(L.MTIP_SESSION, L.MTIP_NO_SESSION, Style.GREY)
+        end
+        local rank, cap = input.rank, input.cap
+        if type(rank) == "number" then
+            local skill = type(cap) == "number" and format(L.MTIP_SKILL, rank, cap) or rank
+            tip:Pair(L.OV_FISHING, skill)
+        end
+        tip:Gap()
+        tip:Hint(L.MTIP_LEFT)
+        tip:Hint(L.MTIP_SHIFT)
+        tip:Hint(L.MTIP_RIGHT)
+        tip:Hint(L.MTIP_DRAG)
+    end
 end

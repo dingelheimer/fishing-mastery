@@ -1,5 +1,6 @@
 -- Skill scan, skill pace, forecasts, and the Skill tab texts of the stats window.
 local addon = require("spec.helpers.addon")
+local tiplines = require("spec.helpers.tiplines")
 
 local DAY = 20763
 
@@ -10,6 +11,8 @@ describe("FishingMastery skill tab", function()
         ns = addon.load({
             "Locale.lua",
             "LocaleStats.lua",
+            "LocaleUI.lua",
+            "Style.lua",
             "Codec.lua",
             "CodecDecode.lua",
             "History.lua",
@@ -210,7 +213,7 @@ describe("FishingMastery skill tab", function()
             assert.truthy(text:find("about 1 h 00 min of active fishing", 1, true), text)
             local chart = ns.SkillTable.RankChart(model, input)
             assert.are.equal(26, #chart.points)
-            assert.are.same({ "Rank 20", "d2000" }, chart.points[1].tip)
+            assert.are.same({ "Rank 20", "d2000" }, tiplines.lines(chart.points[1].tip))
             assert.are.equal("d2000", chart.labels[1])
             local bars = ns.SkillTable.BandChart(model)
             assert.are.equal(2, #bars.bars) -- ranks 21-24 and 25-44

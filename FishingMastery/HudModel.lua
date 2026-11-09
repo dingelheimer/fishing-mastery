@@ -1,6 +1,6 @@
 -- Pure logic: the HUD's numbers from the open session and the live game values (rank, skill
--- modifier, lure time, item name), their short formats, and the rate tooltip lines (minimap
--- button); the HUD card is HudCardModel.lua. Rates come from Stats with the session's
+-- modifier, lure time, item name) and their short formats; the HUD card and its tooltip are
+-- HudCardModel.lua. Rates come from Stats with the session's
 -- outcome counts; small samples show counts or are greyed by the Stats display rule. No frame
 -- or API calls.
 local _, ns = ...
@@ -62,37 +62,4 @@ function HudModel.Rate(result)
         return "-"
     end
     return format(L.HUD_PER_HOUR, floor(result.rate + 0.5))
-end
-
-local function percentRange(result)
-    return floor(result.low * 100 + 0.5), floor(result.high * 100 + 0.5)
-end
-
--- Tooltip lines with the 95 % ranges of both rates (or why there is none yet).
-function HudModel.Tooltip(model)
-    local lines = {}
-    local success, perHour = model.success, model.perHour
-    if success.display == "count" or not success.low then
-        lines[1] = format(L.HUD_TIP_SUCCESS_FEW, success.k, success.n)
-    else
-        local low, high = percentRange(success)
-        lines[1] =
-            format(L.HUD_TIP_SUCCESS, HudModel.Percent(success), low, high, success.k, success.n)
-    end
-    if perHour.display == "count" or not perHour.rate then
-        lines[2] = L.HUD_TIP_RATE_FEW
-    else
-        lines[2] = format(
-            L.HUD_TIP_RATE,
-            floor(perHour.rate + 0.5),
-            floor(perHour.low + 0.5),
-            floor(perHour.high + 0.5),
-            perHour.count,
-            HudModel.Duration(perHour.seconds)
-        )
-    end
-    if success.display == "few" then
-        lines[3] = L.HUD_TIP_GREY
-    end
-    return lines
 end

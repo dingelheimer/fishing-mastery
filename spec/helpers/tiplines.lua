@@ -1,6 +1,6 @@
 -- Records what a row's tip(builder) writes, as plain lines without color escapes: a title or line
 -- as its text, a pair as "label = value", a gap as " ", details as the Shift lines (shift) or the
--- "Hold Shift" line.
+-- prompt (the "Hold Shift" line).
 local M = {}
 
 local function plain(text)
@@ -13,18 +13,17 @@ function M.lines(draw, shift)
     local function add(_, text)
         out[#out + 1] = plain(text)
     end
-    builder.Title, builder.Header, builder.Line, builder.Text, builder.Hint =
-        add, add, add, add, add
+    builder.Title, builder.Header, builder.Line, builder.Hint = add, add, add, add
     function builder.Pair(_, label, value)
         out[#out + 1] = plain(label) .. " = " .. plain(value)
     end
     function builder.Gap()
         out[#out + 1] = " "
     end
-    function builder.Details(_, lines)
+    function builder.Details(_, lines, prompt)
         out[#out + 1] = " "
         if not shift then
-            out[#out + 1] = "Hold Shift for how this is counted"
+            out[#out + 1] = prompt or "Hold Shift for how this is counted"
             return
         end
         for _, line in ipairs(lines) do

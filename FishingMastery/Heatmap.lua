@@ -19,7 +19,7 @@ Heatmap.DAY_LABELS = { [1] = "HEAT_MON", [4] = "HEAT_THU", [7] = "HEAT_SUN" }
 
 local function onEnter(owner)
     if owner.tip then
-        ns.Tip.Lines(owner.env, owner, owner.tip, "ANCHOR_TOP")
+        ns.Tip.Open(owner.env, owner, owner.tip, "ANCHOR_TOP")
     end
 end
 
@@ -69,6 +69,19 @@ function Heatmap.Create(env, parent, width)
     return self
 end
 
+-- The tooltip of a day as draw(tip): the date, then casts and catches or grey "No fishing".
+function Heatmap.Tip(entry, day)
+    return function(tip)
+        tip:Title(day)
+        if entry.casts > 0 then
+            tip:Pair(L.HEAT_CASTS, ns.Style.Number(entry.casts))
+            tip:Pair(L.HEAT_CATCHES, ns.Style.Number(entry.catches))
+        else
+            tip:Line(L.HEAT_TIP_NONE, ns.Style.GREY)
+        end
+    end
+end
+
 -- Draws CalendarModel.Build(days, today); input: { formatDay(day) }. Cells after today are
 -- hidden.
 function Heatmap:Draw(model, input)
@@ -80,9 +93,7 @@ function Heatmap:Draw(model, input)
         local frame = self.cells[(entry.row - 1) * CalendarModel.WEEKS + entry.col]
         local color = CalendarModel.COLORS[entry.level]
         frame.texture:SetColorTexture(color[1], color[2], color[3], color[4])
-        local numbers = entry.casts > 0 and format(L.HEAT_TIP, entry.casts, entry.catches)
-            or L.HEAT_TIP_NONE
-        frame.tip = { input.formatDay(entry.day), numbers }
+        frame.tip = Heatmap.Tip(entry, input.formatDay(entry.day))
         frame:Show()
     end
     self.drawn = model

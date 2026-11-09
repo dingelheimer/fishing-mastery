@@ -161,7 +161,13 @@ describe("FishingMastery charts and failure tables", function()
         assert.are.equal("95", skill.bars[2].label) -- 72 + 25 = 97
         assert.are.equal("4/4", skill.bars[2].text) -- counts only below 10
         assert.is_true(skill.bars[2].grey)
-        assert.truthy(skill.bars[2].tip[1]:find("Effective skill 95-99", 1, true))
+        assert.are.same({
+            "Effective skill 95-99",
+            "Getaways = 4 of 4",
+            "Hooked casts = 4",
+            " ",
+            "Hold Shift for how this is counted",
+        }, tiplines.lines(skill.bars[2].tip))
         assert.is_true(skill.percent)
 
         local clicks = ns.FailureTable.ClickChart(fv)
@@ -170,7 +176,10 @@ describe("FishingMastery charts and failure tables", function()
         assert.are.equal(3, clicks.bars[5].value)
         assert.are.equal(5, clicks.total)
         assert.are.equal(3, clicks.axis.max)
-        assert.truthy(clicks.bars[5].tip[1]:find("Clicked at 4-5 s: 3 of 5", 1, true))
+        assert.are.same(
+            { "Clicked at 4 - 5 s", "Early clicks = 3 of 5" },
+            tiplines.lines(clicks.bars[5].tip)
+        )
 
         local empty = view({ { out = "cancel" } })
         assert.is_nil(ns.FailureTable.SkillChart(empty))

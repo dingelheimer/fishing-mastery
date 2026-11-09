@@ -3,6 +3,7 @@
 -- catch below the base, unknown areas, the Epic 2 Durotar sample (9 catches, 5 getaways), own
 -- rates per resolved area and band, the comparison with the model, and the relative chart.
 local addon = require("spec.helpers.addon")
+local tiplines = require("spec.helpers.tiplines")
 
 local NAMES = { [297] = "Jaguero Isle", [367] = "Sen'jin Village", [814] = "Southfury River" }
 
@@ -13,6 +14,7 @@ describe("FishingMastery getaway model", function()
         ns = addon.load({
             "Locale.lua",
             "LocaleStats.lua",
+            "LocaleUI.lua",
             "Data\\Zones.lua",
             "Codec.lua",
             "CodecDecode.lua",
@@ -22,6 +24,8 @@ describe("FishingMastery getaway model", function()
             "Totals.lua",
             "Stats.lua",
             "HudModel.lua",
+            "Style.lua",
+            "RowTip.lua",
             "Getaway.lua",
             "StatsView.lua",
             "ChartModel.lua",
@@ -162,9 +166,10 @@ describe("FishingMastery getaway model", function()
         end
         assert.are.same({ "-5", "+70", "+75", "+80" }, labels)
         near(1, chart.bars[1].mark)
-        local tip = table.concat(chart.bars[1].tip, " / ")
+        local tip = tiplines.text(chart.bars[1].tip)
         assert.truthy(tip:find("Below the base level", 1, true))
-        assert.truthy(tip:find("Classic model: 100 %", 1, true))
+        assert.truthy(tip:find("Classic model = 100 %", 1, true))
+        assert.truthy(tiplines.text(chart.bars[1].tip, true):find("Skill over base: ", 1, true))
         near(0.18, chart.bars[3].mark) -- +75 to +79: catch 80-84 %
         -- Without zone data nothing is grouped.
         assert.is_nil((ns.FailureTable.RelativeChart(view(), nil)))

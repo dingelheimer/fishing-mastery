@@ -179,7 +179,7 @@ function CompareTable.Rows(a, b, t)
             cells = { L.CMP_casts, Style.Number(a.casts), Style.Number(b.casts), "", "" },
             tip = function(tip)
                 tip:Title(L.CMP_casts)
-                tip:Text(L.CMP_TIP_CASTS)
+                tip:Details({ L.CMP_TIP_CASTS })
             end,
         },
     }
@@ -199,7 +199,7 @@ function CompareTable.Rows(a, b, t)
             },
             tip = function(tip)
                 tip:Title(L.CMP_bite)
-                tip:Text(L.CMP_TIP_BITE)
+                tip:Details({ L.CMP_TIP_BITE })
             end,
         }
     end

@@ -94,17 +94,29 @@ describe("FishingMastery helpers page boot", function()
         page.rows.autoLure.check:Click()
         assert.is_false(helpers().autoLure)
         assert.are.equal("off", page.rows.autoLure.tag:GetText())
-        -- The long explanation in the row tooltip.
+        -- The long explanation in the row tooltip, behind Shift.
         local hover = page.rows.hideUI.hover
         hover:GetScript("OnEnter")(hover)
-        assert.are.equal("Hide the interface", _G.GameTooltip.lines[1])
-        assert.truthy(_G.GameTooltip.lines[2]:find("like Alt+Z", 1, true))
+        assert.are.same({ "Hide the interface", " ", "Hold Shift for more" }, _G.GameTooltip.lines)
+        game.shift = true
+        hover:GetScript("OnEnter")(hover)
+        game.shift = false
+        assert.truthy(_G.GameTooltip.lines[3]:find("like Alt+Z", 1, true))
+        assert.is_true(_G.GameTooltip.wraps[3])
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 
     it("binds and clears the casting key, and never in combat", function()
         local page = open()
         local button = page.keyButton
+        button:GetScript("OnEnter")(button)
+        assert.are.same({
+            "Casting key",
+            " ",
+            "Click, then a key: set",
+            "Escape: cancel",
+            "Right-click: clear",
+        }, _G.GameTooltip.lines)
         button:Click()
         assert.are.equal("Press a key", button:GetText())
         assert.is_true(button.keyboard)

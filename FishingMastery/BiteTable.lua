@@ -131,7 +131,13 @@ function BiteTable.Chart(group)
             label = format("%d", from),
             value = n,
             text = format("%d", n),
-            tip = { format(L.STATS_TIP_BITES, from, from + 1, n, group.n) },
+            tip = function(tip)
+                tip:Title(format(L.STATS_TIP_BITE_AT, from, from + 1))
+                tip:Pair(
+                    L.STATS_TIP_BITES,
+                    format(L.TIP_OF, Style.Number(n), Style.Number(group.n))
+                )
+            end,
         }
     end
     return ChartModel.Build(bars, false)

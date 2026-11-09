@@ -4,7 +4,7 @@
 local _, ns = ...
 
 local format, floor, ipairs, huge = string.format, math.floor, ipairs, math.huge
-local L, HudModel, ChartModel = ns.L, ns.HudModel, ns.ChartModel
+local L, HudModel, ChartModel, Style = ns.L, ns.HudModel, ns.ChartModel, ns.Style
 
 local SkillTable = {}
 ns.SkillTable = SkillTable
@@ -86,6 +86,35 @@ function SkillTable.Lines(model, input)
     return lines
 end
 
+-- The tooltip of a rank point as draw(tip): "Rank 20" and the date in grey.
+function SkillTable.RankTip(rank, date)
+    return function(tip)
+        tip:Title(format(L.SKILL_TIP_RANK, rank))
+        tip:Line(date, Style.GREY)
+    end
+end
+
+-- The tooltip of a band of ranks as draw(tip): catches per point with its range (grey "too few"
+-- below the count rule), the points, and the catches.
+function SkillTable.PaceTip(title, pace)
+    return function(tip)
+        tip:Title(title)
+        if not pace.mean or pace.display == "count" then
+            tip:Pair(L.SKILL_TIP_PACE, L.TIP_FEW, Style.GREY)
+        else
+            local high = pace.high == huge and "?" or format("%.1f", oneDecimal(pace.high))
+            local value = Style.Range(
+                format("%.1f", oneDecimal(pace.mean)),
+                format("%.1f", oneDecimal(pace.low)),
+                high
+            )
+            tip:Pair(L.SKILL_TIP_PACE, value, pace.display == "few" and Style.GREY or nil)
+        end
+        tip:Pair(L.SKILL_TIP_POINTS, Style.Number(pace.k))
+        tip:Pair(L.SKILL_TIP_CATCHES, Style.Number(pace.c))
+    end
+end
+
 -- Line chart of the rank over time; input: { formatDate(t) }.
 function SkillTable.RankChart(model, input)
     local points = {}
@@ -93,7 +122,7 @@ function SkillTable.RankChart(model, input)
         points[i] = {
             x = entry.t,
             y = entry.rank,
-            tip = { format(L.SKILL_TIP_RANK, entry.rank), input.formatDate(entry.t) },
+            tip = SkillTable.RankTip(entry.rank, input.formatDate(entry.t)),
         }
     end
     local chart = ChartModel.Line(points)
@@ -119,7 +148,7 @@ function SkillTable.BandChart(model)
                 high = high,
                 text = format("%.1f", oneDecimal(pace.mean)),
                 grey = pace.display ~= "full",
-                tip = { format(L.SKILL_TIP_BAND, range), SkillTable.PaceText(pace) },
+                tip = SkillTable.PaceTip(format(L.SKILL_TIP_BAND, range), pace),
             }
         end
     end

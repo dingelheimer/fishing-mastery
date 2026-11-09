@@ -288,7 +288,7 @@ describe("FishingMastery HUD boot", function()
 
         local stop = c.cardButtons.stop
         stop:GetScript("OnEnter")(stop)
-        assert.are.equal("Stop session", _G.GameTooltip.lines[1])
+        assert.are.same({ "Stop session", "Click: end the session now" }, _G.GameTooltip.lines)
         stop:GetScript("OnLeave")(stop)
         local ended = {}
         w.ns.castLog:OnSessionEnd(function(session)

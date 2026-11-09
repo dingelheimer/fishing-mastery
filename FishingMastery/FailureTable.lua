@@ -30,20 +30,27 @@ local function pct(x)
     return floor(x * 100 + 0.5)
 end
 
--- Tooltip line of a rate with its range: "<label>: 12 % (95 % range 8-17 %), 5 of 40".
-function FailureTable.RateLine(label, rate)
-    if rate.display == "count" or not rate.low then
-        return format(L.STATS_TIP_RATE_FEW, label, rate.k, rate.n)
+-- The tooltip of a getaway band as draw(tip): the band, the getaway rate with its range, the
+-- hooked casts; with a model the Classic value, below-base and differs lines, and the relative
+-- band explanation behind Shift.
+local function bandTip(title, rate, model, from)
+    return function(tip)
+        tip:Title(title)
+        RowTip.Rate(tip, L.STATS_GETAWAYS, rate)
+        tip:Pair(L.STATS_TIP_HOOKED, Style.Number(rate.n))
+        if not model then
+            RowTip.Details(tip, { "range" })
+            return
+        end
+        tip:Pair(L.STATS_TIP_MODEL, format("%d %%", pct(model)))
+        if from < 0 then
+            tip:Line(L.STATS_TIP_BELOW_BASE, Style.GREY)
+        end
+        if Getaway.Compare(rate, model).differs then
+            tip:Line(L.STATS_TIP_DIFFERS, Style.ORANGE)
+        end
+        RowTip.Details(tip, { "range", L.STATS_D_REL_BAND, L.HTIP_D_CLASSIC })
     end
-    return format(
-        L.STATS_TIP_RATE,
-        label,
-        HudModel.Percent(rate),
-        pct(rate.low),
-        pct(rate.high),
-        rate.k,
-        rate.n
-    )
 end
 
 -- Rows of the outcome table.
@@ -107,25 +114,10 @@ function FailureTable.SkillChart(view, t)
             high = rate.high,
             text = HudModel.Percent(rate),
             grey = rate.display ~= "full",
-            tip = {
-                format(L.STATS_TIP_BAND, label),
-                FailureTable.RateLine(L.STATS_GETAWAYS, rate),
-            },
+            tip = bandTip(format(L.STATS_TIP_BAND, label), rate),
         }
     end
     return ChartModel.Build(bars, true)
-end
-
--- Tooltip lines of the Classic model next to an own rate.
-local function modelLines(tip, rate, model, from)
-    local compare = Getaway.Compare(rate, model)
-    if from < 0 then
-        tip[#tip + 1] = L.STATS_TIP_BELOW_BASE
-    end
-    tip[#tip + 1] = format(L.STATS_TIP_MODEL, pct(model))
-    if compare.differs then
-        tip[#tip + 1] = L.STATS_TIP_DIFFERS
-    end
 end
 
 -- Getaway rate per band of effective skill minus the water's base, with the Classic model of
@@ -151,11 +143,7 @@ function FailureTable.RelativeChart(view, areas, t)
         local entry = relative[band]
         local rate = Stats.Proportion(entry.getaways, entry.hooked, t)
         local model = Getaway.BandModel(band, size, 0)
-        local tip = {
-            format(L.STATS_TIP_REL_BAND, format("%+d to %+d", band, band + size - 1)),
-            FailureTable.RateLine(L.STATS_GETAWAYS, rate),
-        }
-        modelLines(tip, rate, model, band)
+        local title = format(L.STATS_TIP_REL_BAND, format("%+d to %+d", band, band + size - 1))
         bars[i] = {
             label = format("%+d", band),
             value = rate.p,
@@ -164,7 +152,7 @@ function FailureTable.RelativeChart(view, areas, t)
             mark = model,
             text = HudModel.Percent(rate),
             grey = rate.display ~= "full",
-            tip = tip,
+            tip = bandTip(title, rate, model, band),
         }
     end
     return ChartModel.Build(bars, true), left
@@ -192,7 +180,10 @@ function FailureTable.ClickChart(view)
             label = format("%d", from),
             value = n,
             text = format("%d", n),
-            tip = { format(L.STATS_TIP_CLICKS, from, from + 1, n, total) },
+            tip = function(tip)
+                tip:Title(format(L.STATS_TIP_CLICKS_AT, from, from + 1))
+                tip:Pair(L.STATS_TIP_CLICKS, format(L.TIP_OF, Style.Number(n), Style.Number(total)))
+            end,
         }
     end
     local chart = ChartModel.Build(bars, false)

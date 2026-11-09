@@ -249,8 +249,8 @@ describe("FishingMastery stats window boot", function()
         local hover = skill.hovers.list[1]
         hover:GetScript("OnEnter")(hover)
         local tip = table.concat(_G.GameTooltip.lines, " / ")
-        assert.truthy(tip:find("water's base level: +80 to +84", 1, true))
-        assert.truthy(tip:find("Classic model: 13 %", 1, true))
+        assert.truthy(tip:find("Skill over base +80 to +84", 1, true))
+        assert.truthy(tip:find("Classic model = 13 %", 1, true))
         window.skillButton:Click()
         assert.are.equal("Group: effective skill", window.skillButton:GetText())
         hover = skill.hovers.list[1]

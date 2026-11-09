@@ -5,8 +5,8 @@
 -- cells for small samples, and an optional legend line. Rows come from the table builders:
 -- cells per column, .grey[i], .colors[i] ({ r, g, b }), .icons[i] (texture), .dim[i] (a dimmed
 -- icon), .tags[i] ({ text, kind }), .color for every cell, .selected (first cell gold), and the
--- tooltip as .tip(tip) (Tip builder) or .tooltip (lines). With onSelect a click on a row selects
--- it. Unnamed, insecure frames only.
+-- tooltip as .tip(tip) (Tip builder). With onSelect a click on a row selects it. Unnamed,
+-- insecure frames only.
 local _, ns = ...
 
 local setmetatable, ipairs, pcall, type = setmetatable, ipairs, pcall, type
@@ -39,10 +39,6 @@ local function showTooltip(self, row)
     end
     if type(data.tip) == "function" then
         ns.Tip.Open(self.env, row, data.tip)
-        return
-    end
-    if data.tooltip then
-        ns.Tip.Lines(self.env, row, data.tooltip)
     end
 end
 

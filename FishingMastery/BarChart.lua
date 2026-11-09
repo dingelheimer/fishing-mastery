@@ -83,7 +83,7 @@ local function hover(self, bar, x, y, w, h)
             "OnEnter",
             ns.Guard.Wrap("chart:tooltip", function(owner)
                 if owner.tip then
-                    ns.Tip.Lines(self.env, owner, owner.tip, "ANCHOR_TOP")
+                    ns.Tip.Open(self.env, owner, owner.tip, "ANCHOR_TOP")
                 end
             end)
         )

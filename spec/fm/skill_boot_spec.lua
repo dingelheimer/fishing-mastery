@@ -168,7 +168,10 @@ describe("FishingMastery skill and compare boot", function()
         assert.are.equal(1, cell.texture.color[4])
         cell:GetScript("OnEnter")(cell)
         assert.are.equal(os.date("!%Y-%m-%d", today.day * 86400), _G.GameTooltip.lines[1])
-        assert.are.equal("2 casts, 2 catches", _G.GameTooltip.lines[2])
+        assert.are.same({ "Casts = 2", "Catches = 2" }, {
+            _G.GameTooltip.lines[2],
+            _G.GameTooltip.lines[3],
+        })
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 end)

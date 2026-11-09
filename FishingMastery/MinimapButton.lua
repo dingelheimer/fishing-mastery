@@ -1,12 +1,12 @@
 -- The own minimap button (no libraries, owner decision 2026-11-05): a round button on the minimap
 -- edge, dragged around it (angle saved per character in FishingMasteryCharDB.ui.minimap), left
 -- click toggles the main window (Shift: its Journal page), right click opens the settings,
--- tooltip with the session numbers. Hidden with the minimap setting. OnUpdate runs only while
--- dragging. Unnamed, insecure frame.
+-- tooltip with the session, the skill, and the click hints (MinimapModel.Tip). Hidden with the
+-- minimap setting. OnUpdate runs only while dragging. Unnamed, insecure frame.
 local _, ns = ...
 
-local setmetatable, type, ipairs = setmetatable, type, ipairs
-local L, Context, MinimapModel, HudModel = ns.L, ns.Context, ns.MinimapModel, ns.HudModel
+local setmetatable, type = setmetatable, type
+local Context, MinimapModel = ns.Context, ns.MinimapModel
 
 local MinimapButton = {}
 MinimapButton.__index = MinimapButton
@@ -67,24 +67,21 @@ local function dragUpdate(self)
     self:Place()
 end
 
-function MinimapButton:ShowTooltip(owner)
-    local tip = self.env.GameTooltip
-    if not tip then
-        return
-    end
-    tip:SetOwner(owner, "ANCHOR_LEFT")
-    tip:SetText(L.PREFIX)
+-- The MinimapModel.Tip input: the open session's catches and active time, the Fishing skill.
+function MinimapButton:TipInput()
+    local rank, _, cap = Context.Fishing(self.env)
+    local input = { rank = rank, cap = cap }
     local castLog = self.hud and self.hud.castLog
     local session = castLog and castLog:Session()
     if session then
-        for _, line in ipairs(HudModel.Tooltip(self.hud:Model(session))) do
-            tip:AddLine(line, 1, 1, 1, true)
-        end
-    else
-        tip:AddLine(L.MINIMAP_NO_SESSION, 1, 1, 1, true)
+        local model = self.hud:Model(session)
+        input.catches, input.active = model.catches, model.active
     end
-    tip:AddLine(L.MINIMAP_HINT, 0.6, 0.8, 1, true)
-    tip:Show()
+    return input
+end
+
+function MinimapButton:ShowTooltip(owner)
+    ns.Tip.Open(self.env, owner, MinimapModel.Tip(self:TipInput()), "ANCHOR_LEFT")
 end
 
 local function build(self)
@@ -132,10 +129,8 @@ local function build(self)
             self:ShowTooltip(b)
         end)
     )
-    button:SetScript("OnLeave", function()
-        if env.GameTooltip then
-            env.GameTooltip:Hide()
-        end
+    button:SetScript("OnLeave", function(b)
+        ns.Tip.Close(env, b)
     end)
 end
 

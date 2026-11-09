@@ -102,6 +102,10 @@ describe("FishingMastery compare, calendar, and line chart", function()
             end
             local rows = ns.CompareTable.Rows(group(60, 40), group(30, 70))
             assert.are.same({ "Casts", "100", "100", "", "" }, rows[1].cells)
+            assert.are.same(
+                { "Casts", " ", "All casts of the group, fair or not." },
+                tiplines.lines(rows[1].tip, true)
+            )
             local success = rows[2]
             assert.are.same(
                 { "Success rate", "60 %", "30 %", "+30 pts", "clear difference" },

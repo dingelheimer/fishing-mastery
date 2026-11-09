@@ -1,30 +1,42 @@
--- Item tooltip line: the pure line builder and, through every TOC file, the post-call on a fake
+-- Item tooltip lines (Draft 6): the pure draw and, through every TOC file, the post-call on a fake
 -- tooltip (caught items only, one lookup, the setting, secret IDs, guarded errors).
 local addon = require("spec.helpers.addon")
 local fmboot = require("spec.helpers.fmboot")
+local tiplines = require("spec.helpers.tiplines")
 
-describe("FishingMastery item tooltip line", function()
+describe("FishingMastery item tooltip", function()
     describe("TooltipModel", function()
         local ns
 
         before_each(function()
-            ns = addon.load({ "Locale.lua", "TooltipModel.lua" }, nil, "FishingMastery")
+            ns = addon.load(
+                { "Locale.lua", "LocaleUI.lua", "Style.lua", "TooltipModel.lua" },
+                nil,
+                "FishingMastery"
+            )
         end)
 
         local function mapName(map)
             return map == 1411 and "Durotar" or nil
         end
 
-        it("names the count and the best zone for caught items only", function()
-            local line = ns.TooltipModel.Line({ n = 37, best = 1411 }, mapName)
-            assert.are.equal("Fishing Mastery: caught 37x (best: Durotar)", line)
-            line = ns.TooltipModel.Line({ n = 2, best = 1412 }, mapName)
-            assert.are.equal("Fishing Mastery: caught 2x (best: zone 1412)", line)
-            line = ns.TooltipModel.Line({ n = 1, best = 0 }, mapName)
-            assert.are.equal("Fishing Mastery: caught 1x", line)
-            assert.is_nil(ns.TooltipModel.Line(nil, mapName))
-            assert.is_nil(ns.TooltipModel.Line({ n = 0 }, mapName))
-            assert.is_nil(ns.TooltipModel.Line({ n = "3" }, mapName))
+        local function lines(entry)
+            return tiplines.lines(ns.TooltipModel.Draw(entry, mapName))
+        end
+
+        it("names the count and the best water for caught items only", function()
+            assert.are.same(
+                { " ", "Fishing Mastery = caught 1,412", "Best water = Durotar" },
+                lines({ n = 1412, best = 1411 })
+            )
+            assert.are.same(
+                { " ", "Fishing Mastery = caught 2", "Best water = zone 1412" },
+                lines({ n = 2, best = 1412 })
+            )
+            assert.are.same({ " ", "Fishing Mastery = caught 1" }, lines({ n = 1, best = 0 }))
+            assert.is_nil(ns.TooltipModel.Draw(nil, mapName))
+            assert.is_nil(ns.TooltipModel.Draw({ n = 0 }, mapName))
+            assert.is_nil(ns.TooltipModel.Draw({ n = "3" }, mapName))
         end)
     end)
 
@@ -54,17 +66,26 @@ describe("FishingMastery item tooltip line", function()
             _G.Enum, _G.TooltipDataProcessor, _G.issecretvalue = nil, nil, nil
         end)
 
-        -- A tooltip that records its added lines, with lines of another addon already on it.
+        -- A tooltip that records its added lines (pairs as "left = right" with the left color),
+        -- with lines of another addon already on it.
         local function tooltip()
             local tip = { lines = { "Raw Slitherskin Mackerel", "Other addon: 5 in bank" } }
-            function tip:AddLine(text, r, g, b)
+            function tip:NumLines()
+                return #self.lines
+            end
+            function tip:AddLine(text, _, _, _, wrap)
                 self.lines[#self.lines + 1] = text
-                self.color = { r, g, b }
+                self.wrapped = self.wrapped or wrap
+            end
+            function tip:AddDoubleLine(left, right, r, g, b)
+                self.lines[#self.lines + 1] = left .. " = " .. right
+                self.colors = self.colors or {}
+                self.colors[#self.lines] = { r, g, b }
             end
             return tip
         end
 
-        it("adds one line to caught items and nothing to others", function()
+        it("adds the lines of Draft 6 to caught items and nothing to others", function()
             w.catch(5000, 9)
             w.catch(5020, 12)
             local tip = tooltip()
@@ -72,8 +93,13 @@ describe("FishingMastery item tooltip line", function()
             assert.are.same({
                 "Raw Slitherskin Mackerel",
                 "Other addon: 5 in bank",
-                "Fishing Mastery: caught 2x (best: Durotar)",
+                " ",
+                "Fishing Mastery = caught 2",
+                "Best water = Durotar",
             }, tip.lines)
+            assert.are.same(w.ns.Style.ADDON, tip.colors[4]) -- the addon color
+            assert.are.same(w.ns.Style.GOLD, tip.colors[5])
+            assert.is_falsy(tip.wrapped)
             -- The zone name is looked up once by the tooltip and once by the HUD zone line.
             postCall(tip, { id = 6303 })
             assert.are.equal(2, lookups)

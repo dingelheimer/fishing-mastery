@@ -95,7 +95,7 @@ function UiCheck.OnTooltip(tooltip, data)
     if type(id) ~= "number" or isSecret(id) then
         return
     end
-    tooltip:AddLine(format(L.UI_TOOLTIP_LINE, id))
+    ns.Tip.Into(tooltip):Line(format(L.UI_TOOLTIP_LINE, id))
     result.tooltipSeen = (result.tooltipSeen or 0) + 1
 end
 

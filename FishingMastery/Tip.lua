@@ -2,6 +2,8 @@
 -- empty lines between groups, colors only for meaning, green hints last, and explanations only
 -- while Shift is held. Tip.Open draws through a callback and redraws when Shift changes while the
 -- owner still holds the tooltip. Uses GameTooltip; one event frame for the modifier state.
+-- Tip.Into writes into a tooltip that is already shown (the item tooltip post-call). Only
+-- Details wraps its lines; every other line is short and never wrapped (Story 9.9).
 local _, ns = ...
 
 local setmetatable, ipairs, type, tostring = setmetatable, ipairs, type, tostring
@@ -69,6 +71,12 @@ function Tip.Open(env, owner, draw, anchor)
     render(current)
 end
 
+-- A builder that adds lines below the ones a shown tooltip already has (no title, no Shift).
+function Tip.Into(tooltip)
+    local count = type(tooltip.NumLines) == "function" and tooltip:NumLines() or 1
+    return setmetatable({ tooltip = tooltip, shift = false, lines = count }, Tip)
+end
+
 -- Hides the tooltip of owner (OnLeave).
 function Tip.Close(env, owner)
     if current and current.owner == owner then
@@ -95,20 +103,21 @@ function Tip:Title(text, color)
     return self
 end
 
--- A gold label on the left, the value on the right (white unless a color is given).
-function Tip:Pair(label, value, color)
+-- A label on the left (gold unless labelColor is given), the value on the right (white unless
+-- a color is given).
+function Tip:Pair(label, value, color, labelColor)
     color = color or Style.WHITE
-    local gold = Style.GOLD
+    local left = labelColor or Style.GOLD
     if self.lines == 0 then -- no title yet: a tooltip cannot start with a double line
-        add(self, label .. ": " .. tostring(value), gold)
+        add(self, label .. ": " .. tostring(value), left)
         return self
     end
     self.tooltip:AddDoubleLine(
         label,
         value,
-        gold[1],
-        gold[2],
-        gold[3],
+        left[1],
+        left[2],
+        left[3],
         color[1],
         color[2],
         color[3]
@@ -143,31 +152,16 @@ function Tip:Hint(text)
     return self
 end
 
--- Explanations: wrapped grey lines while Shift is held, else the grey "Hold Shift" line.
-function Tip:Details(lines)
+-- Explanations: wrapped grey lines while Shift is held, else the grey prompt (default "Hold
+-- Shift for how this is counted"). The only wrapped lines of any tooltip.
+function Tip:Details(lines, prompt)
     self:Gap()
     if not self.shift then
-        add(self, L.TIP_SHIFT, Style.GREY)
+        add(self, prompt or L.TIP_SHIFT, Style.GREY)
         return self
     end
     for _, line in ipairs(lines) do
         add(self, line, Style.GREY, true)
     end
     return self
-end
-
--- A longer white sentence, wrapped (white unless a color is given).
-function Tip:Text(text, color)
-    add(self, text, color, true)
-    return self
-end
-
--- Shows plain lines (charts, older tables): the first as the title, the others wrapped below.
-function Tip.Lines(env, owner, lines, anchor)
-    Tip.Open(env, owner, function(tip)
-        tip:Title(lines[1] or "")
-        for i = 2, #lines do
-            tip:Text(lines[i])
-        end
-    end, anchor)
 end
