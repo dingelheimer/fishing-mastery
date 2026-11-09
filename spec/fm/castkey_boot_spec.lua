@@ -137,7 +137,7 @@ describe("FishingMastery casting key", function()
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 
-    it("adds the Helpers heading to the settings panel, or lists it as missing", function()
+    it("keeps the helpers out of the settings panel (they are on the Helpers page)", function()
         local headers, layout = {}, {}
         function layout.AddInitializer(_, initializer)
             headers[#headers + 1] = initializer
@@ -161,14 +161,11 @@ describe("FishingMastery casting key", function()
             return { name = name, tooltip = tooltip }
         end
         w.boot(nil, nil)
-        assert.are.equal(1, #headers)
-        assert.are.equal("Helpers", headers[1].name)
-        assert.truthy(headers[1].tooltip:find("Key Bindings, under AddOns", 1, true))
-        assert.are.equal("ok", w.ns.settingsPanel.results.helpers)
-
-        _G.CreateSettingsListSectionHeaderInitializer = nil
-        w.boot(nil, nil)
-        assert.are.equal("missing", w.ns.settingsPanel.results.helpers)
+        assert.are.equal(0, #headers)
+        for _, name in ipairs({ "helpers", "doubleClick", "autoLure", "loudSplash", "hideUI" }) do
+            assert.is_nil(w.ns.settingsPanel.results[name])
+        end
+        assert.are.equal("ok", w.ns.settingsPanel.results.hudEnabled)
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 end)

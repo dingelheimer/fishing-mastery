@@ -1,7 +1,8 @@
 -- Small controls in the Forever look, shared by the pages of the main window (Epic 9): a
 -- dropdown-styled button (an inset box with the value and a down arrow, as in Draft 2; a click
 -- runs onClick, the pages cycle the value, no menu), the same look without the arrow for actions,
--- a framed box with a gold title (Draft 1), and a small status bar. Unnamed, insecure frames only.
+-- a framed box with a gold title (Draft 1), a small status bar, and a check box. Unnamed, insecure
+-- frames only.
 local _, ns = ...
 
 local Frames, Style = ns.Frames, ns.Style
@@ -74,4 +75,32 @@ function Controls.Bar(env, parent, width, height)
     bar.text = bar:CreateFontString(nil, "OVERLAY", Style.FONTS.small)
     bar.text:SetPoint("CENTER", bar, "CENTER", 0, 0)
     return bar
+end
+
+-- A check box: the client's UICheckButtonTemplate, else the Classic check box textures. A click
+-- calls onClick(checked).
+Controls.CHECK_TEMPLATE = "UICheckButtonTemplate"
+Controls.CHECK = {
+    normal = "InterfaceButtonsUI-CheckBox-Up",
+    pushed = "InterfaceButtonsUI-CheckBox-Down",
+    highlight = "InterfaceButtonsUI-CheckBox-Highlight",
+    checked = "InterfaceButtonsUI-CheckBox-Check",
+}
+function Controls.Check(env, parent, onClick)
+    local box, template =
+        Frames.CreateFirst(env, "CheckButton", parent, { Controls.CHECK_TEMPLATE })
+    box:SetSize(24, 24)
+    if not template then
+        box:SetNormalTexture(Controls.CHECK.normal)
+        box:SetPushedTexture(Controls.CHECK.pushed)
+        box:SetHighlightTexture(Controls.CHECK.highlight)
+        box:SetCheckedTexture(Controls.CHECK.checked)
+    end
+    box:SetScript(
+        "OnClick",
+        ns.Guard.Wrap("check:click", function(button)
+            onClick(button:GetChecked() and true or false)
+        end)
+    )
+    return box
 end

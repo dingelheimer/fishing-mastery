@@ -88,13 +88,16 @@ local function applySetting(key)
     ns.hud:Refresh()
 end
 
+-- A setting changed outside the settings panel (the Helpers page): applied the same way.
+function ns.ApplySetting(key)
+    ns.Guard.Call("settings:apply", applySetting, key)
+end
+
 -- Settings panel and minimap button (after the main window, which they open).
 local function startSettings()
-    local conflict = ns.DoubleCast.Conflict(_G)
     ns.settingsPanel = ns.SettingsPanel.Start({
         env = _G,
         settings = ns.db.settings,
-        notes = { doubleClick = conflict and format(L.HELPER_CONFLICT, conflict) or nil },
         onChange = function(key)
             ns.Guard.Call("settings:apply", applySetting, key)
         end,

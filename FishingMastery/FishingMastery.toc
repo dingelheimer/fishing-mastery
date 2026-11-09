@@ -58,6 +58,7 @@ ZoneTable.lua
 ZoneRef.lua
 OverviewTable.lua
 OverviewModel.lua
+HelperModel.lua
 ChartModel.lua
 FailureTable.lua
 BiteTable.lua
@@ -122,6 +123,8 @@ HelperStatus.lua
 Helpers.lua
 DoubleClick.lua
 DoubleCast.lua
+KeyButton.lua
+HelpersPage.lua
 ItemTooltip.lua
 Dev.lua
 Compartment.lua

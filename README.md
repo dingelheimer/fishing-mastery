@@ -32,10 +32,11 @@ and open source (GPL-3.0). Developers: see the [development reference](docs/deve
     a profession window once to add the Forever recipes you know.
   - **Gear:** poles, gear, lures, buff food, fishing ranks, and the glove enchant, with what you
     own (bags, bank, equipped) and your best possible skill.
-- **Casting key:** bind a key to "Cast Fishing" (Key Bindings, AddOns, Fishing Mastery) and cast
-  without an action bar slot. It acts only when you press it.
-- **Double right-click casting** (off by default; Settings, AddOns, Fishing Mastery): with a
-  fishing pole in hand, a double right-click into the world casts Fishing.
+- **Helpers page** (`/fm helpers`): every helper with a check box and what it does right now.
+- **Casting key:** bind a key to "Cast Fishing" on the Helpers page (or in Key Bindings, AddOns,
+  Fishing Mastery) and cast without an action bar slot. It acts only when you press it.
+- **Double right-click casting** (off by default): with a fishing pole in hand, a double
+  right-click into the world casts Fishing.
 - **Smart lure** (off by default): the casting key and the double right-click first put on the
   cheapest lure in your bags that stops getaways in this water, or your best one if none does, and
   nothing when your skill is enough. The HUD tooltip says which lure would help.
@@ -65,7 +66,7 @@ Your data stays when you update.
 | `/fm hud scale <0.5-2>`, `/fm hud style full` or `text` | HUD size and style |
 | `/fm settings` | Settings panel (also right click on the minimap button) |
 | `/fm contribute` | Your catch counts as text to share (no names, IDs, or times) |
-| `/fm helpers` | What the helpers did since login (casts, lures, double-clicks) and their settings |
+| `/fm helpers` | Helpers page; also prints what the helpers did since login |
 | `/fm minimap show` or `hide` | The minimap button |
 | `/fm export`, `/fm export all`, `/fm import` | Copy your history out, or back in |
 | `/fm backup list`, `/fm backup restore <n>` | Daily snapshots of your totals and settings |

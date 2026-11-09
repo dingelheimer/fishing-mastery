@@ -48,8 +48,12 @@ describe("FishingMastery settings and minimap math", function()
                     assert.are.equal(expected[control.key], ns.Options.Default(control.key))
                 end
             end
-            assert.are.equal(17, #ns.Options.CONTROLS) -- 16 values and the Helpers heading
-            assert.is_nil(ns.Options.BY_KEY.helpers)
+            assert.are.equal(16, #ns.Options.CONTROLS)
+            -- The helpers live on the Helpers page of the main window (Story 9.6).
+            for _, key in ipairs({ "doubleClick", "autoLure", "loudSplash", "hideUI" }) do
+                assert.are.equal("helpers", ns.Options.BY_KEY[key].page)
+            end
+            assert.is_nil(ns.Options.BY_KEY.hudEnabled.page)
             assert.is_false(ns.Options.Set(settings, "helpers", true))
             -- Hud, Summary, Stats, and Totals take their defaults from the same table.
             assert.are.equal(10, ns.Stats.DEFAULTS.countBelow)

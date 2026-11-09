@@ -111,11 +111,7 @@ describe("FishingMastery settings and minimap boot", function()
             "minimapShown",
             "tooltipLine",
             "reloadReminder",
-            "doubleClick",
-            "autoLure",
-            "loudSplash",
-            "hideUI",
-        }, log.checkboxes)
+        }, log.checkboxes) -- the helpers are on the Helpers page (Story 9.6)
         assert.are.same({ "hudScale", "countBelow", "greyBelow", "activeCap" }, log.sliders)
         assert.are.same({ 30, 120, 5 }, log.settings.activeCap.range)
         assert.are.equal("FishingMastery_hudScale", log.settings.hudScale.variable)
@@ -147,7 +143,7 @@ describe("FishingMastery settings and minimap boot", function()
         log = stubSettings({ noSliders = true })
         stubMinimap(w)
         boot(nil, nil)
-        assert.are.equal(12, #log.checkboxes)
+        assert.are.equal(8, #log.checkboxes)
         assert.is_nil(log.settings.hudScale)
         w.printed = {}
         _G.SlashCmdList.FM("settings")

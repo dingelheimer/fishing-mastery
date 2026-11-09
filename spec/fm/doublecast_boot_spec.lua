@@ -251,7 +251,7 @@ describe("FishingMastery double right-click casting", function()
         assert.are.equal("first", dc().last)
     end)
 
-    it("warns in the settings when another fishing addon is loaded", function()
+    it("warns on the Helpers page when another fishing addon is loaded", function()
         local DoubleCast = w.ns.DoubleCast
         local loaded = {}
         local env = {
@@ -268,26 +268,17 @@ describe("FishingMastery double right-click casting", function()
         loaded.Luredon = true
         assert.are.equal("Luredon", DoubleCast.Conflict(env))
 
-        local tips = {}
-        _G.Settings = {
-            RegisterVerticalLayoutCategory = function()
-                return {}, {}
-            end,
-            RegisterAddOnSetting = function(_, _, key)
-                return { key = key }
-            end,
-            CreateCheckbox = function(_, setting, tooltip)
-                tips[setting.key] = tooltip
-            end,
-            RegisterAddOnCategory = function() end,
-        }
-        w.ns.SettingsPanel.Start({
-            env = _G,
-            settings = {},
-            notes = { doubleClick = "Luredon is loaded and has its own casting" },
-        })
-        assert.truthy(tips.doubleClick:find("double right-click into the world", 1, true))
-        assert.truthy(tips.doubleClick:find("\n\nLuredon is loaded", 1, true))
-        assert.is_nil(tips.hudEnabled:find("Luredon", 1, true))
+        _G.SlashCmdList.FM("helpers")
+        local page = w.ns.helpersPage
+        assert.are.equal("", page.conflict:GetText())
+        _G.C_AddOns.IsAddOnLoaded = function(name)
+            return name == "Luredon"
+        end
+        page:Draw()
+        assert.are.equal(
+            "Luredon is loaded and has its own casting; both may react to the same click.",
+            page.conflict:GetText()
+        )
+        assert.are.same(w.ns.Style.ORANGE, page.conflict.color)
     end)
 end)

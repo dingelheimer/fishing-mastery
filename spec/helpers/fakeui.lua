@@ -230,13 +230,43 @@ end
 function Frame:GetID()
     return self.id
 end
--- Test helper: a click as the player would do it (ignored when hidden or disabled).
-function Frame:Click()
+-- Test helper: a click as the player would do it (ignored when hidden or disabled); a check
+-- button flips its state first, as the client does.
+function Frame:Click(button)
     if self.shown and self.enabled and self.scripts.OnClick then
-        self.scripts.OnClick(self, "LeftButton")
+        if self.frameType == "CheckButton" then
+            self:SetChecked(not self:GetChecked())
+        end
+        self.scripts.OnClick(self, button or "LeftButton")
         return true
     end
     return false
+end
+-- Check button methods (templates may replace them per frame).
+function Frame:SetChecked(checked)
+    self.checked = checked and true or false
+end
+function Frame:GetChecked()
+    return self.checked or false
+end
+function Frame:SetNormalTexture(texture)
+    self.normal = texture
+end
+function Frame:SetPushedTexture(texture)
+    self.pushed = texture
+end
+function Frame:SetCheckedTexture(texture)
+    self.checkedTexture = texture
+end
+-- Keyboard capture (the key-binding button).
+function Frame:EnableKeyboard(value)
+    self.keyboard = value
+end
+-- Test helper: a key press delivered to a frame that captures the keyboard.
+function Frame:PressKeyboard(key)
+    if self.keyboard and self.scripts.OnKeyDown then
+        self.scripts.OnKeyDown(self, key)
+    end
 end
 
 -- Edit box methods (only valid on "EditBox" frames).

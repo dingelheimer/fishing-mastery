@@ -24,7 +24,8 @@ local function number(value)
     return not isSecret(value) and type(value) == "number" and value or nil
 end
 
--- Lures of the journal in the bags that this race may use: { { id, bonus, need } }, by item ID;
+-- Lures of the journal in the bags that this race may use: { { id, bonus, need, count } }, by
+-- item ID;
 -- nil when the bags cannot be read.
 local function owned(env, journal)
     local race = number(select(SmartLure.RACE_ID, Context.Call(env, "UnitRace", "player")))
@@ -36,7 +37,7 @@ local function owned(env, journal)
             return nil
         end
         if count > 0 and ns.GearModel.RaceOk(l[3], raceBit) then
-            list[#list + 1] = { id = id, bonus = l[1], need = l[2] }
+            list[#list + 1] = { id = id, bonus = l[1], need = l[2], count = count }
         end
     end
     sort(list, function(a, b)
@@ -97,6 +98,26 @@ function SmartLure.Line(env, areas, journal)
         return format(L.LURE_NONE_OWNED, choice.goal)
     end
     return nil
+end
+
+-- The Helpers page's "Right now" facts: the choice without the running lure (nil when the bags
+-- cannot be read), the running lure, the water's name, and an item name reader.
+function SmartLure.Now(env, areas, journal)
+    local input = SmartLure.Read(env, areas, journal)
+    local active, choice = input.active, nil
+    if input.lures then
+        input.active = nil
+        choice = LureChoice.Choose(input)
+    end
+    local area = areas and Context.CurrentArea(env, areas)
+    return {
+        choice = choice,
+        active = active,
+        zone = area and Context.AreaName(env, area) or nil,
+        name = function(id)
+            return itemName(env, id)
+        end,
+    }
 end
 
 -- deps: { env, bus, castKey, settings, areas, journal, now }.

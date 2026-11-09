@@ -5,6 +5,9 @@
 - Changed: statistics and journal are pages of one Fishing Mastery window with side tabs on its
   right edge, like the Professions window. It opens on the last page, moves by the title, and
   closes with Escape. Window positions saved before this version are reset once.
+- New: a Helpers page in the window. Turn each helper on or off, see whether it is ready or
+  what blocks it, bind the casting key in place, see what the smart lure would do in this water,
+  and this login's counts. The helpers left the game's settings panel; your settings are kept.
 - Changed: the Journal tabs show item icons and quality colors, season and night tags, a
   progress bar in the page header (every group in its tooltip), dropdown-styled filters, and
   recipe and gear tooltips as short labels and values.

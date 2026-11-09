@@ -41,7 +41,8 @@ local function setThreshold(key)
     end
 end
 
--- Panel controls in order. checkbox: get/set booleans; slider: numbers from min to max in steps.
+-- Panel controls in order. checkbox: get/set booleans; slider: numbers from min to max in steps;
+-- page: shown on that page of the main window instead of the settings panel.
 Options.CONTROLS = {
     {
         key = "hudEnabled",
@@ -170,11 +171,12 @@ Options.CONTROLS = {
         end,
         set = setThreshold("activeCap"),
     },
-    -- Helpers (module 5): a section heading with the key binding note; its options follow.
-    { key = "helpers", kind = "header" },
+    -- Helpers (module 5): shown on the Helpers page of the main window (page = "helpers"), not
+    -- in the game's settings panel (Story 9.6); the keys stay.
     {
         key = "doubleClick",
         kind = "checkbox",
+        page = "helpers",
         get = function(s)
             return section(s, "helpers").doubleClick == true
         end,
@@ -185,6 +187,7 @@ Options.CONTROLS = {
     {
         key = "autoLure",
         kind = "checkbox",
+        page = "helpers",
         get = function(s)
             return section(s, "helpers").autoLure == true
         end,
@@ -195,6 +198,7 @@ Options.CONTROLS = {
     {
         key = "loudSplash",
         kind = "checkbox",
+        page = "helpers",
         get = function(s)
             return section(s, "helpers").loudSplash == true
         end,
@@ -205,6 +209,7 @@ Options.CONTROLS = {
     {
         key = "hideUI",
         kind = "checkbox",
+        page = "helpers",
         get = function(s)
             return section(s, "helpers").hideUI == true
         end,

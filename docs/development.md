@@ -31,10 +31,10 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | File            | Responsibility                                                         |
 |-----------------|------------------------------------------------------------------------|
 | `Locale.lua`    | User-facing strings (`ns.L`), English fallback                         |
-| `Options.lua`   | Every setting's default in one table; settings panel controls with ranges; the proxy the panel writes through (pure) |
+| `Options.lua`   | Every setting's default in one table; controls with ranges (helpers marked for the Helpers page); the proxy the panel writes through (pure) |
 | `LocaleStats.lua` | User-facing strings of the Statistics page                           |
 | `LocaleJournal.lua` | User-facing strings of the Journal page |
-| `LocaleHelpers.lua` | User-facing strings of the helpers (casting key, Helpers settings, smart lure, catch line) |
+| `LocaleHelpers.lua` | User-facing strings of the helpers (casting key, the helpers' long explanations, smart lure, catch line) |
 | `LocaleUI.lua` | User-facing strings of the UI overhaul (style kit; later the main window and its pages) |
 | `Data/Zones.lua` | Generated zone data `ns.Zones`: Classic loot lists, base skills, area placement (see Zone Data) |
 | `Data/Journal.lua` | Generated journal data `ns.Journal`: item groups, Classic recipes that use fish, fishing gear, lures, buff food, fishing ranks, the glove enchant, season rules (see Journal Data) |
@@ -112,7 +112,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar |
 | `LineChart.lua` | Line chart widget: pooled `CreateLine` segments (squares without it), grid and axis labels, hover tooltip per point |
 | `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |
-| `Controls.lua` | Shared controls of the pages: dropdown-styled button, the same look without the arrow for actions, framed box, small status bar |
+| `Controls.lua` | Shared controls of the pages: dropdown-styled button, the same look without the arrow for actions, framed box, small status bar, check box |
 | `MainWindow.lua` | The Fishing Mastery window: page registry (`MainWindow.Register`), portrait frame (template fallbacks), side tabs on the right edge, page name, last page and position per character, Escape |
 | `StatsWindow.lua` | Statistics page `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
 | `StatsScope.lua` | Statistics page helpers: characters of the scope, their overview model, session count, the Fishing skill |
@@ -131,13 +131,16 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `SkillTabs.lua` | Build and draw of the Skill tab (history scan with a progress line) and the Compare tab |
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click main window, Shift + left click its Journal page, right click settings, session tooltip, hide setting |
-| `SettingsPanel.lua` | Settings panel (Settings API): one checkbox or slider per setting, section headings (Helpers), a warning note on a control's tooltip (also printed by `/fm settings`), `/fm settings`, `/fm minimap` |
+| `SettingsPanel.lua` | Settings panel (Settings API): one checkbox or slider per setting (not the helpers, which are on the Helpers page), section headings, `/fm settings`, `/fm minimap` |
 | `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing; a chooser (the smart lure) may make the next press a lure use or nothing, asked again in `PreClick`; `OnRelease` listeners (double-click, smart lure) |
 | `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, a lure being applied, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
 | `LureChoice.lua`, `SmartLure.lua` | Smart lure (module 5, setting `autoLure`, off): pure `LureChoice` picks no lure when the skill without a lure reaches base + 95, else the cheapest usable lure in the bags that does, else the strongest (also in water without data); nothing while a lure with more than 30 s runs, only a same-kind renewal at 30 s or less, a wait while a lure is applied. `SmartLure` reads the inputs, is the casting key's chooser (`type=item`, `target-slot` 16, decided in `PreClick` out of combat), waits after a lure click until the enchant shows up (at most 10 s, or a failed cast), and gives the HUD tooltip line |
 | `SoundBoost.lua` | Louder splash (module 5, setting `loudSplash`, off): with a pole in hand `Sound_EnableSFX` 1, `Sound_SFXVolume` 1, `Sound_MusicVolume` 0, `Sound_AmbienceVolume` 0; the old values in `FishingMasteryCharDB.sounds`, restored when the pole leaves the hand, the setting goes off, at `PLAYER_LOGOUT`, and at the next login without a pole (a copy is never saved over) |
 | `HideUI.lua` | Hidden interface (module 5, setting `hideUI`, off): `SetUIVisibility(false)` at the fishing channel start (not in combat, dead, or when the player hid it); back on moving, combat, death, target, whispers, dialogs, mount, a loot window without auto loot, the pole leaving the hand, loading screens, logout, the setting off; the player's own Alt+Z is left alone; catch lines on `WorldFrame` for 5 s |
-| `HelperStatus.lua` | `/fm helpers`: this login's casting key presses by mode (cast, lure, wait), double-click presses, casts the tracker saved, and each helper setting (memory only) |
+| `HelperStatus.lua` | `/fm helpers`: this login's casting key presses by mode (cast, lure, wait), double-click presses, casts the tracker saved, and each helper setting (memory only); opens the Helpers page |
+| `HelperModel.lua` | Helpers page: helper rows with their state (off, ready, on, active, blocked with the reason), the smart lure's "Right now" texts, the "This login" rows (pure) |
+| `KeyButton.lua` | Key-binding button: binds the next key (with modifiers) to "Cast Fishing", Escape cancels, right-click clears; disabled in combat |
+| `HelpersPage.lua` | Helpers page of the main window: helper rows with check boxes and state tags, the casting key, "Right now", "This login", the other-addon warning; redraws every second while shown |
 | `Helpers.lua` | Starts the helpers at login in order (casting key, smart lure, louder splash, hidden interface, double-click, status) and passes each saved cast to the catch line and the status |
 | `ItemTooltip.lua` | Item tooltip post-call: adds the line for items this character caught, one lookup per tooltip, tooltip setting |
 | `Compartment.lua` | Addon compartment handler `FishingMastery_OnAddonCompartmentClick` (TOC `AddonCompartmentFunc`), run through the guard; opens or closes the main window, with Shift its Journal page |
@@ -352,7 +355,8 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
 
 - **Settings panel** (game menu Options > AddOns > Fishing Mastery, `/fm settings`, or a right
   click on the minimap button): HUD on/off, lock, one text line, zone line, scale; summary in the chat;
-  minimap button; item tooltip line; reload reminder; the count-only and grey sample sizes; the idle cap T. Changes
+  minimap button; item tooltip line; reload reminder; the count-only and grey sample sizes; the idle cap T (the
+  helpers are on the Helpers page). Changes
   apply at once (T at the next login). Checkboxes use the Settings API confirmed on live; sliders
   appear only when the client has `Settings.CreateSlider`, else `/fm settings` names them.
 - **Minimap button** (own, no libraries): drag it around the minimap edge (square minimaps

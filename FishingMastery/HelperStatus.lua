@@ -1,7 +1,8 @@
 -- /fm helpers (module 5, Story 8.5): what the helpers did this login, for the owner's session
 -- check against the tracker: presses of the casting key by what they did (cast, lure, wait), the
 -- presses that came from a double right-click, the casts the tracker recorded, and the state of
--- each helper setting. Counts live in memory only; nothing is saved.
+-- each helper setting; it also opens the Helpers page (Story 9.6). Counts live in memory only;
+-- nothing is saved.
 local _, ns = ...
 
 local setmetatable, ipairs, format = setmetatable, ipairs, string.format
@@ -71,5 +72,8 @@ ns.Commands.Register("helpers", L.CMD_HELPERS, function()
     end
     for _, line in ipairs(ns.helperStatus:Lines()) do
         ns.Print(line)
+    end
+    if ns.mainWindow then
+        ns.mainWindow:Open(ns.HelpersPage.KEY)
     end
 end)
