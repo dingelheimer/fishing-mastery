@@ -124,6 +124,14 @@ UiCheck.CHECKS = {
     { name = "Frame:CreateLine", methods = { "CreateLine" }, try = draw(UiTest.DrawLine) },
     { name = "Texture bar", methods = { "CreateTexture" }, try = draw(UiTest.DrawBar) },
     {
+        name = "Bar gradient",
+        apis = { "CreateColor" },
+        methods = { "CreateTexture" },
+        try = function(ctx)
+            return UiTest.DrawGradient(ctx.window, ctx.env)
+        end,
+    },
+    {
         name = "Settings API",
         apis = {
             "Settings.RegisterVerticalLayoutCategory",

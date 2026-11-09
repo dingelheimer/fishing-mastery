@@ -117,7 +117,9 @@ function FailureTable.SkillChart(view, t)
             tip = bandTip(format(L.STATS_TIP_BAND, label), rate),
         }
     end
-    return ChartModel.Build(bars, true)
+    local chart = ChartModel.Build(bars, true)
+    chart.kind = "getaway"
+    return chart
 end
 
 -- Getaway rate per band of effective skill minus the water's base, with the Classic model of
@@ -155,7 +157,9 @@ function FailureTable.RelativeChart(view, areas, t)
             tip = bandTip(title, rate, model, band),
         }
     end
-    return ChartModel.Build(bars, true), left
+    local chart = ChartModel.Build(bars, true)
+    chart.kind = "getaway"
+    return chart, left
 end
 
 -- Early clicks per 1-second band of the click time, or nil when no early click has a time.

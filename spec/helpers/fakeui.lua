@@ -104,8 +104,13 @@ end
 function Texture:SetSize(width, height)
     self.width, self.height = width, height
 end
-function Texture:SetVertexColor(r, g, b)
-    self.vertex = { r, g, b }
+function Texture:SetVertexColor(r, g, b, a)
+    self.vertex = { r, g, b, a }
+    self.gradient = nil
+end
+-- Records a gradient as { orientation, min color, max color } (color objects of CreateColor).
+function Texture:SetGradient(orientation, minColor, maxColor)
+    self.gradient = { orientation, minColor, maxColor }
 end
 function Texture:SetTexCoord(...)
     self.coords = { ... }
@@ -393,6 +398,10 @@ function M.new(opts)
         end
         templates.apply(env, frame, frameType, template)
         return frame
+    end
+    -- Color objects as the client's CreateColor makes them (fields r, g, b, a).
+    function env.CreateColor(r, g, b, a)
+        return { r = r, g = g, b = b, a = a }
     end
     -- Modifier state: specs set env.shift to hold Shift.
     env.shift = false

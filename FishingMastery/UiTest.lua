@@ -90,6 +90,17 @@ function UiTest.DrawBar(window)
     return "drawn"
 end
 
+-- A bar in the draft gold with the vertical gradient (BarFill), next to the plain bar; returns
+-- "gradient", or "flat" when the client refused it (Story 10.1).
+function UiTest.DrawGradient(window, env)
+    local chart = window.chart
+    local bar = window.gradient or chart:CreateTexture(nil, "ARTWORK")
+    window.gradient = bar
+    bar:SetPoint("BOTTOMLEFT", chart, "BOTTOMLEFT", 44, 0)
+    bar:SetSize(24, 80)
+    return ns.BarFill.Paint(env, bar, ns.Style.BAR_GOLD)
+end
+
 -- An item icon (file ID from C_Item.GetItemIconByID) in the chart corner.
 function UiTest.DrawIcon(window, icon)
     local chart = window.chart

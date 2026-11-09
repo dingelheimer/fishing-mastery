@@ -81,7 +81,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `CompareTable.lua` | Compare tab: groups (lure, day/night, zone, character), rates with the Newcombe difference, median bite time (pure) |
 | `MinimapModel.lua` | Minimap button position for an angle (round minimap or `GetMinimapShape` shapes), drag angle, saved angle; the button's tooltip (session, skill, click hints) (pure) |
 | `TooltipModel.lua` | Item tooltip lines of Draft 6 ("Fishing Mastery" with "caught N", "Best water") from one item total (pure) |
-| `Style.lua` | Colors, fonts by role, thousands separators, grey ranges "66 % (52 - 78)", "~" estimates (pure) |
+| `Style.lua` | Text colors, the softer bar colors of Draft 1 (`BAR_GREEN`, `BAR_GOLD`, `BAR_ORANGE`, `BAR_GREY`), fonts by role, thousands separators, grey ranges "66 % (52 - 78)", "~" estimates (pure) |
 | `CalendarModel.lua` | Calendar heatmap: 53 weeks of days, rows Monday to Sunday, color levels by catches (pure) |
 | `Stats.lua`     | Statistics engine: Wilson, Byar, Newcombe ranges, expected casts, chance of at least one, bite quartiles, active time, blending; rate builders with fair and hooked casts and the display thresholds (pure) |
 | `Export.lua`    | Export text: versioned pages with a checksum, per character (sharing) or all (backup) (pure) |
@@ -113,7 +113,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Tip.lua` | Tooltip builder: title, label and value pairs (gold label unless a color is given), gaps, headers, short lines, green hints, explanations only while Shift is held (redraws on `MODIFIER_STATE_CHANGED`; the only wrapped lines); `Tip.Into` writes below a shown tooltip (item post-call). The only file that writes tooltip lines (a spec checks it) |
 | `StatsListHeader.lua` | Table header: gold bar with sort buttons and arrow, or labels |
 | `StatsList.lua` | Table widget: header (`StatsListHeader`) over a ScrollBox list; striped rows, hover highlight, number cells with separators, item icons, cell colors, season and night tags, grey cells, legend line, `Tip` tooltips |
-| `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar (`Tip` draw from the chart model) |
+| `BarFill.lua` | Bar fills: a slight vertical gradient (`SetGradient` with `CreateColor`, checked by `/fm dev ui`), flat fill as the fallback; clears an old gradient on reused textures |
+| `BarChart.lua`  | Bar chart widget: pooled bars (gold; orange for getaway charts; grey small samples), soft white range marks, grid and axis labels, value and x labels, hover tooltip per bar (`Tip` draw from the chart model) |
 | `LineChart.lua` | Line chart widget: pooled `CreateLine` segments (squares without it), grid and axis labels, hover tooltip per point |
 | `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |
 | `DetailPane.lua` | Detail pane widget in the tooltip and table style: title, lines, gold label and right-aligned value pairs, gaps, three-column tables; nothing wraps, rows past the height are hidden |
@@ -353,7 +354,8 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   below (UTC days of the server time, brighter = more catches; date, casts, and catches in each
   day's tooltip).
 - Charts: bar values above the bars when they fit, the numbers of every bar in its tooltip, grey
-  bars for small samples.
+  bars for small samples. Bars use the softer colors of Draft 1 with a slight gradient (gold;
+  orange for the getaway charts); the 95 % range is a soft white whisker.
 - **Skill** (this character): reads the history 10 chunks per frame with "Reading your history"
   and a percentage in the status line, then later only the new chunks. Line chart of the rank
   over time (the first cast at each rank); catches per skill point over the last 10 points with
@@ -497,7 +499,7 @@ do not see it.
 | `/fm dev load`               | Lists the last 10 load measurements                          |
 | `/fm dev clear`              | Removes `dev.stress` and `dev.lines`                         |
 | `/fm dev capture [on\|off\|clear]` | Raw capture switch; without an argument, a summary of the captured aura IDs and loot sources |
-| `/fm dev ui`                 | UI API check: opens the test window, prints one line per API (ok, missing, error with the text), and keeps the results in `dev.ui` |
+| `/fm dev ui`                 | UI API check: opens the test window, prints one line per API (ok, missing, error with the text), and keeps the results in `dev.ui`; "Bar gradient" says whether bars get the gradient or the flat fallback |
 | `/fm dev area [clear]`       | Area API check at the current spot: prints the readings and the area the lookup resolves, appends them to `dev.area.runs` (30 kept); `clear` removes the runs |
 | `/fm dev journal [clear]`    | Journal API check: prints and appends a run to `dev.journal.runs` (10 kept); while the dev flag is on, every opened trade skill window adds a read to `dev.journal.trades` (10 kept); `clear` removes both |
 

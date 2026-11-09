@@ -17,10 +17,10 @@ OverviewModel.RANKS =
     { [75] = "apprentice", [150] = "journeyman", [225] = "expert", [300] = "artisan" }
 -- Outcome rows in order; fair outcomes have a share of the fair casts, the others are grey.
 OverviewModel.OUTCOMES = {
-    { key = "catch", color = Style.GREEN },
-    { key = "getaway", color = Style.ORANGE },
-    { key = "early_click", color = Style.GOLD },
-    { key = "timeout", color = Style.GOLD },
+    { key = "catch", color = Style.BAR_GREEN },
+    { key = "getaway", color = Style.BAR_ORANGE },
+    { key = "early_click", color = Style.BAR_GOLD },
+    { key = "timeout", color = Style.BAR_GOLD },
     { key = "cancel", grey = true },
     { key = "invalid_target", grey = true },
 }

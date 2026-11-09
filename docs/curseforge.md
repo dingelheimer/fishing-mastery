@@ -11,7 +11,8 @@ GPL-3.0, source `https://github.com/dingelheimer/fishing-mastery`, issues on the
 **Logo:** `docs/images/logo-400.png` (400 × 400; `logo-1024.png` if a larger one is asked for),
 drawn by `tools/draw_logo.py`.
 **Images tab:** `docs/images/stats-overview.png`, `hud-card.png`, `journal-fish.png` (the README
-screenshots of 1.1.0; no character names).
+screenshots of 1.1.0), `zones.png`, `bite-times.png`, `skill.png`, `sessions.png` (1.1.0;
+`sessions.png` shows the owner's character name, accepted by the owner on 2026-11-09).
 
 ## Summary
 

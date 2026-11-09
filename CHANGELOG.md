@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Changed: bars in the Statistics pages use the softer colors of the drafts with a slight
+  gradient; getaway charts are orange.
+
 ## 1.1.0
 
 The interface overhaul: one Fishing Mastery window with side tabs for Statistics, Journal,

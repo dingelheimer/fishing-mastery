@@ -26,6 +26,11 @@ Style.HOVER = { 1, 0.82, 0, 0.12 } -- the row under the mouse
 Style.HEADER = { 0.2, 0.15, 0.08, 0.9 } -- table header bar
 Style.TAG_SEASON = { 0.31, 0.63, 1, 0.18 }
 Style.TAG_NIGHT = { 0.63, 0.47, 1, 0.2 }
+-- Bar fills of Draft 1 (Story 10.1), softer than the text colors; BarFill.lua paints them.
+Style.BAR_GREEN = { 81 / 255, 197 / 255, 81 / 255 } -- catches
+Style.BAR_GOLD = { 240 / 255, 202 / 255, 92 / 255 } -- counts, most caught, histograms
+Style.BAR_ORANGE = { 225 / 255, 129 / 255, 60 / 255 } -- getaways
+Style.BAR_GREY = { 0.42, 0.42, 0.42 } -- small samples
 -- Fill of the skill bar (the Professions window's blue) and the empty part of bars.
 Style.SKILL = { 0.2, 0.38, 0.86 }
 Style.TRACK = { 0, 0, 0, 0.5 }
@@ -46,6 +51,11 @@ Style.FONTS = {
     big = "GameFontHighlightHuge", -- headline numbers
     number = "GameFontHighlightLarge", -- numbers of the HUD card
 }
+
+-- The color times f (alpha kept): the darker end of a bar gradient.
+function Style.Shade(color, f)
+    return { color[1] * f, color[2] * f, color[3] * f, color[4] }
+end
 
 -- "ffrrggbb" of a color.
 function Style.Hex(color)

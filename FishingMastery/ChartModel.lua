@@ -2,7 +2,8 @@
 -- histogram bins from tenth-second keys, bar positions in a plot width, and the label step that
 -- keeps the x labels apart. A chart is { bars = { { label, value, low, high, mark, text, grey,
 -- tip } }, mark = a reference value drawn as a line across the bar,
--- axis = Scale, percent }; a line chart (Line) holds points with an x range. No frame or API calls.
+-- axis = Scale, percent, kind ("getaway": orange bars) }; a line chart (Line) holds points with
+-- an x range. No frame or API calls.
 local _, ns = ...
 
 local floor, ceil, max, log10, format, ipairs, pairs, type =

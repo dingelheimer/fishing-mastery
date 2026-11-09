@@ -167,6 +167,7 @@ end
 
 -- Creates the Overview frames on panel (width x height pixels); page holds them.
 function OverviewPage.Build(page, env, panel, width, height)
+    page.env = env
     skillPanel(page, env, panel, width)
     numbersPanel(page, env, panel, width)
     local top = OverviewPage.SKILL_HEIGHT + OverviewPage.NUMBERS_HEIGHT + 2 * OverviewPage.GAP
@@ -205,12 +206,12 @@ local function drawNumbers(page, numbers)
     end
 end
 
-local function drawBar(fill, share, length, c)
+local function drawBar(page, fill, share, length, c)
     local width = type(share) == "number" and share * length or 0
     fill:SetShown(width >= 1)
     if width >= 1 then
         fill:SetSize(width, 10)
-        tint(fill, c)
+        ns.BarFill.Paint(page.env, fill, c)
     end
 end
 
@@ -224,7 +225,7 @@ local function drawOutcomes(page, rows)
         color(cells.label, c)
         color(cells.count, c)
         color(cells.share, c)
-        drawBar(cells.bar, data.share, OverviewPage.OUT_BAR, data.color or Style.GREY)
+        drawBar(page, cells.bar, data.share, OverviewPage.OUT_BAR, data.color or Style.BAR_GREY)
     end
 end
 
@@ -239,7 +240,7 @@ local function drawTop(page, rows)
             cells.name:SetText(data.hex and ("|c" .. data.hex .. data.name .. "|r") or data.name)
             cells.count:SetText(data.n)
         end
-        drawBar(cells.bar, data and data.fill, OverviewPage.TOP_BAR, Style.GOLD)
+        drawBar(page, cells.bar, data and data.fill, OverviewPage.TOP_BAR, Style.BAR_GOLD)
     end
     page.topEmpty:SetShown(#rows == 0)
 end

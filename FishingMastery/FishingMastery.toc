@@ -24,6 +24,7 @@ OptionsControls.lua
 Guard.lua
 Style.lua
 Tip.lua
+BarFill.lua
 Events.lua
 Db.lua
 Character.lua

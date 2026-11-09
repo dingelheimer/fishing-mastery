@@ -17,6 +17,7 @@ local UI_STUBS = {
     "PanelTemplates_SetTab",
     "GetMinimapShape",
     "AddonCompartmentFrame",
+    "CreateColor",
 }
 local FRAME_METHODS = { "CreateLine", "CreateTexture" }
 
@@ -131,6 +132,9 @@ local function stubAll(w)
         return "ROUND"
     end
     _G.AddonCompartmentFrame = {}
+    _G.CreateColor = function(r, g, b, a)
+        return { r = r, g = g, b = b, a = a }
+    end
     return log
 end
 
@@ -183,7 +187,7 @@ describe("FishingMastery UI check boot", function()
         assert.truthy(
             w.output():find("GetMinimapShape: missing - GetMinimapShape (normal", 1, true)
         )
-        assert.truthy(w.output():find("UI check: 0 ok, 11 missing, 0 errors.", 1, true))
+        assert.truthy(w.output():find("UI check: 0 ok, 12 missing, 0 errors.", 1, true))
         assert.is_true(w.ns.UiCheck.state.window.frame:IsShown())
 
         -- The settings button without a category says so instead of failing.
@@ -206,6 +210,7 @@ describe("FishingMastery UI check boot", function()
         assert.are.equal("0 0.44 0.87 ff0070dd", map["C_Item.GetItemQualityColor"].detail)
         assert.are.equal("PanelTabButtonTemplate", map["Tab templates"].detail)
         assert.are.equal("ROUND", map.GetMinimapShape.detail)
+        assert.are.equal("gradient", map["Bar gradient"].detail)
         assert.are.same({ "Row 1", "Row 2", "Row 3" }, log.rows)
         assert.are.same({ "SetColorTexture", 1, 0.82, 0, 1 }, log.line.calls[1])
         assert.are.same({ "SetThickness", 2 }, log.line.calls[4])
@@ -214,7 +219,7 @@ describe("FishingMastery UI check boot", function()
         assert.is_true(log.categories[1].registered)
         assert.are.equal("FishingMastery_UiCheck", log.checkboxes[1].variable)
         assert.are.same({ flag = false }, _G.FishingMasteryDB.dev.uiSetting)
-        assert.truthy(w.output():find("UI check: 11 ok, 0 missing, 0 errors.", 1, true))
+        assert.truthy(w.output():find("UI check: 12 ok, 0 missing, 0 errors.", 1, true))
 
         fakeui.button(w.env, "Open settings"):Click()
         assert.are.same({ 42 }, log.opened)
@@ -281,7 +286,7 @@ describe("FishingMastery UI check boot", function()
             map["Tab templates"].detail:find("no tab template of PanelTabButtonTemplate", 1, true)
         )
         assert.are.equal("ok", map["ScrollBox list"].status)
-        assert.truthy(w.output():find("UI check: 8 ok, 0 missing, 3 errors.", 1, true))
+        assert.truthy(w.output():find("UI check: 9 ok, 0 missing, 3 errors.", 1, true))
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 

@@ -108,7 +108,7 @@ describe("FishingMastery overview model", function()
             { "Invalid target", "1", "-", true },
         }, rows)
         assert.is_nil(model.outcomes[5].share)
-        assert.are.same(ns.Style.GREEN, model.outcomes[1].color)
+        assert.are.same(ns.Style.BAR_GREEN, model.outcomes[1].color)
 
         assert.are.equal(2, #model.top)
         assert.are.same({

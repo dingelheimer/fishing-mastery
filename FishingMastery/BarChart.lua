@@ -15,11 +15,13 @@ ns.BarChart = BarChart
 
 BarChart.LEFT, BarChart.BOTTOM, BarChart.TOP = 40, 16, 30 -- plot margins (title + value labels)
 BarChart.VALUE_MIN_SLOT = 18 -- value labels only for slots at least this wide
--- Colors of the style kit (Style.lua): the skill bar blue, grey small samples, gold ranges.
+-- Bar colors of Draft 1 (Story 10.1): gold, orange for getaway charts (chart.kind "getaway"), grey
+-- small samples; the 95 % range a soft white whisker, the reference mark a full-width white line.
 local Style = ns.Style
-BarChart.BAR = { Style.SKILL[1], Style.SKILL[2], Style.SKILL[3], 1 }
-BarChart.BAR_GREY = { Style.GREY[1], Style.GREY[2], Style.GREY[3], 1 }
-BarChart.RANGE = { Style.GOLD[1], Style.GOLD[2], Style.GOLD[3], 1 }
+BarChart.BAR = Style.BAR_GOLD
+BarChart.BAR_KIND = { getaway = Style.BAR_ORANGE }
+BarChart.BAR_GREY = Style.BAR_GREY
+BarChart.RANGE = { 1, 1, 1, 0.6 }
 BarChart.GRID = Style.GRID
 BarChart.MARK = { 1, 1, 1, 0.9 }
 
@@ -54,11 +56,15 @@ local function acquire(pool, make)
     return item
 end
 
-local function texture(self, color, x, y, w, h)
+local function texture(self, color, x, y, w, h, fill)
     local tex = acquire(self.textures, function()
         return self.frame:CreateTexture(nil, "ARTWORK")
     end)
-    tex:SetColorTexture(color[1], color[2], color[3], color[4])
+    if fill then
+        ns.BarFill.Paint(self.env, tex, color)
+    else
+        ns.BarFill.Flat(tex, color) -- a pooled texture may hold a bar's gradient
+    end
     tex:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMLEFT", x, y)
     tex:SetSize(max(1, w), max(1, h))
     return tex
@@ -132,7 +138,8 @@ local function bars(self, chart, plotW, plotH)
     for i, bar in ipairs(chart.bars) do
         local x = left + layout.x(i)
         local h = (bar.value or 0) * scale
-        texture(self, bar.grey and BarChart.BAR_GREY or BarChart.BAR, x, bottom, layout.bar, h)
+        local fill = bar.grey and BarChart.BAR_GREY or BarChart.BAR_KIND[chart.kind] or BarChart.BAR
+        texture(self, fill, x, bottom, layout.bar, h, true)
         local top = h
         if bar.low and bar.high then
             local mid = x + floor(layout.bar / 2)
