@@ -102,6 +102,7 @@ local function decorate(self, frame, template)
         inset = Frames.Create(env, "Frame", frame, MainWindow.INSET_TEMPLATE)
     end
     if inset then
+        ns.Look.Tint(inset, ns.Look.WARM_BODY)
         inset:ClearAllPoints()
         inset:SetPoint("TOPLEFT", frame, "TOPLEFT", 4, MainWindow.INSET_TOP)
         inset:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -6, 4)

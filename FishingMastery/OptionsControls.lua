@@ -65,6 +65,31 @@ Options.CONTROLS = {
         end,
     },
     {
+        key = "hudBackground",
+        page = "settings",
+        kind = "choice",
+        values = { "tooltip", "solid" },
+        get = function(s)
+            local value = section(s, "hud").background
+            return value == "solid" and "solid" or "tooltip"
+        end,
+        set = function(s, v)
+            section(s, "hud").background = v
+        end,
+    },
+    {
+        key = "uiPanels",
+        page = "settings",
+        kind = "choice",
+        values = { "game", "warm" },
+        get = function(s)
+            return section(s, "ui").panels == "game" and "game" or "warm"
+        end,
+        set = function(s, v)
+            section(s, "ui").panels = v
+        end,
+    },
+    {
         key = "hudZone",
         page = "settings",
         kind = "checkbox",

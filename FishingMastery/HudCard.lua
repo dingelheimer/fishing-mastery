@@ -32,6 +32,7 @@ HudCard.RISK = {
 local function frame(env, parent, height)
     local f, template = Frames.CreateFirst(env, "Frame", parent, { HudCard.TEMPLATE })
     f:SetSize(HudCard.WIDTH, height)
+    ns.Look.Backing(f) -- the solid background setting (Story 10.4)
     if not template then
         local back = f:CreateTexture(nil, "BACKGROUND")
         back:SetAllPoints(f)

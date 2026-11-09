@@ -48,6 +48,7 @@ end
 -- A framed panel (the inset look of the Professions window) with an optional gold title.
 function Controls.Box(env, parent, title)
     local box = Frames.Create(env, "Frame", parent, Controls.BOX_TEMPLATE)
+    ns.Look.Tint(box, ns.Look.WARM_PANEL)
     if title then
         box.title = box:CreateFontString(nil, "OVERLAY", Style.FONTS.label)
         box.title:SetPoint("TOPLEFT", box, "TOPLEFT", 10, -8)

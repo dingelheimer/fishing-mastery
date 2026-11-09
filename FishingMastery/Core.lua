@@ -82,6 +82,8 @@ local function applySetting(key)
         ns.soundBoost:Update()
     elseif key == "hideUI" and ns.hideUI then
         ns.hideUI:Update()
+    elseif key == "uiPanels" or key == "hudBackground" then
+        ns.Look.Apply(settings)
     elseif key == "activeCap" then
         ns.Print(format(L.OPT_CAP_NEXT_LOGIN, ns.Options.Get(settings, "activeCap")))
     end
@@ -126,6 +128,7 @@ end
 -- this login is set first, so totals counted with another T are counted again.
 local function startTracker()
     ns.Totals.SetCap(ns.Options.Get(ns.db.settings, "activeCap"))
+    ns.Look.Apply(ns.db.settings) -- before any window or HUD frame is built
     ns.area = ns.Area.New(ns.Zones, function(id)
         return ns.Context.AreaName(_G, id)
     end)

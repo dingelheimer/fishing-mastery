@@ -29,6 +29,7 @@ describe("FishingMastery HUD card", function()
             "Getaway.lua",
             "HudCardModel.lua",
             "Frames.lua",
+            "Look.lua",
             "Controls.lua",
             "HudCard.lua",
         }, nil, "FishingMastery")

@@ -14,6 +14,7 @@ local FILES = {
     "Style.lua",
     "Tip.lua",
     "Frames.lua",
+    "Look.lua",
     "Controls.lua",
     "MainWindow.lua",
 }

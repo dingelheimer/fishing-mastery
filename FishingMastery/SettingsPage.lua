@@ -18,7 +18,7 @@ ns.SettingsPage = SettingsPage
 SettingsPage.KEY = "settings" -- MainWindow page key
 SettingsPage.ICON = "Interface\\Icons\\INV_Misc_Gear_01"
 SettingsPage.TOP, SettingsPage.LEFT_WIDTH, SettingsPage.GAP = 62, 380, 12
-SettingsPage.TOP_HEIGHT = 236 -- the HUD and preview boxes
+SettingsPage.TOP_HEIGHT = 250 -- the HUD and preview boxes
 SettingsPage.SLIDER = 150
 SettingsPage.PREVIEW_MAX = 1.3 -- the preview grows with the scale up to this, so it fits the box
 -- Value texts of the sliders.
@@ -30,6 +30,9 @@ SettingsPage.FORMATS = {
     activeCap = "SET_SECONDS",
 }
 SettingsPage.PERCENT = { hudScale = true, hudOpacity = true }
+-- The value texts of the choice controls: the locale key prefix per control.
+SettingsPage.CHOICES =
+    { hudLayout = "SET_LAYOUT_", hudBackground = "SET_BACKGROUND_", uiPanels = "SET_PANELS_" }
 -- The data buttons: label and the /fm command they run.
 SettingsPage.DATA =
     { { "SET_EXPORT", "export" }, { "SET_BACKUPS", "backup" }, { "SET_CONTRIBUTE", "contribute" } }
@@ -102,6 +105,24 @@ local function slider(self, box, key, x, y)
     self.controls[key] = bar
 end
 
+-- A dropdown-styled button that steps to the next value of a choice control.
+local function choice(self, box, key, width)
+    local control = Controls.Dropdown(self.env, box, width or 120, function()
+        local values = Options.BY_KEY[key].values
+        local current = Options.Get(self.settings, key)
+        local nextValue = values[1]
+        for i, value in ipairs(values) do
+            if value == current then
+                nextValue = values[i % #values + 1]
+            end
+        end
+        change(self, key, nextValue)
+    end)
+    tooltip(self, control, key)
+    self.controls[key] = control
+    return control
+end
+
 local function hudBox(self, panel)
     local box = Controls.Box(self.env, panel, L.SET_HUD)
     box:SetPoint("TOPLEFT", panel, "TOPLEFT", 14, -SettingsPage.TOP)
@@ -110,14 +131,11 @@ local function hudBox(self, panel)
     check(self, box, "hudLocked", -70)
     check(self, box, "hudZone", -96)
     label(box, "hudLayout", -142)
-    local layout = Controls.Dropdown(self.env, box, 120, function()
-        local current = Options.Get(self.settings, "hudLayout")
-        change(self, "hudLayout", current == "card" and "compact" or "card")
-    end)
-    layout:SetPoint("TOPLEFT", box, "TOPLEFT", 110, -138)
-    self.controls.hudLayout = layout
-    slider(self, box, "hudScale", 110, -172)
-    slider(self, box, "hudOpacity", 110, -200)
+    choice(self, box, "hudLayout"):SetPoint("TOPLEFT", box, "TOPLEFT", 110, -138)
+    label(box, "hudBackground", -168)
+    choice(self, box, "hudBackground"):SetPoint("TOPLEFT", box, "TOPLEFT", 110, -164)
+    slider(self, box, "hudScale", 110, -198)
+    slider(self, box, "hudOpacity", 110, -226)
 end
 
 local function infoBox(self, panel, height)
@@ -195,6 +213,8 @@ local function defaultsButton(self, panel)
     button:SetText(L.SET_DEFAULTS)
     button:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -14, MainWindow.CONTROLS_Y)
     self.defaultsButton = button
+    -- The window look applies to every page, so it sits with the page controls.
+    choice(self, panel, "uiPanels", 130):SetPoint("RIGHT", button, "LEFT", -8, 0)
 end
 
 -- Builds the page on panel (the main window's page frame).
@@ -233,7 +253,7 @@ function SettingsPage:Draw()
             control:SetValue(value)
             control.valueText:SetText(valueText(key, value))
         else
-            control:SetText(L["SET_LAYOUT_" .. value])
+            control:SetText(L[SettingsPage.CHOICES[key] .. value])
         end
     end
     local layout = Options.Get(self.settings, "hudLayout")

@@ -31,6 +31,8 @@ describe("FishingMastery settings and minimap math", function()
                 hudLocked = false,
                 hudLayout = "card",
                 hudZone = true,
+                hudBackground = "tooltip",
+                uiPanels = "warm",
                 hudScale = 1,
                 hudOpacity = 1,
                 summaryChat = false,
@@ -51,7 +53,7 @@ describe("FishingMastery settings and minimap math", function()
                     assert.are.equal(expected[control.key], ns.Options.Default(control.key))
                 end
             end
-            assert.are.equal(17, #ns.Options.CONTROLS)
+            assert.are.equal(19, #ns.Options.CONTROLS) -- with the two look settings (Story 10.4)
             -- Every control is on a page of the main window: Helpers (Story 9.6) or Settings.
             for _, control in ipairs(ns.Options.CONTROLS) do
                 local helper = expected[control.key] ~= nil

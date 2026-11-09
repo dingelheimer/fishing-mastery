@@ -11,6 +11,10 @@
 - Changed: the HUD names the running lure ("Shiny Bauble +25" with its icon). In water where fish
   get away its tooltip always shows the best lure in your bags, marked "on the pole" when it is
   the one running. The tooltip's labels are shorter ("Success", "Per hour").
+- Changed: the window's panels have a dark warm brown tint, as in the drafts; "Panels: game" in
+  the Settings page header brings back the grey of the game's windows.
+- New: the HUD background setting "Solid" puts a dark, non-see-through background behind the HUD
+  (default: the game's see-through tooltip look).
 
 ## 1.1.0
 

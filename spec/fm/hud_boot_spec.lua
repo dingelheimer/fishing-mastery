@@ -117,6 +117,7 @@ describe("FishingMastery HUD boot", function()
             layout = "card",
             opacity = 1,
             zoneLine = true,
+            background = "tooltip",
         }, settings)
 
         -- show without a session: shown with zeros so it can be placed.

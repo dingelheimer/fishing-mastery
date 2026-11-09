@@ -25,6 +25,7 @@ Guard.lua
 Style.lua
 Tip.lua
 BarFill.lua
+Look.lua
 Events.lua
 Db.lua
 Character.lua

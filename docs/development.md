@@ -119,6 +119,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `LineChart.lua` | Line chart widget: pooled `CreateLine` segments (squares without it), grid and axis labels, hover tooltip per point |
 | `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |
 | `DetailPane.lua` | Detail pane widget in the tooltip and table style: title, lines, gold label and right-aligned value pairs, gaps, three-column tables; nothing wraps, rows past the height are hidden |
+| `Look.lua` | Look settings: warm tints (Draft 1's brown) inside the main window's inset and every framed box, a solid backing (Draft 5's dark) behind the HUD views; created once, shown or hidden as a whole (`Look.Apply` at login and on a change) |
 | `Controls.lua` | Shared controls of the pages: dropdown-styled button, the same look without the arrow for actions, framed box, small status bar, check box |
 | `MainWindow.lua` | The Fishing Mastery window: page registry (`MainWindow.Register`), portrait frame (template fallbacks), side tabs on the right edge, page name, last page and position per character, Escape |
 | `StatsWindow.lua` | Statistics page `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
@@ -141,7 +142,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click main window, Shift + left click its Journal page, right click settings, tooltip of Draft 6, hide setting |
 | `SettingsPanel.lua` | The game's Options entry as a launcher: one button that opens the Settings page (canvas category, else a button initializer); `/fm settings`, `/fm minimap` |
 | `HudCard.lua` | HUD views of Draft 5 in the tooltip look: the card with stacked rows and two dividers around the numbers (small grey units; fish icons with names on hover; a long water name cut before the tag) and the compact line |
-| `SettingsPage.lua` | Settings page of the main window: HUD (with the live preview), Information, Advanced statistics with the data buttons, Defaults with a confirmation |
+| `SettingsPage.lua` | Settings page of the main window: HUD (with the live preview), Information, Advanced statistics with the data buttons; "Panels: game / warm" and Defaults with a confirmation in the page header |
 | `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing; a chooser (the smart lure) may make the next press a lure use or nothing, asked again in `PreClick`; `OnRelease` listeners (double-click, smart lure) |
 | `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, a lure being applied, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
 | `LureChoice.lua`, `SmartLure.lua` | Smart lure (module 5, setting `autoLure`, off): pure `LureChoice` picks no lure when the skill without a lure reaches base + 95, else the cheapest usable lure in the bags that does, else the strongest (also in water without data); nothing while a lure with more than 30 s runs, only a same-kind renewal at 30 s or less, a wait while a lure is applied. `SmartLure` reads the inputs, is the casting key's chooser (`type=item`, `target-slot` 16, decided in `PreClick` out of combat), waits after a lure click until the enchant shows up (at most 10 s, or a failed cast), and gives the Helpers page and the HUD the choice for this water (`SmartLure.Now`); `LureChoice.Running` names the running lure from its bonus, `SmartLure.Owned` lists the lures in the bags |
@@ -235,8 +236,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 - `FishingMasteryDB.settings` (account; every default in `Options.DEFAULTS`): `hud` = `enabled`
   (default on), `locked`, `scale` (0.5-2, default 1), `layout` (`card` or `compact`; a `style` saved
   before 1.1.0 becomes its layout: full card, text compact), `opacity` (0.3-1, default 1), `zoneLine`
-  (default on);
-  `summary.style` = `window` (default) or `chat`; `minimap.shown` (default on);
+  (default on), `background` (`tooltip`, default, or `solid`); `ui.panels` (`warm`, default, or
+  `game`); `summary.style` = `window` (default) or `chat`; `minimap.shown` (default on);
   `tooltip.shown` (item tooltip line, default on);
   `reloadReminder` (default on); `thresholds` = `countBelow` (5-30, default 10), `greyBelow`
   (10-100, default 30), `activeCap` (the idle cap T, 30-120 s, default 60).
@@ -385,10 +386,11 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
 
 - **Settings page** (`/fm settings`, a right click on the minimap button, or the button of the
   game's Options > AddOns > Fishing Mastery entry): HUD on/off, lock, water line, layout (card or
-  compact), scale, opacity, with a live preview; item tooltip line, summary in the chat, minimap
-  button, reload reminder; the count-only and grey sample sizes and the idle cap T; export,
-  backups, contribute; Defaults (asks first; the helpers and positions stay). Changes apply at
-  once (T at the next login). The helpers are on the Helpers page.
+  compact), background (game tooltip or solid), scale, opacity, with a live preview; item tooltip
+  line, summary in the chat, minimap button, reload reminder; the count-only and grey sample sizes
+  and the idle cap T; export, backups, contribute; in the page header "Panels: game / warm" (a dark
+  warm tint over the window's panels) and Defaults (asks first; the helpers and positions stay).
+  Changes apply at once (T at the next login). The helpers are on the Helpers page.
 - **Minimap button** (own, no libraries): drag it around the minimap edge (square minimaps
   follow their corners); the angle is saved per character. Left click opens or closes the main
   window, Shift + left click its Journal page, right click opens the settings. The tooltip

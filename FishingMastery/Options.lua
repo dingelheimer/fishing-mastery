@@ -18,6 +18,7 @@ Options.DEFAULTS = {
         layout = "card",
         opacity = 1,
         zoneLine = true,
+        background = "tooltip", -- or "solid" (Story 10.4)
     },
     summary = { style = "window" },
     minimap = { shown = true },
@@ -25,7 +26,10 @@ Options.DEFAULTS = {
     reloadReminder = true,
     thresholds = { countBelow = 10, greyBelow = 30, activeCap = 60 },
     helpers = { doubleClick = false, autoLure = false, loudSplash = false, hideUI = false },
-    ui = { minimapAngle = 220 }, -- per character (FishingMasteryCharDB.ui.minimap)
+    -- minimapAngle: per character (FishingMasteryCharDB.ui.minimap); panels: account-wide
+    -- (FishingMasteryDB.settings.ui.panels, "warm" or "game"; warm is the owner's pick, Story
+    -- 10.4).
+    ui = { minimapAngle = 220, panels = "warm" },
 }
 
 -- HUD layouts (Epic 9): the card of Draft 5 and the one compact line.

@@ -74,6 +74,7 @@ describe("FishingMastery units and spacing", function()
                 "Style.lua",
                 "Tip.lua",
                 "Frames.lua",
+                "Look.lua",
                 "Controls.lua",
                 "HudCard.lua",
             }, nil, "FishingMastery")
