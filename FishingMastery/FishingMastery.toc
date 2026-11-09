@@ -89,6 +89,7 @@ UiTest.lua
 UiCheck.lua
 AreaCheck.lua
 JournalCheck.lua
+LureCheck.lua
 JournalTrade.lua
 JournalTradeUI.lua
 RecipeRead.lua

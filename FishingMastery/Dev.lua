@@ -271,6 +271,8 @@ local function command(rest)
             { env = self.deps.env, db = self.db, serverTime = self.deps.serverTime },
             value
         )
+    elseif action == "lure" then
+        ns.LureCheck.Run({ env = self.deps.env, db = self.db, serverTime = self.deps.serverTime })
     elseif action == "journal" then
         ns.JournalCheck.Run(
             { env = self.deps.env, db = self.db, serverTime = self.deps.serverTime },

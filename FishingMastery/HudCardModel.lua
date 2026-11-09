@@ -79,7 +79,13 @@ local function lure(input)
     local running = input.lure
     if running and running.seconds then
         local text = running.bonus and format(L.HCARD_LURE, running.bonus) or L.HCARD_LURE_ON
-        return { icon = HudCardModel.LURE_ICON, text = text, timer = timer(running.seconds) }
+        if running.name then -- the lure's item is known (Story 10.3): "Shiny Bauble +25"
+            text = running.bonus
+                    and running.name .. " " .. paint(format("+%d", running.bonus), Style.GREY)
+                or running.name
+        end
+        local icon = running.icon or HudCardModel.LURE_ICON
+        return { icon = icon, text = text, timer = timer(running.seconds) }
     end
     local m = model(input.zone)
     if m and m.getaway <= 0 then
@@ -258,17 +264,20 @@ function HudCardModel.Tip(input, extra)
             L.OV_CATCHES,
             format(L.OV_CHAR_LINE, Style.Number(m.catches), Style.Number(m.casts))
         )
-        RowTip.Rates(tip, m.success, m.perHour)
+        RowTip.Rate(tip, L.HTIP_SUCCESS, m.success)
+        RowTip.PerHour(tip, L.HTIP_PER_HOUR, m.perHour)
         if zone and zone.risk then
             getaways(tip, zone)
         end
-        local suggestion = input.suggestion
-        if suggestion then
+        -- The best owned lure, only while fish still get away; "on the pole" when it runs.
+        local suggestion, water = input.suggestion, model(zone)
+        if suggestion and water and water.getaway > 0 then
+            local value = suggestion.name .. " " .. paint("+" .. suggestion.bonus, Style.GREY)
+            if input.lure and input.lure.bonus == suggestion.bonus then
+                value = value .. " " .. paint(L.HTIP_ON_POLE, Style.GREY)
+            end
             tip:Gap()
-            tip:Pair(
-                L.HTIP_BEST_LURE,
-                suggestion.name .. " " .. paint("+" .. suggestion.bonus, Style.GREY)
-            )
+            tip:Pair(L.HTIP_BEST_LURE, value)
         end
         RowTip.Details(tip, { "fair", "range", L.HTIP_D_CLASSIC })
         if extra then

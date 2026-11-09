@@ -8,6 +8,9 @@
   Overview's lower panels sit right below their rows. The HUD card shows "%" small next to the
   success number, thin lines between its parts, and a green tick on the skill bar where getaways
   stop.
+- Changed: the HUD names the running lure ("Shiny Bauble +25" with its icon). In water where fish
+  get away its tooltip always shows the best lure in your bags, marked "on the pole" when it is
+  the one running. The tooltip's labels are shorter ("Success", "Per hour").
 
 ## 1.1.0
 

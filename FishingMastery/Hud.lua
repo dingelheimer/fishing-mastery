@@ -170,18 +170,27 @@ function Hud:CardInput(model)
     local _, _, max = Context.Fishing(env)
     local enchant, seconds = Context.LureTime(env)
     local zone = self.settings.zoneLine and self.zone or nil
+    local journal = ns.Journal or {}
+    local lure
+    if seconds then
+        -- The running lure's item by its bonus (Story 10.3): name and icon when known.
+        local bonus = (journal.lureEnchants or {})[enchant]
+        local owned = ns.SmartLure.Owned(env, journal)
+        local id = ns.LureChoice.Running(bonus, owned, journal.lures)
+        local info = id and itemInfo(self, id) or {}
+        lure = { bonus = bonus, seconds = seconds, name = info.name, icon = info.icon }
+    end
     local input = {
         model = model,
         max = max,
         zone = zone,
-        lure = seconds
-            and { bonus = ((ns.Journal or {}).lureEnchants or {})[enchant], seconds = seconds },
+        lure = lure,
         last = itemInfo(self, model.lastItem),
         info = function(id)
             return itemInfo(self, id)
         end,
     }
-    if zone and not seconds then
+    if zone then -- the lure row without a running lure; the tooltip's best lure
         input.suggestion = suggestion(self)
     end
     return input

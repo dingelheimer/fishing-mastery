@@ -25,9 +25,8 @@ local function number(value)
 end
 
 -- Lures of the journal in the bags that this race may use: { { id, bonus, need, count } }, by
--- item ID;
--- nil when the bags cannot be read.
-local function owned(env, journal)
+-- item ID; nil when the bags cannot be read.
+function SmartLure.Owned(env, journal)
     local race = number(select(SmartLure.RACE_ID, Context.Call(env, "UnitRace", "player")))
     local raceBit = race and race >= 1 and 2 ^ (race - 1) or nil
     local list = {}
@@ -65,7 +64,7 @@ function SmartLure.Read(env, areas, journal)
         base = area and areas:Base(area) or nil,
         skill = skill,
         rank = rank,
-        lures = owned(env, journal),
+        lures = SmartLure.Owned(env, journal),
         active = enchant and { bonus = bonus, seconds = seconds } or nil,
     }
 end

@@ -97,6 +97,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Confirm.lua`   | Confirmation dialog (backup restore) |
 | `UiTest.lua`    | UI check test window: one line, one bar, an item icon, a 3-row scroll list, two tabs, "Open settings" (dev flag only) |
 | `UiCheck.lua`   | UI API check: each statistics UI API missing, ok, or error; results in `dev.ui` (dev flag only) |
+| `LureCheck.lua` | Lure check: the enchant ID of the running lure, the bonus the data gives it, and the time left; one entry per ID in `dev.lures` (dev flag only) |
 | `AreaCheck.lua` | Area API check: map, zone and subzone texts, instance, area IDs at the position, test area names with byte-exact match flags; runs in `dev.area` (dev flag only) |
 | `JournalCheck.lua` | Journal API check: recipe spells known, new Forever spell names, gear tooltips and counts, item classes, fishing modifier and main-hand tooltip; runs in `dev.journal` (dev flag only) |
 | `JournalTrade.lua` | Trade skill read on `TRADE_SKILL_SHOW` for the journal check, repeated 1 s later: Classic API part (line, recipe count, first 3 recipes with spell, product, and reagent IDs) plus the `C_TradeSkillUI` part (dev flag only) |
@@ -143,7 +144,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `SettingsPage.lua` | Settings page of the main window: HUD (with the live preview), Information, Advanced statistics with the data buttons, Defaults with a confirmation |
 | `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing; a chooser (the smart lure) may make the next press a lure use or nothing, asked again in `PreClick`; `OnRelease` listeners (double-click, smart lure) |
 | `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, a lure being applied, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
-| `LureChoice.lua`, `SmartLure.lua` | Smart lure (module 5, setting `autoLure`, off): pure `LureChoice` picks no lure when the skill without a lure reaches base + 95, else the cheapest usable lure in the bags that does, else the strongest (also in water without data); nothing while a lure with more than 30 s runs, only a same-kind renewal at 30 s or less, a wait while a lure is applied. `SmartLure` reads the inputs, is the casting key's chooser (`type=item`, `target-slot` 16, decided in `PreClick` out of combat), waits after a lure click until the enchant shows up (at most 10 s, or a failed cast), and gives the Helpers page and the HUD the choice for this water (`SmartLure.Now`) |
+| `LureChoice.lua`, `SmartLure.lua` | Smart lure (module 5, setting `autoLure`, off): pure `LureChoice` picks no lure when the skill without a lure reaches base + 95, else the cheapest usable lure in the bags that does, else the strongest (also in water without data); nothing while a lure with more than 30 s runs, only a same-kind renewal at 30 s or less, a wait while a lure is applied. `SmartLure` reads the inputs, is the casting key's chooser (`type=item`, `target-slot` 16, decided in `PreClick` out of combat), waits after a lure click until the enchant shows up (at most 10 s, or a failed cast), and gives the Helpers page and the HUD the choice for this water (`SmartLure.Now`); `LureChoice.Running` names the running lure from its bonus, `SmartLure.Owned` lists the lures in the bags |
 | `SoundBoost.lua` | Louder splash (module 5, setting `loudSplash`, off): with a pole in hand `Sound_EnableSFX` 1, `Sound_SFXVolume` 1, `Sound_MusicVolume` 0, `Sound_AmbienceVolume` 0; the old values in `FishingMasteryCharDB.sounds`, restored when the pole leaves the hand, the setting goes off, at `PLAYER_LOGOUT`, and at the next login without a pole (a copy is never saved over) |
 | `HideUI.lua` | Hidden interface (module 5, setting `hideUI`, off): `SetUIVisibility(false)` at the fishing channel start (not in combat, dead, or when the player hid it); back on moving, combat, death, target, whispers, dialogs, mount, a loot window without auto loot, the pole leaving the hand, loading screens, logout, the setting off; the player's own Alt+Z is left alone; catch lines on `WorldFrame` for 5 s |
 | `HelperStatus.lua` | `/fm helpers`: this login's casting key presses by mode (cast, lure, wait), double-click presses, casts the tracker saved, and each helper setting (memory only); opens the Helpers page |
@@ -283,15 +284,19 @@ your effective skill from the Classic model (green "no getaways", orange "18 % g
 without a base level). The skill bar shows "Fishing 154 / 225" with the skill-ups and a white mark
 at the effective skill with lure and gear; while fish still get away a green tick marks where
 getaways stop (when that is on the bar) and a line shows "with lure 176" and "getaways stop at
-225". The lure row shows the running lure with a mm:ss timer, "No lure needed
+225". The lure row shows the running lure with a mm:ss timer (named with its icon: the lure of
+that bonus in the bags, else the only lure with that bonus; "Lure +50" when two share it and
+none is owned), "No lure needed
 here", or the smart lure's suggestion. Then, between two thin dividers, catches, success (with a
-small grey "%"), and catches per hour (grey while the sample is small), the last catch with icon, quality color, and bite time, and the water's fish as
+small grey "%"), and catches per hour (grey while the sample is small), the last catch with
+icon, quality color, and bite time, and the water's fish as
 icons (bright when caught here, dark when missing, names on hover) with "N missing". The compact
 layout is one line: water, risk, catches, success, skill. A long water name ends in "..." before
 the tag. The water is read again on `ZONE_CHANGED`, `ZONE_CHANGED_INDOORS`, `ZONE_CHANGED_NEW_AREA`,
 skill changes, and attempt ends (the lure tick keeps it). The tooltip (Draft 6): the session, its
 casts and rates with ranges, getaways here (Classic at your skill, yours in the skill band, none
-from skill), the best lure, and the explanations with Shift. The setting "Water line" leaves the
+from skill), in risky water the best lure in the bags ("on the pole" when it runs), and the
+explanations with Shift. The setting "Water line" leaves the
 water out. Two small buttons at the top right (at the right end of the compact line) switch
 between the card and the compact line (saved like the Settings page) and stop the session now
 (the summary shows as after an idle end; the next cast starts a new session).
@@ -503,6 +508,7 @@ do not see it.
 | `/fm dev clear`              | Removes `dev.stress` and `dev.lines`                         |
 | `/fm dev capture [on\|off\|clear]` | Raw capture switch; without an argument, a summary of the captured aura IDs and loot sources |
 | `/fm dev ui`                 | UI API check: opens the test window, prints one line per API (ok, missing, error with the text), and keeps the results in `dev.ui`; "Bar gradient" says whether bars get the gradient or the flat fallback |
+| `/fm dev lure`               | Lure check: prints the running lure's enchant ID with the data's bonus and time left, keeps one entry per ID in `dev.lures` |
 | `/fm dev area [clear]`       | Area API check at the current spot: prints the readings and the area the lookup resolves, appends them to `dev.area.runs` (30 kept); `clear` removes the runs |
 | `/fm dev journal [clear]`    | Journal API check: prints and appends a run to `dev.journal.runs` (10 kept); while the dev flag is on, every opened trade skill window adds a read to `dev.journal.trades` (10 kept); `clear` removes both |
 

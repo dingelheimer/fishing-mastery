@@ -4,7 +4,7 @@
 -- else the strongest usable one. No frame or API calls.
 local _, ns = ...
 
-local type, ipairs = type, ipairs
+local type, ipairs, pairs = type, ipairs, pairs
 local Getaway = ns.Getaway
 
 local LureChoice = {}
@@ -76,4 +76,31 @@ function LureChoice.Choose(input)
         return result("none", "other-running", lure)
     end
     return result("lure", reason, lure)
+end
+
+-- The item of a running lure from its bonus (the client reports only the lure enchant, which the
+-- journal maps to a bonus; Story 10.3): a lure of that bonus in the bags (several kinds: the
+-- lowest item ID, as Choose picks among equal bonuses), else the only lure of the journal with
+-- that bonus, else nil (two lures share it). owned: { { id, bonus } } or nil; lures: the
+-- journal's lures ({ [id] = { bonus, ... } }).
+function LureChoice.Running(bonus, owned, lures)
+    if type(bonus) ~= "number" then
+        return nil
+    end
+    local best
+    for _, lure in ipairs(owned or {}) do
+        if lure.bonus == bonus and (not best or lure.id < best) then
+            best = lure.id
+        end
+    end
+    if best then
+        return best
+    end
+    local only, count = nil, 0
+    for id, lure in pairs(lures or {}) do
+        if lure[1] == bonus then
+            only, count = id, count + 1
+        end
+    end
+    return count == 1 and only or nil
 end

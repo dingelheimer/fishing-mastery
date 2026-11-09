@@ -90,7 +90,9 @@ describe("FishingMastery HUD boot", function()
         w.game.lure, w.game.modifier = 263, 25
         w.catch(5000, 8)
         local c = card()
-        assert.truthy(plain(c.lureText):find("^Lure"))
+        -- Enchant 263 is +25: only Shiny Bauble has it, named from the item cache (the harness
+        -- names every item the same) with the bonus (Story 10.3).
+        assert.are.equal("Raw Slitherskin Mackerel +25", plain(c.lureText))
         assert.truthy(c.lureTimer:GetText():find("^%d+:%d%d$"))
         assert.is_true(c.mark:IsShown()) -- effective 36 of 75
         w.runTimers(5009.5) -- the attempt's grace timer and the first tick
@@ -198,7 +200,7 @@ describe("FishingMastery HUD boot", function()
         assert.is_true(tip.shown)
         assert.truthy(tip.lines[2]:find("^This session, %d+ min$"))
         assert.are.equal("Catches = 12 of 12 casts", tip.lines[3])
-        assert.truthy(tip.lines[4]:find("^Success rate = 100 %% |cff8c8c8c%(76 %- 100%)|r$"))
+        assert.truthy(tip.lines[4]:find("^Success = 100 %% |cff8c8c8c%(76 %- 100%)|r$"))
         assert.are.equal("Hold Shift for how this is counted", tip.lines[#tip.lines])
         -- An open tooltip follows the card (owner review, Story 9.10: 126 on the card, 127 in a
         -- tooltip drawn seconds earlier).
