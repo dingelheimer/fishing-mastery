@@ -1,13 +1,12 @@
 -- Pure logic: the Fish tab of the journal window from a JournalModel model: the filtered list rows
--- (group, caught or not, plain-text search on the item name), the progress line, and the detail
--- lines of the selected fish (with the season and whether it is on now, own catches by month, and
--- the day/night tag with own catches by server hour). Not-caught rows are marked (dimmed icon,
--- grey cells, "not caught") but keep every column filled (owner decision 2, 2026-11-06). No frame
--- or API calls.
+-- (group, caught or not, plain-text search on the item name), the progress line, and the place
+-- names the detail pane shares (JournalDetail.lua). Not-caught rows are marked (dimmed icon, grey
+-- cells, "not caught") but keep every column filled (owner decision 2, 2026-11-06). No frame or
+-- API calls.
 local _, ns = ...
 
-local format, ipairs, find, lower, min, concat, type, tostring =
-    string.format, ipairs, string.find, string.lower, math.min, table.concat, type, tostring
+local format, ipairs, find, lower, type, tostring =
+    string.format, ipairs, string.find, string.lower, type, tostring
 local L, StatsTables = ns.L, ns.StatsTables
 
 local Style = ns.Style
@@ -46,15 +45,20 @@ function JournalTable.ItemText(id, info, caught)
     )
 end
 
--- Place name of an area: "Subzone, Zone" for a subzone, the zone name otherwise.
-local function areaName(input, area)
-    local info = input.areas and input.areas:Info(area)
+-- Place name of an area: "Subzone, Zone" for a subzone (only the subzone when short), the zone
+-- name otherwise.
+function JournalTable.AreaName(input, area, short)
     local name = input.areaName(area) or tostring(area)
+    if short then
+        return name
+    end
+    local info = input.areas and input.areas:Info(area)
     local zone = info and info.zone and input.areaName(info.zone)
     return zone and format(L.JOURNAL_SUBZONE, name, zone) or name
 end
 
-local function placeName(input, map, sub)
+-- Place of a first catch: "Subzone, Zone" when the subzone text is known, else the zone.
+function JournalTable.PlaceName(input, map, sub)
     local zone = input.mapName(map) or L.JOURNAL_NO_PLACE
     if type(sub) == "string" and sub ~= "" then
         return format(L.JOURNAL_SUBZONE, sub, zone)
@@ -98,7 +102,7 @@ function JournalTable.Rows(model, input, filters)
             if entry.caught and entry.best then
                 where = input.mapName(entry.best)
             elseif entry.places[1] then
-                where = areaName(input, entry.places[1].area)
+                where = JournalTable.AreaName(input, entry.places[1].area)
             end
             rows[#rows + 1] = {
                 id = entry.id,
@@ -141,133 +145,4 @@ function JournalTable.Bar(model)
         lines = lines,
         pending = model.pending > 0 and format(L.JOURNAL_PENDING, model.pending) or nil,
     }
-end
-
-local function pct(x)
-    local value = x * 100
-    if value < 1 then
-        return format("%.1f %%", value)
-    end
-    return format("%d %%", value + 0.5)
-end
-
--- Detail lines of one entry. input as for Rows plus formatDate(t), spellName(id),
--- ownShare(area, id) -> k, n (own catches of the item and all catches in that area) or nil,
--- recipe(spell) -> the RecipeModel entry, known(spell) -> true when known (optional),
--- formatMonthDay(month, day).
--- Own catches by month (every caught fish) and, for the day/night fish, the guides' claim with
--- the own catches by realm hour; "unconfirmed" below the grey threshold (Statistics Methods).
-local function timeLines(entry, input, add)
-    local months = {}
-    for month = 1, 12 do
-        local n = entry.months and entry.months[month]
-        if type(n) == "number" and n > 0 then
-            months[#months + 1] = format(L.JOURNAL_D_MONTH, input.monthName(month), n)
-        end
-    end
-    if #months > 0 then
-        add(L.JOURNAL_D_MONTHS, concat(months, ", "))
-    end
-    if not entry.time then
-        return
-    end
-    local byHour, total = ns.Season.Hours(entry.hours, input.hourOffset)
-    local need = input.thresholds.greyBelow
-    add(
-        L.JOURNAL_D_TIME,
-        L["JOURNAL_TIME_" .. entry.time],
-        total < need and format(L.JOURNAL_D_TIME_UNCONFIRMED, total, need)
-            or format(L.JOURNAL_D_TIME_OWN, total)
-    )
-    local hours = {}
-    for hour = 0, 23 do
-        if byHour[hour] > 0 then
-            hours[#hours + 1] = format(L.JOURNAL_D_HOUR, hour, byHour[hour])
-        end
-    end
-    if #hours > 0 then
-        add(L.JOURNAL_D_HOURS, concat(hours, ", "))
-    end
-end
-
-function JournalTable.Detail(entry, input)
-    if not entry then
-        return { L.JOURNAL_SELECT }
-    end
-    local info = input.info(entry.id)
-    local lines = { JournalTable.ItemText(entry.id, info, entry.caught) }
-    local function add(...)
-        lines[#lines + 1] = format(...)
-    end
-    add("%s", L["JOURNAL_GROUP_" .. entry.group])
-    if entry.new then
-        add("%s", L.JOURNAL_D_NEW)
-    end
-    if entry.questOnly then
-        add("%s", L.JOURNAL_D_QUEST)
-    end
-    if entry.caught then
-        add(L.JOURNAL_D_CAUGHT, entry.n, entry.qty or entry.n)
-        if entry.first then
-            add(
-                L.JOURNAL_D_FIRST,
-                input.formatDate(entry.first),
-                placeName(input, entry.firstMap, entry.firstSub)
-            )
-        end
-        if entry.best then
-            add(L.JOURNAL_D_BEST, input.mapName(entry.best) or L.JOURNAL_NO_PLACE)
-        end
-    else
-        add("%s", L.JOURNAL_D_NOT_CAUGHT)
-    end
-    if entry.base and entry.base < 1 then
-        add("%s", L.JOURNAL_D_SKILL_LOW)
-    elseif entry.base then
-        add(L.JOURNAL_D_SKILL, entry.base, entry.safe)
-    else
-        add("%s", L.JOURNAL_D_NO_SKILL)
-    end
-    if #entry.places > 0 then
-        add("%s", L.JOURNAL_D_WHERE)
-        for _, place in ipairs(entry.places) do
-            local k, n = input.ownShare(place.area, entry.id)
-            local name = areaName(input, place.area)
-            if n and n > 0 then
-                add(L.JOURNAL_D_PLACE_OWN, name, pct(place.chance / 100), pct(k / n), k, n)
-            else
-                add(L.JOURNAL_D_PLACE, name, pct(place.chance / 100))
-            end
-        end
-        if entry.placeCount > #entry.places then
-            add(L.JOURNAL_D_MORE, entry.placeCount - #entry.places)
-        end
-    else
-        add("%s", L.JOURNAL_D_NO_WHERE)
-    end
-    if #entry.recipes > 0 then
-        add("%s", L.JOURNAL_D_RECIPES)
-        for i = 1, min(#entry.recipes, 6) do
-            local spell = entry.recipes[i]
-            local recipe = input.recipe(spell)
-            local skill = recipe and recipe.profession and L["JOURNAL_SKILL_" .. recipe.profession]
-            add(
-                input.known and input.known(spell) and L.JOURNAL_D_RECIPE_KNOWN
-                    or L.JOURNAL_D_RECIPE,
-                input.spellName(spell) or format(L.JOURNAL_SPELL_LOADING, spell),
-                skill or L.JOURNAL_NO_PLACE
-            )
-        end
-    end
-    local season = entry.season
-    if season then
-        local start = input.formatMonthDay(season.month, season.day)
-        add(L.JOURNAL_D_SEASON, L["JOURNAL_SEASON_" .. season.season], start, season.days)
-        local now = input.inSeason and input.inSeason(season)
-        if now ~= nil then
-            add("%s", now and L.JOURNAL_D_SEASON_IN or L.JOURNAL_D_SEASON_OUT)
-        end
-    end
-    timeLines(entry, input, add)
-    return lines
 end

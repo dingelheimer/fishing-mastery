@@ -6,7 +6,8 @@
   tooltip shows "Fishing Mastery" with "caught N" and your best water; the minimap button shows
   the session, your Fishing skill, and the click hints; chart bars and calendar days list their
   numbers as pairs. Longer explanations (settings, helpers, comparisons) appear while Shift is
-  held.
+  held. The fish details in the Journal are label and value pairs with the places and recipes as
+  small tables instead of a block of sentences.
 - Fixed: in places the game reports as the continent, such as the cave outside Wailing Caverns,
   the HUD named "Kalimdor" and knew no risk or fish; new casts there were saved under Kalimdor.
   Both now use the zone shown on screen (The Barrens). Casts saved before stay as they are.

@@ -167,6 +167,49 @@ describe("FishingMastery tooltips", function()
         end)
     end)
 
+    describe("detail pane", function()
+        it(
+            "draws gold labels with right-aligned values, tables, and hides what does not fit",
+            function()
+                local ns = addon.load(
+                    { "Locale.lua", "LocaleUI.lua", "Style.lua", "DetailPane.lua" },
+                    nil,
+                    "FishingMastery"
+                )
+                local env = fakeui.new()
+                local pane = ns.DetailPane.Create(env, env.CreateFrame("Frame"), 0, 0, 246, 70)
+                pane:Draw(function(b)
+                    b:Title("Raw Brilliant Smallfish")
+                    b:Pair("Caught", "28")
+                    b:Header({ "Where it bites", "Classic", "Yours" })
+                    b:Row({ "Sen'jin Village", "59 %", "1/2" }, { nil, nil, ns.Style.GREY })
+                    b:Line("never shown: below the pane's 70 pixels")
+                end)
+                assert.are.same({
+                    "Raw Brilliant Smallfish",
+                    "Caught",
+                    "28",
+                    "Where it bites",
+                    "Classic",
+                    "Yours",
+                    "Sen'jin Village",
+                    "59 %",
+                    "1/2",
+                }, pane:Texts())
+                local label, value, grey = pane.cells[2], pane.cells[3], pane.cells[9]
+                assert.are.same(ns.Style.GOLD, label.color)
+                assert.are.same({ "LEFT", "RIGHT" }, { label.justifyH, value.justifyH })
+                assert.are.same(ns.Style.GREY, grey.color)
+                assert.is_false(value.wordWrap)
+                -- A redraw reuses the font strings and shows only the new rows.
+                pane:Draw(function(b)
+                    b:Line("Click a fish to see its details.", ns.Style.GREY)
+                end)
+                assert.are.same({ "Click a fish to see its details." }, pane:Texts())
+            end
+        )
+    end)
+
     describe("source rule", function()
         -- Lua comments are removed first, so a comment may still name the calls.
         local function code(file)

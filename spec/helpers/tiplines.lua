@@ -13,10 +13,15 @@ function M.lines(draw, shift)
     local function add(_, text)
         out[#out + 1] = plain(text)
     end
-    builder.Title, builder.Header, builder.Line, builder.Hint = add, add, add, add
+    builder.Title, builder.Line, builder.Hint = add, add, add
     function builder.Pair(_, label, value)
         out[#out + 1] = plain(label) .. " = " .. plain(value)
     end
+    -- A Tip header is a line; a detail pane header or row (cells) is joined by " | ".
+    function builder.Header(_, cells)
+        out[#out + 1] = type(cells) == "table" and plain(table.concat(cells, " | ")) or plain(cells)
+    end
+    builder.Row = builder.Header
     function builder.Gap()
         out[#out + 1] = " "
     end

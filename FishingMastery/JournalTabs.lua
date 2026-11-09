@@ -7,7 +7,7 @@
 -- fishing item, rank, and enchant with what the player has, and the best setup).
 local _, ns = ...
 
-local concat, ipairs, tonumber = table.concat, ipairs, tonumber
+local ipairs, tonumber = ipairs, tonumber
 local L, StatsFrame, JournalTable, WatersTable, RecipeTable, GearTable =
     ns.L, ns.StatsFrame, ns.JournalTable, ns.WatersTable, ns.RecipeTable, ns.GearTable
 
@@ -19,6 +19,8 @@ local JournalTabs = {}
 ns.JournalTabs = JournalTabs
 
 JournalTabs.LIST_WIDTH = 530 -- the fish list; the details fill the rest of the panel
+JournalTabs.DETAIL_WIDTH = StatsFrame.PANEL_WIDTH - JournalTabs.LIST_WIDTH - 16
+JournalTabs.DETAIL_HEIGHT = ns.JournalFrame.HEIGHT - ns.JournalFrame.PANEL_TOP - 14 - 34
 JournalTabs.WATERS_LIST = 200 -- height of the waters list above the selected water's fish
 JournalTabs.RECIPES_TAB = 3
 
@@ -41,13 +43,14 @@ JournalTabs.fish = {
         end)
         self.fishEmpty = list:CreateFontString(nil, "OVERLAY", "GameFontDisable")
         self.fishEmpty:SetPoint("TOP", list, "TOP", 0, -60)
-        local detail = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        detail:SetPoint("TOPLEFT", panel, "TOPLEFT", JournalTabs.LIST_WIDTH + 12, -2)
-        detail:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -4, 30)
-        detail:SetJustifyH("LEFT")
-        detail:SetJustifyV("TOP")
-        detail:SetWordWrap(true)
-        self.fishDetail = detail
+        self.fishDetail = ns.DetailPane.Create(
+            self.env,
+            panel,
+            JournalTabs.LIST_WIDTH + 12,
+            -4,
+            JournalTabs.DETAIL_WIDTH,
+            JournalTabs.DETAIL_HEIGHT
+        )
         -- Link to the Recipes tab, filtered to the selected fish.
         self.fishRecipes = ns.Controls.Button(self.env, panel, 160, function()
             local recipes = self.recipeFilters
@@ -66,7 +69,7 @@ JournalTabs.fish = {
         self.fishList:SetRows(rows, keepScroll)
         self.fishEmpty:SetText(#rows == 0 and L.JOURNAL_EMPTY or "")
         local entry = filters.selected and findEntry(model, filters.selected)
-        self.fishDetail:SetText(concat(JournalTable.Detail(entry, input), "\n"))
+        self.fishDetail:Draw(ns.JournalDetail.Draw(entry, input))
         self.fishRecipes:SetShown(entry ~= nil and #entry.recipes > 0)
         local bar = JournalTable.Bar(model)
         self.progress:SetText(bar.pending or "")

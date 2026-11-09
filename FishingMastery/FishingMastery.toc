@@ -53,6 +53,7 @@ RowTip.lua
 HudCardModel.lua
 StatsTables.lua
 JournalTable.lua
+JournalDetail.lua
 RecipeTable.lua
 GearTable.lua
 WatersTable.lua
@@ -102,6 +103,7 @@ StatsList.lua
 BarChart.lua
 LineChart.lua
 Heatmap.lua
+DetailPane.lua
 Controls.lua
 OverviewPage.lua
 HudActions.lua

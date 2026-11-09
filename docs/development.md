@@ -116,6 +116,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `BarChart.lua`  | Bar chart widget: pooled bars, range marks, grid and axis labels, value and x labels, hover tooltip per bar (`Tip` draw from the chart model) |
 | `LineChart.lua` | Line chart widget: pooled `CreateLine` segments (squares without it), grid and axis labels, hover tooltip per point |
 | `Heatmap.lua`   | Calendar heatmap widget: 53 × 7 day cells with weekday labels and a tooltip per day |
+| `DetailPane.lua` | Detail pane widget in the tooltip and table style: title, lines, gold label and right-aligned value pairs, gaps, three-column tables; nothing wraps, rows past the height are hidden |
 | `Controls.lua` | Shared controls of the pages: dropdown-styled button, the same look without the arrow for actions, framed box, small status bar, check box |
 | `MainWindow.lua` | The Fishing Mastery window: page registry (`MainWindow.Register`), portrait frame (template fallbacks), side tabs on the right edge, page name, last page and position per character, Escape |
 | `StatsWindow.lua` | Statistics page `/fm stats`: tab, scope, sort, filter, and bite group state; draws only the shown tab; redraws when item names load and while the history is counted |
@@ -123,7 +124,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `StatsFrame.lua` | Statistics page layout: scope dropdown, status line, one panel per tab, 8 bottom tabs |
 | `OverviewPage.lua` | Overview frames: Fishing panel with the skill bar, headline numbers, where casts end, most caught |
 | `StatsTabs.lua` | Build and draw of the Overview, Fish, and Zones tabs (with the click hint) |
-| `JournalTable.lua` | Fish tab of the journal: filtered rows (group, caught or not, plain-text search) with icon, quality color, season or night tag, dimmed icon and grey row when not caught; the header bar (fish caught of total, every group in its tooltip); detail lines (pure) |
+| `JournalTable.lua` | Fish tab of the journal: filtered rows (group, caught or not, plain-text search) with icon, quality color, season or night tag, dimmed icon and grey row when not caught; the header bar (fish caught of total, every group in its tooltip); the place names shared with the detail pane (pure) |
+| `JournalDetail.lua` | The Fish tab's detail pane: the fish as title, gold label and value pairs (caught, first catch, skill, season, time of day, own catches by hour and month), the places table (Classic and own share) and the recipes table (pure) |
 | `JournalWindow.lua` | Journal page `/fm journal`: tab (saved per character), scope (account-wide by default), filters, selection; builds the model once per draw |
 | `JournalInputs.lua` | Inputs of the Journal table builders: names, seasons, recipes, known spells, stock, own share per area, dates |
 | `JournalFrame.lua` | Journal page layout: progress bar in the page header, scope dropdown, info line, filter row (dropdowns and the search box), panels, bottom tabs |
@@ -390,12 +392,13 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
   caught items new in Forever, for all characters (scope button: this character). Not-caught
   fish are marked (dimmed icon, grey row, "not caught") but show all their information. Filters:
   group, caught or not, and a search box (plain text in the item name). A click on a row shows
-  the details: count, first catch date and place, most caught zone, the skill to catch it and
-  to stop getaways (Classic model), the top 5 places by Classic share with the own share there,
-  the recipes that use it, and the Classic season with "in season now" or not (Classic
+  the details on the right as label and value pairs and two small tables (no sentences): count,
+  first catch date and place, most caught zone, the skill to catch it and
+  to stop getaways (Classic model), the top 5 places by Classic share with the own share there
+  (grey counts below 10 casts), up to 4 recipes that use it, and the Classic season with "in season now" or not (Classic
   window in server time). Caught fish list your catches by month (UTC). Raw Nightfin Snapper
   and Raw Sunscale Salmon carry the guides' day or night claim, "unconfirmed" below 30 catches,
-  with your catches by server hour. A bar in the page header shows the fish caught of all fish;
+  with your busiest server hours. A bar in the page header shows the fish caught of all fish;
   its tooltip lists every group. Filters and buttons have the dropdown look.
   The **Waters** tab lists every water of the Classic data (subzones under their zone, dungeons
   last) and places you fished that have no reference data, with the skill to catch there and to
