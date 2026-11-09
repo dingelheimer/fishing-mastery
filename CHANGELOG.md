@@ -4,6 +4,10 @@
 
 - Changed: bars in the Statistics pages use the softer colors of the drafts with a slight
   gradient; getaway charts are orange.
+- Changed: the active fishing time reads "4 h 44 min" with small units, and the notes under the
+  Overview's lower panels sit right below their rows. The HUD card shows "%" small next to the
+  success number, thin lines between its parts, and a green tick on the skill bar where getaways
+  stop.
 
 ## 1.1.0
 

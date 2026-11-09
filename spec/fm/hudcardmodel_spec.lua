@@ -139,8 +139,27 @@ describe("FishingMastery HUD card", function()
         assert.are.equal(HudCardModel.LURE_ICON, card.lure.icon)
         assert.are.equal("23", card.numbers[1].value)
         assert.is_false(card.numbers[2].grey) -- 35 fair casts: full
+        -- Story 10.2: "%" as a small unit, the compact line keeps "66 %", the green tick at 225.
+        local success = card.numbers[2]
+        assert.are.same({ "%", nil }, { success.unit, card.numbers[1].unit })
+        assert.truthy(success.value:find("^%d+$"))
+        assert.truthy(plain(card.compact):find("|  " .. success.value .. " %  |", 1, true))
+        assert.are.equal(1, card.bar.safe) -- getaways stop at the bar's end
         assert.are.equal("3 missing", card.missing)
         assert.is_nil(card.last)
+    end)
+
+    it("draws the green tick only in risky water and only on the bar", function()
+        local m = model({ catch = 3 }, { rank = 100 })
+        local function safe(max, risk)
+            local zone = { name = "W", risk = risk }
+            return HudCardModel.Build({ model = m, max = max, zone = zone }).bar.safe
+        end
+        local risky = Getaway.Risk(nil, 100, 90) -- base 90: fish still get away at 100
+        assert.are.equal(risky.model.stopsAt / 225, safe(225, risky))
+        assert.is_nil(safe(150, risky)) -- past the bar's end (cap 150)
+        assert.is_nil(safe(225, Getaway.Risk(nil, 100, 1))) -- no getaways: no tick
+        assert.is_nil(HudCardModel.Build({ model = m, max = 225 }).bar.safe) -- no water line
     end)
 
     it(
@@ -219,7 +238,8 @@ describe("FishingMastery HUD card", function()
         base.fish = { { id = 1, caught = true }, { id = 2, caught = false } }
         base.missing = "1 missing"
         ns.HudCard.Draw(card, base, "card")
-        assert.are.equal(short + 14 + 22 + 22, card.card.height) -- risk line, last catch, fish
+        -- risk line, the divider under the numbers, last catch, fish
+        assert.are.equal(short + 14 + 4 + 22 + 22, card.card.height)
         assert.is_true(card.fishSlots[2]:IsShown())
         assert.is_false(card.fishSlots[3]:IsShown())
         assert.is_nil(card.cardButtons) -- no buttons without actions (the Settings preview)

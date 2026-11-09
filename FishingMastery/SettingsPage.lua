@@ -237,7 +237,7 @@ function SettingsPage:Draw()
         end
     end
     local layout = Options.Get(self.settings, "hudLayout")
-    HudCard.Draw(self.preview, HudCard.Sample(), layout)
+    HudCard.Draw(self.preview, ns.HudCardModel.Sample(), layout)
     local view = HudCard.Shown(self.preview, layout)
     local scale = Options.Get(self.settings, "hudScale")
     view:SetScale(scale > SettingsPage.PREVIEW_MAX and SettingsPage.PREVIEW_MAX or scale)

@@ -92,7 +92,8 @@ describe("FishingMastery overview model", function()
         assert.truthy(rate.sub:find("^likely %d+ %- %d+$"))
         assert.are.equal("/ h", rate.unit)
         assert.are.equal("in 3 sessions", active.sub)
-        assert.truthy(active.value:find("^0 h %d%d min$"))
+        assert.truthy(active.value:find("^%d+$")) -- under an hour: minutes only
+        assert.are.same({ "min", nil }, { active.unit, active.value2 })
         assert.is_false(model.empty)
 
         local rows = {}

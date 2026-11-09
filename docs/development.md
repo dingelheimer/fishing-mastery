@@ -59,7 +59,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
 | `Getaway.lua`   | Getaway risk: Classic model at an effective skill and base, own rate per resolved area and skill band with its range, and the comparison (pure) |
 | `HudModel.lua`  | HUD numbers from the session, rank, lure, and item; short formats; count/grey rules (pure) |
-| `HudCardModel.lua` | The HUD card of Draft 5 (water and risk tag, skill bar with skill-ups and the effective-skill mark, risk line, lure row with timer or suggestion, three numbers, last catch, the water's fish), the compact line, and the HUD tooltip of Draft 6 (pure) |
+| `HudCardModel.lua` | The HUD card of Draft 5 (water and risk tag, skill bar with skill-ups and the effective-skill mark, risk line, lure row with timer or suggestion, three numbers with "%" as a unit, last catch, the water's fish, the green getaway-free tick), the compact line, the HUD tooltip of Draft 6, and the Settings preview sample (pure) |
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Scope model: per-character and merged numbers, favorite zone, session records, calendar days, the merged view (pure) |
 | `JournalModel.lua` | Journal model: entries of the four journal groups with own catches (account-wide or one character), places, base and no-getaway skill, recipes, season, quest-only flag, new-in-Forever items by Forever class, progress per group, gear for a skill gap (pure) |
@@ -139,7 +139,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click main window, Shift + left click its Journal page, right click settings, tooltip of Draft 6, hide setting |
 | `SettingsPanel.lua` | The game's Options entry as a launcher: one button that opens the Settings page (canvas category, else a button initializer); `/fm settings`, `/fm minimap` |
-| `HudCard.lua` | HUD views of Draft 5 in the tooltip look: the card with stacked rows (fish icons with names on hover; a long water name cut before the tag) and the compact line; the sample for the Settings preview |
+| `HudCard.lua` | HUD views of Draft 5 in the tooltip look: the card with stacked rows and two dividers around the numbers (small grey units; fish icons with names on hover; a long water name cut before the tag) and the compact line |
 | `SettingsPage.lua` | Settings page of the main window: HUD (with the live preview), Information, Advanced statistics with the data buttons, Defaults with a confirmation |
 | `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing; a chooser (the smart lure) may make the next press a lure use or nothing, asked again in `PreClick`; `OnRelease` listeners (double-click, smart lure) |
 | `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, a lure being applied, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
@@ -281,10 +281,11 @@ copied and adapted, and the probe folder is never loaded or referenced.
 The HUD card names the water you stand in (resolved area, else the map name) with a risk tag at
 your effective skill from the Classic model (green "no getaways", orange "18 % get away", grey "?"
 without a base level). The skill bar shows "Fishing 154 / 225" with the skill-ups and a white mark
-at the effective skill with lure and gear; while fish still get away a line shows "with lure 176"
-and "getaways stop at 225". The lure row shows the running lure with a mm:ss timer, "No lure needed
-here", or the smart lure's suggestion. Then catches, success, and catches per hour (grey while the
-sample is small), the last catch with icon, quality color, and bite time, and the water's fish as
+at the effective skill with lure and gear; while fish still get away a green tick marks where
+getaways stop (when that is on the bar) and a line shows "with lure 176" and "getaways stop at
+225". The lure row shows the running lure with a mm:ss timer, "No lure needed
+here", or the smart lure's suggestion. Then, between two thin dividers, catches, success (with a
+small grey "%"), and catches per hour (grey while the sample is small), the last catch with icon, quality color, and bite time, and the water's fish as
 icons (bright when caught here, dark when missing, names on hover) with "N missing". The compact
 layout is one line: water, risk, catches, success, skill. A long water name ends in "..." before
 the tag. The water is read again on `ZONE_CHANGED`, `ZONE_CHANGED_INDOORS`, `ZONE_CHANGED_NEW_AREA`,
@@ -312,9 +313,11 @@ shown tab. Ranges are in the row tooltips; values from small samples are grey (c
 - **Overview** (of the scope): the Fishing panel (rank name, the skill bar "Fishing 154 / 225"
   with a white mark at the effective skill with lure and gear, the skill points gained since the
   first saved session); four numbers: catches of casts, success rate, catches per hour (each
-  with "likely low - high", grey or counts only for few casts), active fishing time in sessions;
+  with "likely low - high", grey or counts only for few casts), active fishing time in sessions
+  ("4 h 44 min", "12 min" under an hour; units small and grey, each number centered with its unit);
   where casts end (catch, got away, clicked too early, not clicked: count, bar, share of fair
-  casts; cancelled and invalid target grey, counted only); the five most caught items with a bar.
+  casts; cancelled and invalid target grey, counted only); the five most caught items with a bar;
+  each panel's note line right under its rows.
   With all characters the Catches number lists every character in its tooltip.
 - **Fish:** every item with catches (icon, quality color, a season or night tag), share of
   catches, about every (fair casts per catch), dry streak (fair casts since the last one, one

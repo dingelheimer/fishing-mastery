@@ -95,11 +95,14 @@ end
 
 local function numbers(m)
     local success, perHour = m.success, m.perHour
+    local full = success.n > 0 and success.display ~= "count"
     local rate = HudModel.Rate(perHour)
     return {
         { value = Style.Number(m.catches or 0), label = L.PREVIEW_CATCHES },
         {
-            value = HudModel.Percent(success),
+            -- A percent gets "%" as a small unit (Draft 5); counts ("4/5") and "-" have none.
+            value = full and format("%d", pct(success.p)) or HudModel.Percent(success),
+            unit = full and "%" or nil,
             label = L.PREVIEW_SUCCESS,
             grey = success.display ~= "full",
         },
@@ -154,6 +157,7 @@ local function compact(card, m)
         or card.risk.kind == "risk" and Style.ORANGE
         or Style.GREY
     local success = card.numbers[2]
+    local rate = success.unit and success.value .. " " .. success.unit or success.value
     local skill = type(m.rank) == "number" and format(L.HCARD_COMPACT_SKILL, m.rank) or ""
     if (m.skillUps or 0) > 0 then
         skill = skill .. " " .. paint(format("+%d", m.skillUps), Style.GREEN)
@@ -162,7 +166,7 @@ local function compact(card, m)
         paint(card.zone, Style.GOLD),
         paint(card.risk.text, riskColor),
         format(L.HCARD_COMPACT_CATCHES, card.numbers[1].value),
-        success.grey and paint(success.value, Style.GREY) or success.value,
+        success.grey and paint(rate, Style.GREY) or rate,
         skill,
     }
     return concat(parts, paint("  |  ", Style.GREY))
@@ -185,7 +189,40 @@ function HudCardModel.Build(input)
     }
     card.fish, card.missing = fish(input)
     card.compact = compact(card, input.model)
+    -- The green tick where getaways stop, only in risky water and only on the bar.
+    local m = model(zone)
+    if card.riskLine and m.stopsAt <= card.bar.max then
+        card.bar.safe = m.stopsAt / card.bar.max
+    end
     return card
+end
+
+-- The sample of Draft 5 (safe water) for the Settings page preview.
+function HudCardModel.Sample()
+    local gold, green, grey = Style.Hex(Style.GOLD), Style.Hex(Style.GREEN), Style.Hex(Style.GREY)
+    return {
+        zone = L.PREVIEW_ZONE,
+        risk = { text = L.PREVIEW_SAFE, kind = "safe" },
+        bar = { value = 154, max = 225, text = L.PREVIEW_BAR },
+        lure = { text = L.HCARD_NO_LURE_NEEDED, grey = true },
+        numbers = {
+            { value = "8", label = L.PREVIEW_CATCHES },
+            { value = "8/9", label = L.PREVIEW_SUCCESS, grey = true },
+            { value = "-", label = L.PREVIEW_PER_HOUR, grey = true },
+        },
+        compact = "|c"
+            .. gold
+            .. L.PREVIEW_ZONE
+            .. "|r  |c"
+            .. green
+            .. L.PREVIEW_SAFE
+            .. "|r  "
+            .. L.PREVIEW_COMPACT_CATCHES
+            .. "  |c"
+            .. grey
+            .. "8/9|r  "
+            .. L.PREVIEW_COMPACT_SKILL,
+    }
 end
 
 local function getaways(tip, zone)

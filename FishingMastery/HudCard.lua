@@ -1,11 +1,12 @@
 -- The HUD views of Draft 5 (Epic 9): the card in the tooltip look (TooltipBackdropTemplate,
 -- confirmed in Story 9.1) and the compact line. The HUD (Story 9.8) and the Settings page preview
 -- (Story 9.7) draw them. Draw takes a model (HudCardModel.Build):
--- { zone, risk = { text, kind = "safe" | "risk" | "unknown" }, bar = { value, max, text, mark },
---   riskLine = { left, right } or nil, lure = { icon, text, timer, grey, dim },
---   numbers = { { value, label, grey } x3 }, last = { icon, text, color, bite } or nil,
+-- { zone, risk = { text, kind = "safe" | "risk" | "unknown" }, bar = { value, max, text, mark,
+--   safe }, riskLine = { left, right } or nil, lure = { icon, text, timer, grey, dim },
+--   numbers = { { value, unit, label, grey } x3 }, last = { icon, text, color, bite } or nil,
 --   fish = { { id, icon, name, caught } } or nil, missing, compact }.
--- Rows stack from the top; the card is as tall as what it shows. Unnamed, insecure frames only.
+-- Rows stack from the top with thin dividers around the numbers (Story 10.2); the card is as tall
+-- as what it shows. Unnamed, insecure frames only.
 local _, ns = ...
 
 local ipairs = ipairs
@@ -19,6 +20,7 @@ HudCard.WIDTH, HudCard.PAD = 260, 10
 HudCard.COMPACT_HEIGHT = 24
 HudCard.ICON, HudCard.FISH_ICONS = 16, 8
 HudCard.TAG_GAP = 14 -- between the water name and the risk tag
+HudCard.UNIT_GAP = 3 -- between a number and its small unit
 HudCard.DARK = 0.3 -- brightness of a fish icon not caught here yet
 HudCard.BACK = { 0.03, 0.03, 0.06, 0.92 } -- without the template
 HudCard.RISK = {
@@ -36,6 +38,10 @@ local function frame(env, parent, height)
         back:SetColorTexture(HudCard.BACK[1], HudCard.BACK[2], HudCard.BACK[3], HudCard.BACK[4])
     end
     return f
+end
+
+local function color(fs, c)
+    fs:SetTextColor(c[1], c[2], c[3])
 end
 
 local function text(parent, font, justify)
@@ -94,17 +100,27 @@ function HudCard.Create(env, parent, actions)
     card.mark = card.bar:CreateTexture(nil, "OVERLAY")
     card.mark:SetSize(2, 18)
     card.mark:SetColorTexture(1, 1, 1, 1)
+    card.safe = card.bar:CreateTexture(nil, "OVERLAY") -- where getaways stop (green)
+    card.safe:SetSize(2, 18)
+    card.safe:SetColorTexture(Style.GREEN[1], Style.GREEN[2], Style.GREEN[3], 1)
     card.riskLeft = text(f, Style.FONTS.secondary)
     card.riskRight = text(f, Style.FONTS.secondary, "RIGHT")
     card.lureIcon, card.lureText = icon(f), text(f, Style.FONTS.small)
     card.lureTimer = text(f, Style.FONTS.small, "RIGHT")
-    card.divider = f:CreateTexture(nil, "ARTWORK")
-    card.divider:SetSize(HudCard.WIDTH - 2 * HudCard.PAD, 1)
-    card.divider:SetColorTexture(1, 1, 1, 0.12)
+    card.dividers = {}
+    for i = 1, 2 do
+        local line = f:CreateTexture(nil, "ARTWORK")
+        line:SetSize(HudCard.WIDTH - 2 * HudCard.PAD, 1)
+        line:SetColorTexture(1, 1, 1, 0.12)
+        card.dividers[i] = line
+    end
     card.numbers = {}
     for i = 1, 3 do
+        local unit = text(f, Style.FONTS.secondary)
+        color(unit, Style.GREY)
         card.numbers[i] = {
             value = text(f, Style.FONTS.number, "CENTER"),
+            unit = unit,
             label = text(f, Style.FONTS.smallLabel, "CENTER"),
         }
     end
@@ -125,10 +141,6 @@ function HudCard.Create(env, parent, actions)
         card.right = ns.HudActions.WIDTH + 6 -- room the buttons take at the right
     end
     return card
-end
-
-local function color(fs, c)
-    fs:SetTextColor(c[1], c[2], c[3])
 end
 
 local function drawTop(card, model)
@@ -153,6 +165,11 @@ local function drawTop(card, model)
     if bar.mark then
         card.mark:ClearAllPoints()
         card.mark:SetPoint("CENTER", card.bar, "LEFT", bar.mark * (HudCard.WIDTH - 2 * pad), 0)
+    end
+    card.safe:SetShown(bar.safe ~= nil)
+    if bar.safe then
+        card.safe:ClearAllPoints()
+        card.safe:SetPoint("CENTER", card.bar, "LEFT", bar.safe * (HudCard.WIDTH - 2 * pad) - 1, 0)
     end
     local y = -48
     local risky = model.riskLine
@@ -185,14 +202,20 @@ end
 
 local function drawNumbers(card, numbers, y)
     local pad = HudCard.PAD
-    place(card.divider, card, "TOPLEFT", pad, y)
+    place(card.dividers[1], card, "TOPLEFT", pad, y)
     local column = (HudCard.WIDTH - 2 * pad) / 3
     for i, number in ipairs(numbers) do
         local cells = card.numbers[i]
         local x = pad + (i - 0.5) * column - HudCard.WIDTH / 2
-        place(cells.value, card, "TOP", x, y - 6)
-        place(cells.label, card, "TOP", x, y - 28)
         cells.value:SetText(number.value)
+        cells.unit:SetText(number.unit or "")
+        -- The number and its unit are centered as one group.
+        local width = cells.value:GetStringWidth()
+        local unit = number.unit and cells.unit:GetStringWidth() + HudCard.UNIT_GAP or 0
+        place(cells.value, card, "TOP", x - unit / 2, y - 6)
+        cells.unit:ClearAllPoints()
+        cells.unit:SetPoint("BOTTOMLEFT", cells.value, "BOTTOM", width / 2 + HudCard.UNIT_GAP, 2)
+        place(cells.label, card, "TOP", x, y - 28)
         color(cells.value, number.grey and Style.GREY or Style.WHITE)
         cells.label:SetText(number.label)
     end
@@ -253,6 +276,12 @@ function HudCard.Draw(card, model, layout)
     local y = drawTop(card, model)
     y = drawLure(card, model.lure or { text = "" }, y)
     y = drawNumbers(card, model.numbers, y)
+    local below = model.last ~= nil or model.fish ~= nil
+    card.dividers[2]:SetShown(below)
+    if below then
+        place(card.dividers[2], card, "TOPLEFT", HudCard.PAD, y + 2)
+        y = y - 4
+    end
     y = drawLast(card, model.last, y)
     y = drawFish(card, model.fish, model.missing, y)
     card.card:SetHeight(-y + HudCard.PAD - 4)
@@ -261,32 +290,4 @@ end
 -- The frame of the shown view (for scale, opacity, and placement).
 function HudCard.Shown(card, layout)
     return layout == "compact" and card.compact or card.card
-end
-
--- The sample of Draft 5 (safe water) for the Settings page preview.
-function HudCard.Sample()
-    local gold, green, grey = Style.Hex(Style.GOLD), Style.Hex(Style.GREEN), Style.Hex(Style.GREY)
-    return {
-        zone = L.PREVIEW_ZONE,
-        risk = { text = L.PREVIEW_SAFE, kind = "safe" },
-        bar = { value = 154, max = 225, text = L.PREVIEW_BAR },
-        lure = { text = L.HCARD_NO_LURE_NEEDED, grey = true },
-        numbers = {
-            { value = "8", label = L.PREVIEW_CATCHES },
-            { value = "8/9", label = L.PREVIEW_SUCCESS, grey = true },
-            { value = "-", label = L.PREVIEW_PER_HOUR, grey = true },
-        },
-        compact = "|c"
-            .. gold
-            .. L.PREVIEW_ZONE
-            .. "|r  |c"
-            .. green
-            .. L.PREVIEW_SAFE
-            .. "|r  "
-            .. L.PREVIEW_COMPACT_CATCHES
-            .. "  |c"
-            .. grey
-            .. "8/9|r  "
-            .. L.PREVIEW_COMPACT_SKILL,
-    }
 end

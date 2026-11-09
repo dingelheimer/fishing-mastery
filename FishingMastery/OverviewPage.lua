@@ -15,6 +15,8 @@ OverviewPage.SKILL_HEIGHT, OverviewPage.NUMBERS_HEIGHT, OverviewPage.GAP = 70, 7
 OverviewPage.BAR_X, OverviewPage.BAR_HEIGHT = 240, 18
 OverviewPage.ROW_TOP, OverviewPage.ROW = -32, 22
 OverviewPage.OUT_BAR, OverviewPage.TOP_BAR = 120, 80 -- bar lengths in the two lower panels
+OverviewPage.LEGEND_GAP = 8 -- between the last row and the legend line
+OverviewPage.UNIT_GAP, OverviewPage.PAIR_GAP = 4, 8 -- number to unit, unit to the next number
 
 local function text(parent, font, point, x, y, width, justify)
     local fs = parent:CreateFontString(nil, "OVERLAY", font)
@@ -80,9 +82,14 @@ local function numbersPanel(page, env, panel, width)
         local cell = env.CreateFrame("Frame", nil, box)
         cell:SetPoint("TOPLEFT", box, "TOPLEFT", (i - 1) * column, 0)
         cell:SetSize(column, OverviewPage.NUMBERS_HEIGHT)
+        -- Up to two number and unit pairs ("4 h 44 min"), centered as one group (drawNumbers).
         cell.value = text(cell, Style.FONTS.big, "TOP", 0, -10, nil, "CENTER")
         cell.unit = cell:CreateFontString(nil, "OVERLAY", Style.FONTS.secondary)
-        cell.unit:SetPoint("BOTTOMLEFT", cell.value, "BOTTOMRIGHT", 4, 2)
+        cell.unit:SetPoint("BOTTOMLEFT", cell.value, "BOTTOMRIGHT", OverviewPage.UNIT_GAP, 2)
+        cell.value2 = cell:CreateFontString(nil, "OVERLAY", Style.FONTS.big)
+        cell.value2:SetPoint("BOTTOMLEFT", cell.unit, "BOTTOMRIGHT", OverviewPage.PAIR_GAP, -2)
+        cell.unit2 = cell:CreateFontString(nil, "OVERLAY", Style.FONTS.secondary)
+        cell.unit2:SetPoint("BOTTOMLEFT", cell.value2, "BOTTOMRIGHT", OverviewPage.UNIT_GAP, 2)
         cell.label = text(cell, Style.FONTS.label, "TOP", 0, -42, column - 8, "CENTER")
         cell.sub = text(cell, Style.FONTS.secondary, "TOP", 0, -57, column - 8, "CENTER")
         page.numbers[i] = cell
@@ -124,6 +131,11 @@ local function barTexture(box, x, y)
     return fill
 end
 
+-- The legend line right under the last of rows rows (Story 10.2).
+local function legendY(rows)
+    return OverviewPage.ROW_TOP - rows * OverviewPage.ROW - OverviewPage.LEGEND_GAP
+end
+
 local function outcomePanel(page, env, panel, x, top, width, height)
     local box = Controls.Box(env, panel, L.OV_WHERE)
     box:SetPoint("TOPLEFT", panel, "TOPLEFT", x, -top)
@@ -138,8 +150,10 @@ local function outcomePanel(page, env, panel, x, top, width, height)
             share = text(box, Style.FONTS.small, "TOPRIGHT", -12, y - 3, 50, "RIGHT"),
         }
     end
-    local legend = text(box, Style.FONTS.secondary, "BOTTOMLEFT", 12, 8, width - 24)
+    local legend = text(box, Style.FONTS.secondary, "TOPLEFT", 12, legendY(#page.outcomeRows))
+    legend:SetWidth(width - 24)
     legend:SetText(L.OV_GREY_ROWS)
+    page.outcomeLegend = legend
 end
 
 local function topPanel(page, env, panel, x, top, width, height)
@@ -161,8 +175,10 @@ local function topPanel(page, env, panel, x, top, width, height)
     end
     page.topEmpty = text(box, Style.FONTS.secondary, "TOPLEFT", 12, OverviewPage.ROW_TOP - 3)
     page.topEmpty:SetText(L.OV_NONE_CAUGHT)
-    local hint = text(box, Style.FONTS.secondary, "BOTTOMLEFT", 12, 8, width - 24)
+    local hint = text(box, Style.FONTS.secondary, "TOPLEFT", 12, legendY(#page.topRows))
+    hint:SetWidth(width - 24)
     hint:SetText(L.OV_ALL_FISH)
+    page.topHint = hint
 end
 
 -- Creates the Overview frames on panel (width x height pixels); page holds them.
@@ -201,6 +217,22 @@ local function drawNumbers(page, numbers)
         cell.value:SetText(number.value)
         color(cell.value, number.grey and Style.GREY or Style.WHITE)
         cell.unit:SetText(number.unit or "")
+        cell.value2:SetText(number.value2 or "")
+        cell.unit2:SetText(number.unit2 or "")
+        -- Center the whole group: shift the first number left by half of what follows it.
+        local after = 0
+        if number.unit then
+            after = OverviewPage.UNIT_GAP + cell.unit:GetStringWidth()
+        end
+        if number.value2 then
+            after = after
+                + OverviewPage.PAIR_GAP
+                + cell.value2:GetStringWidth()
+                + OverviewPage.UNIT_GAP
+                + cell.unit2:GetStringWidth()
+        end
+        cell.value:ClearAllPoints()
+        cell.value:SetPoint("TOP", cell, "TOP", -after / 2, -10)
         cell.label:SetText(number.label)
         cell.sub:SetText(number.sub or "")
     end

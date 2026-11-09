@@ -87,13 +87,21 @@ local function rateNumber(perHour)
     }
 end
 
-local function activeNumber(seconds, sessions)
+-- "4 h 44 min" with "h" and "min" as small units (Draft 1); "12 min" under an hour.
+function OverviewModel.Active(seconds, sessions)
     local minutes = floor((seconds or 0) / 60)
-    return {
-        value = format(L.OV_ACTIVE_VALUE, floor(minutes / 60), minutes % 60),
-        label = L.OV_ACTIVE,
-        sub = format(L.OV_SESSIONS, Style.Number(sessions or 0)),
-    }
+    local hours = floor(minutes / 60)
+    local number = hours > 0
+            and {
+                value = format("%d", hours),
+                unit = L.OV_HOURS,
+                value2 = format("%02d", minutes % 60),
+                unit2 = L.OV_MINUTES,
+            }
+        or { value = format("%d", minutes), unit = L.OV_MINUTES }
+    number.label = L.OV_ACTIVE
+    number.sub = format(L.OV_SESSIONS, Style.Number(sessions or 0))
+    return number
 end
 
 local function numbers(summary, sessions)
@@ -105,7 +113,7 @@ local function numbers(summary, sessions)
         },
         successNumber(summary.success),
         rateNumber(summary.perHour),
-        activeNumber(summary.active, sessions),
+        OverviewModel.Active(summary.active, sessions),
     }
 end
 
