@@ -60,7 +60,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `SummaryCardModel.lua` | The summary card (Story 10.5): water and active time, skill line, three numbers between dividers, pairs (casts, outcomes, vendor value), the Caught table (at most 5 rows), the clear zone comparison, drawn into a `DetailPane` (pure) |
 | `Getaway.lua`   | Getaway risk: Classic model at an effective skill and base, own rate per resolved area and skill band with its range, and the comparison (pure) |
 | `HudModel.lua`  | HUD numbers from the session, rank, lure, and item; short formats; count/grey rules (pure) |
-| `HudCardModel.lua` | The HUD card of Draft 5 (water and risk tag, skill bar with skill-ups and the effective-skill mark, risk line, lure row with timer or suggestion, three numbers with "%" as a unit, last catch, the water's fish, the green getaway-free tick), the compact line, the HUD tooltip of Draft 6, and the Settings preview sample (pure) |
+| `HudCardModel.lua` | The HUD card of Draft 5 (water and risk tag, skill bar with skill-ups and the effective-skill mark, risk line, lure row with timer or suggestion, three numbers with "%" as a unit, the session row (time since the first cast, vendor value), last catch, the water's fish, the green getaway-free tick), the compact line, and the Settings preview sample (pure) |
+| `HudCardTip.lua` | The HUD tooltip of Draft 6: the session, casts and rates, getaways here, the best lure in risky water, Shift details (pure) |
 | `StatsView.lua` | Stats window data: one character's totals or all characters merged (days, hours, subzones by text, lure groups, skill bands) (pure) |
 | `StatsModel.lua` | Scope model: per-character and merged numbers, favorite zone, session records, calendar days, the merged view (pure) |
 | `JournalModel.lua` | Journal model: entries of the four journal groups with own catches (account-wide or one character), places, base and no-getaway skill, recipes, season, quest-only flag, new-in-Forever items by Forever class, progress per group, gear for a skill gap (pure) |
@@ -142,7 +143,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Dev.lua`       | `/fm dev` developer tools, load time measurement, raw capture events (dev flag only) |
 | `MinimapButton.lua` | Own minimap button: drag around the edge (angle per character), left click main window, Shift + left click its Journal page, right click settings, tooltip of Draft 6, hide setting |
 | `SettingsPanel.lua` | The game's Options entry as a launcher: one button that opens the Settings page (canvas category, else a button initializer); `/fm settings`, `/fm minimap` |
-| `HudCard.lua` | HUD views of Draft 5 in the tooltip look: the card with stacked rows and two dividers around the numbers (small grey units; fish icons with names on hover; a long water name cut before the tag) and the compact line |
+| `HudCard.lua` | HUD views of Draft 5 in the tooltip look: the card with stacked rows and two dividers around the numbers (small grey units; the session row under them; a long water name cut before the tag) and the compact line |
+| `HudCardFish.lua` | The card's fish row: the water's fish as icons (bright when caught here, dark when missing, names on hover) and "N missing" |
 | `SettingsPage.lua` | Settings page of the main window: HUD (with the live preview), Information, Advanced statistics with the data buttons; "Panels: game / warm" and Defaults with a confirmation in the page header |
 | `CastKey.lua`, `Bindings.xml` | Casting key (module 5): the named secure button `FishingMasteryCastButton` casts Fishing (name, else the highest known rank) on the key bound to "Cast Fishing" (Key Bindings, AddOns; no default key), on release only; attributes change only out of combat, a /reload in combat builds it after the fight; a note once without Fishing; a chooser (the smart lure) may make the next press a lure use or nothing, asked again in `PreClick`; `OnRelease` listeners (double-click, smart lure) |
 | `DoubleClick.lua`, `DoubleCast.lua` | Double right-click casting (module 5, setting `doubleClick`, off): pure `DoubleClick` takes the second right press within 0.4 s into the world (not a unit, a frame, a held camera drag, a click right after a unit, or the bobber) and names what blocks a cast (combat, mounted, swimming, flying, taxi, dead, no button, no Fishing, no pole, a lure being applied, line out); `DoubleCast` binds `BUTTON2` to the cast button for that one press and clears it on the release, `PLAYER_REGEN_DISABLED`, a loading screen, or after 2 s; `Conflict` names a loaded Luredon or CFC for the settings note |
@@ -281,27 +283,28 @@ copied and adapted, and the probe folder is never loaded or referenced.
 
 ### HUD Card
 
-The HUD card names the water you stand in (resolved area, else the map name) with a risk tag at
-your effective skill from the Classic model (green "no getaways", orange "18 % get away", grey "?"
+The HUD card names the water you stand in (resolved area, else the map name) with a risk tag at your
+effective skill from the Classic model (green "no getaways", orange "18 % get away", grey "?"
 without a base level). The skill bar shows "Fishing 154 / 225" with the skill-ups and a white mark
 at the effective skill with lure and gear; while fish still get away a green tick marks where
-getaways stop (when that is on the bar) and a line shows "with lure 176" and "getaways stop at
-225". The lure row shows the running lure with a mm:ss timer (named with its icon: the lure of
-that bonus in the bags, else the only lure with that bonus; "Lure +50" when two share it and
-none is owned), "No lure needed
-here", or the smart lure's suggestion. Then, between two thin dividers, catches, success (with a
-small grey "%"), and catches per hour (grey while the sample is small), the last catch with
-icon, quality color, and bite time, and the water's fish as
-icons (bright when caught here, dark when missing, names on hover) with "N missing". The compact
-layout is one line: water, risk, catches, success, skill. A long water name ends in "..." before
-the tag. The water is read again on `ZONE_CHANGED`, `ZONE_CHANGED_INDOORS`, `ZONE_CHANGED_NEW_AREA`,
-skill changes, and attempt ends (the lure tick keeps it). The tooltip (Draft 6): the session, its
-casts and rates with ranges, getaways here (Classic at your skill, yours in the skill band, none
-from skill), in risky water the best lure in the bags ("on the pole" when it runs), and the
-explanations with Shift. The setting "Water line" leaves the
-water out. Two small buttons at the top right (at the right end of the compact line) switch
-between the card and the compact line (saved like the Settings page) and stop the session now
-(the summary shows as after an idle end; the next cast starts a new session).
+getaways stop (when that is on the bar) and a line shows "with lure 176" and "getaways stop at 225".
+The lure row shows the running lure with a mm:ss timer (named with its icon: the lure of that bonus
+in the bags, else the only lure with that bonus; "Lure +50" when two share it and none is owned),
+"No lure needed here", or the smart lure's suggestion. Then, between two thin dividers, catches,
+success (with a small grey "%"), and catches per hour (grey while the sample is small), a row with
+the time since the session's first cast and the vendor value of its catch (sell price x quantity;
+"-" without a priced item), the last catch with icon, quality color, and bite time, and the water's
+fish as icons (bright when caught here, dark when missing, names on hover) with "N missing". The
+compact layout is one line: water, risk, catches, success, skill, session time. While a session is
+open the HUD redraws every 30 seconds so the time moves between casts. A long water name ends in
+"..." before the tag. The water is read again on `ZONE_CHANGED`, `ZONE_CHANGED_INDOORS`,
+`ZONE_CHANGED_NEW_AREA`, skill changes, and attempt ends (the lure tick keeps it). The tooltip
+(Draft 6): the session, its casts and rates with ranges, getaways here (Classic at your skill, yours
+in the skill band, none from skill), in risky water the best lure in the bags ("on the pole" when it
+runs), and the explanations with Shift. The setting "Water line" leaves the water out. Two small
+buttons at the top right (at the right end of the compact line) switch between the card and the
+compact line (saved like the Settings page) and stop the session now (the summary shows as after an
+idle end; the next cast starts a new session).
 
 ### Main Window
 

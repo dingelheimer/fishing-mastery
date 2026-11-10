@@ -21,8 +21,9 @@ and open source (GPL-3.0). Developers: see the [development reference](docs/deve
   character. The game writes it at logout or `/reload`, so a crash loses the casts since then; a
   reload reminder after two hours of fishing helps (`/fm reminder on|off`).
 - **HUD card:** the water with its getaway risk, your skill bar, the lure with its time left or
-  the one that would help, catches, success rate, catches per hour, the last catch, and the
-  water's fish you have not caught there yet. Movable, scalable, see-through, or one compact line.
+  the one that would help, catches, success rate, catches per hour, how long the session runs and
+  what its catch is worth at a vendor, the last catch, and the water's fish you have not caught
+  there yet. Movable, scalable, see-through, or one compact line.
 - **Session summary** after a session ends, as a card like the HUD (catches, success, per hour,
   what you caught and what was new) or in the chat.
 - **One window** (left click on the minimap button) with a side tab per module, like the

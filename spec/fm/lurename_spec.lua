@@ -32,6 +32,7 @@ describe("FishingMastery lure name", function()
             "Getaway.lua",
             "LureChoice.lua",
             "HudCardModel.lua",
+            "HudCardTip.lua",
         }, nil, "FishingMastery")
     end)
 

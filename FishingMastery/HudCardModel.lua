@@ -1,13 +1,13 @@
 -- Pure logic: the HUD of Draft 5 (Story 9.8) from the session numbers (HudModel.Build) and the
 -- water: the card (water name with a risk tag, the skill bar with the skill-ups and a mark at the
 -- effective skill, the risk line, the lure row, three numbers, the last catch, the water's fish)
--- as a HudCard model, the compact line, and the HUD tooltip of Draft 6. Grey while a sample is
--- small (Stats display rule). No frame or API calls.
+-- as a HudCard model and the compact line (the HUD tooltip of Draft 6: HudCardTip.lua). Grey
+-- while a sample is small (Stats display rule). No frame or API calls.
 local _, ns = ...
 
-local format, floor, ipairs, type, tostring, concat =
-    string.format, math.floor, ipairs, type, tostring, table.concat
-local L, Style, HudModel, RowTip = ns.L, ns.Style, ns.HudModel, ns.RowTip
+local format, floor, ipairs, pairs, type, tostring, concat =
+    string.format, math.floor, ipairs, pairs, type, tostring, table.concat
+local L, Style, HudModel = ns.L, ns.Style, ns.HudModel
 
 local HudCardModel = {}
 ns.HudCardModel = HudCardModel
@@ -27,6 +27,7 @@ end
 local function model(zone)
     return zone and zone.risk and zone.risk.model or nil
 end
+HudCardModel.Water = model
 
 local function risk(zone)
     local m = model(zone)
@@ -178,8 +179,27 @@ local function compact(card, m)
         format(L.HCARD_COMPACT_CATCHES, card.numbers[1].value),
         success.grey and paint(rate, Style.GREY) or rate,
         skill,
+        card.session.time, -- the session time at the end (owner choice, Story 10.6)
     }
     return concat(parts, paint("  |  ", Style.GREY))
+end
+
+-- The session row (Story 10.6): the time since the first cast and the vendor value of the catch
+-- (sell price x quantity from the item cache; "-" in grey without a priced item).
+local function sessionRow(input)
+    local m = input.model
+    local value, priced = 0, false
+    for id, qty in pairs(type(m.items) == "table" and m.items or {}) do
+        local info = input.info and input.info(id) or {}
+        if type(info.sellPrice) == "number" and info.sellPrice > 0 then
+            value, priced = value + info.sellPrice * qty, true
+        end
+    end
+    return {
+        time = HudModel.Duration(m.elapsed or 0),
+        value = priced and ns.SummaryModel.Money(value) or L.JOURNAL_NO_PLACE,
+        grey = not priced,
+    }
 end
 
 -- input: { model (HudModel.Build), max (skill cap), zone (HudZone.Read or nil when the water
@@ -198,6 +218,7 @@ function HudCardModel.Build(input)
         last = last(input),
     }
     card.fish, card.missing = fish(input)
+    card.session = sessionRow(input)
     card.compact = compact(card, input.model)
     -- The green tick where getaways stop, only in risky water and only on the bar.
     local m = model(zone)
@@ -215,6 +236,7 @@ function HudCardModel.Sample()
         risk = { text = L.PREVIEW_SAFE, kind = "safe" },
         bar = { value = 154, max = 225, text = L.PREVIEW_BAR },
         lure = { text = L.HCARD_NO_LURE_NEEDED, grey = true },
+        session = { time = HudModel.Duration(240), value = ns.SummaryModel.Money(3520) },
         numbers = {
             { value = "8", label = L.PREVIEW_CATCHES },
             { value = "8/9", label = L.PREVIEW_SUCCESS, grey = true },
@@ -231,61 +253,8 @@ function HudCardModel.Sample()
             .. "  |c"
             .. grey
             .. "8/9|r  "
-            .. L.PREVIEW_COMPACT_SKILL,
+            .. L.PREVIEW_COMPACT_SKILL
+            .. "  "
+            .. HudModel.Duration(240),
     }
-end
-
-local function getaways(tip, zone)
-    local r, m = zone.risk, model(zone)
-    tip:Gap()
-    tip:Header(L.HTIP_GETAWAYS)
-    if not m then
-        tip:Line(L.HTIP_NO_BASE, Style.GREY)
-        return
-    end
-    tip:Pair(format(L.HTIP_CLASSIC, r.skill), m.below and L.HTIP_NO_CATCH or pct(m.getaway) .. " %")
-    if r.shown then
-        local own = r.own
-        tip:Pair(
-            format(L.HTIP_YOURS, r.band, r.band + ns.Totals.SKILL_BAND - 1),
-            Style.Range(HudModel.Percent(own), pct(own.low), pct(own.high))
-        )
-    end
-    tip:Pair(L.HTIP_NONE_FROM, m.stopsAt)
-    if r.differs then
-        tip:Line(L.STATS_TIP_DIFFERS, Style.ORANGE)
-    end
-end
-
--- The HUD tooltip of Draft 6 drawn into a Tip builder (same input as Build); extra(tip) adds
--- lines at the end (the dev area line).
-function HudCardModel.Tip(input, extra)
-    return function(tip)
-        local m, zone = input.model, input.zone
-        tip:Title(zone and zone.name or L.PREFIX, Style.GOLD)
-        tip:Line(format(L.HTIP_SESSION, HudModel.Duration(m.active)), Style.GREY)
-        tip:Pair(
-            L.OV_CATCHES,
-            format(L.OV_CHAR_LINE, Style.Number(m.catches), Style.Number(m.casts))
-        )
-        RowTip.Rate(tip, L.HTIP_SUCCESS, m.success)
-        RowTip.PerHour(tip, L.HTIP_PER_HOUR, m.perHour)
-        if zone and zone.risk then
-            getaways(tip, zone)
-        end
-        -- The best owned lure, only while fish still get away; "on the pole" when it runs.
-        local suggestion, water = input.suggestion, model(zone)
-        if suggestion and water and water.getaway > 0 then
-            local value = suggestion.name .. " " .. paint("+" .. suggestion.bonus, Style.GREY)
-            if input.lure and input.lure.bonus == suggestion.bonus then
-                value = value .. " " .. paint(L.HTIP_ON_POLE, Style.GREY)
-            end
-            tip:Gap()
-            tip:Pair(L.HTIP_BEST_LURE, value)
-        end
-        RowTip.Details(tip, { "fair", "range", L.HTIP_D_CLASSIC })
-        if extra then
-            extra(tip)
-        end
-    end
 end

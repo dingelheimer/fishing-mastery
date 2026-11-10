@@ -28,10 +28,12 @@ describe("FishingMastery HUD card", function()
             "RowTip.lua",
             "Getaway.lua",
             "HudCardModel.lua",
+            "HudCardTip.lua",
             "Frames.lua",
             "Look.lua",
             "Controls.lua",
             "HudCard.lua",
+            "HudCardFish.lua",
         }, nil, "FishingMastery")
         Getaway, HudModel, HudCardModel = ns.Getaway, ns.HudModel, ns.HudCardModel
     end)
@@ -115,7 +117,7 @@ describe("FishingMastery HUD card", function()
         assert.are.equal("Raw Brilliant Smallfish", card.fish[3].name)
         assert.are.equal("1 missing", card.missing)
         assert.are.equal(
-            "The Barrens  |  no getaways  |  8 catches  |  8/9  |  Fishing 154 +2",
+            "The Barrens  |  no getaways  |  8 catches  |  8/9  |  Fishing 154 +2  |  0 min",
             plain(card.compact)
         )
     end)
@@ -239,8 +241,8 @@ describe("FishingMastery HUD card", function()
         base.fish = { { id = 1, caught = true }, { id = 2, caught = false } }
         base.missing = "1 missing"
         ns.HudCard.Draw(card, base, "card")
-        -- risk line, the divider under the numbers, last catch, fish
-        assert.are.equal(short + 14 + 4 + 22 + 22, card.card.height)
+        -- risk line, last catch, fish (the session row under the numbers is always there)
+        assert.are.equal(short + 14 + 22 + 22, card.card.height)
         assert.is_true(card.fishSlots[2]:IsShown())
         assert.is_false(card.fishSlots[3]:IsShown())
         assert.is_nil(card.cardButtons) -- no buttons without actions (the Settings preview)

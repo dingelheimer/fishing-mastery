@@ -77,6 +77,7 @@ describe("FishingMastery units and spacing", function()
                 "Look.lua",
                 "Controls.lua",
                 "HudCard.lua",
+                "HudCardFish.lua",
             }, nil, "FishingMastery")
             env = fakeui.new()
             card = ns.HudCard.Create(env, env.UIParent)
@@ -114,14 +115,17 @@ describe("FishingMastery units and spacing", function()
             assert.are.equal(center - unit / 2, x)
         end)
 
-        it("shows the second divider only with rows below the numbers", function()
-            ns.HudCard.Draw(card, model(), "card")
-            assert.is_true(card.dividers[1]:IsShown())
-            assert.is_false(card.dividers[2]:IsShown())
-            local last = { text = "Firefin Snapper", color = { 1, 1, 1 }, bite = "8.4 s" }
-            ns.HudCard.Draw(card, model({ last = last }), "card")
-            assert.is_true(card.dividers[2]:IsShown())
-        end)
+        it(
+            "shows the second divider above the session row, with or without a last catch",
+            function()
+                ns.HudCard.Draw(card, model(), "card")
+                assert.is_true(card.dividers[1]:IsShown())
+                assert.is_true(card.dividers[2]:IsShown()) -- the session row follows (Story 10.6)
+                local last = { text = "Firefin Snapper", color = { 1, 1, 1 }, bite = "8.4 s" }
+                ns.HudCard.Draw(card, model({ last = last }), "card")
+                assert.is_true(card.dividers[2]:IsShown())
+            end
+        )
 
         it("draws the green tick where getaways stop, hidden without it", function()
             local m = model()

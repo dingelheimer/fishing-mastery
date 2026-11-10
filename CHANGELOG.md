@@ -18,6 +18,8 @@ settings carry over.
   the Settings page header brings back the grey of the game's windows.
 - New: the HUD background setting "Solid" puts a dark, non-see-through background behind the HUD
   (default: the game's see-through tooltip look).
+- New: the HUD card shows how long the session has been running and the vendor value of what you
+  caught in it; the compact line ends with the session time.
 - Changed: the session summary is a card like the HUD: the water and active time, your skill
   change, catches, success, and catches per hour, the outcomes, the vendor value, the fish you
   caught (new ones marked), and how the session compares with your average there. The chat style

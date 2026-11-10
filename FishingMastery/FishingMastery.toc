@@ -53,6 +53,7 @@ RecipeModel.lua
 GearModel.lua
 RowTip.lua
 HudCardModel.lua
+HudCardTip.lua
 StatsTables.lua
 JournalTable.lua
 JournalDetail.lua
@@ -110,6 +111,7 @@ Controls.lua
 OverviewPage.lua
 HudActions.lua
 HudCard.lua
+HudCardFish.lua
 SummaryCardModel.lua
 Summary.lua
 MainWindow.lua

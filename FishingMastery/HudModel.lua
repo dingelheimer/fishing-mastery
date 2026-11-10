@@ -19,6 +19,8 @@ function HudModel.Build(input)
     local rank, modifier = input.rank, input.modifier
     return {
         active = active,
+        elapsed = (input.now or session.last) - session.start, -- since the first cast (10.6)
+        items = session.items, -- [itemID] = quantity caught this session
         casts = session.casts,
         catches = session.catches,
         success = Stats.SuccessRate(session.counts, t),

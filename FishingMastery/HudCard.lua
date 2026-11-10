@@ -3,14 +3,15 @@
 -- (Story 9.7) draw them. Draw takes a model (HudCardModel.Build):
 -- { zone, risk = { text, kind = "safe" | "risk" | "unknown" }, bar = { value, max, text, mark,
 --   safe }, riskLine = { left, right } or nil, lure = { icon, text, timer, grey, dim },
---   numbers = { { value, unit, label, grey } x3 }, last = { icon, text, color, bite } or nil,
+--   numbers = { { value, unit, label, grey } x3 }, session = { time, value, grey } (Story 10.6),
+--   last = { icon, text, color, bite } or nil,
 --   fish = { { id, icon, name, caught } } or nil, missing, compact }.
 -- Rows stack from the top with thin dividers around the numbers (Story 10.2); the card is as tall
 -- as what it shows. Unnamed, insecure frames only.
 local _, ns = ...
 
 local ipairs = ipairs
-local L, Style, Frames, Controls = ns.L, ns.Style, ns.Frames, ns.Controls
+local Style, Frames, Controls = ns.Style, ns.Frames, ns.Controls
 
 local HudCard = {}
 ns.HudCard = HudCard
@@ -21,6 +22,7 @@ HudCard.COMPACT_HEIGHT = 24
 HudCard.ICON, HudCard.FISH_ICONS = 16, 8
 HudCard.TAG_GAP = 14 -- between the water name and the risk tag
 HudCard.UNIT_GAP = 3 -- between a number and its small unit
+HudCard.SESSION_ROW = 22 -- the session time and value row under the numbers
 HudCard.DARK = 0.3 -- brightness of a fish icon not caught here yet
 HudCard.BACK = { 0.03, 0.03, 0.06, 0.92 } -- without the template
 HudCard.RISK = {
@@ -63,28 +65,7 @@ local function icon(parent)
     tex:SetSize(HudCard.ICON, HudCard.ICON)
     return tex
 end
-
--- One fish icon with its name in a tooltip.
-local function fishIcon(card, f)
-    local slot = card.env.CreateFrame("Frame", nil, f)
-    slot:SetSize(HudCard.ICON, HudCard.ICON)
-    slot.texture = icon(slot)
-    slot.texture:SetAllPoints(slot)
-    slot:EnableMouse(true)
-    slot:SetScript("OnEnter", function(owner)
-        local data = owner.data
-        if data then
-            ns.Tip.Open(card.env, owner, function(tip)
-                tip:Title(data.name or "?")
-                tip:Line(data.caught and L.HCARD_FISH_CAUGHT or L.HCARD_FISH_MISSING, Style.GREY)
-            end)
-        end
-    end)
-    slot:SetScript("OnLeave", function(owner)
-        ns.Tip.Close(card.env, owner)
-    end)
-    return slot
-end
+HudCard.Place, HudCard.Icon = place, icon -- shared with the fish row (HudCardFish.lua)
 
 -- Creates both views on parent; only one is shown at a time. actions ({ layout(), stop() }, the
 -- HUD only) adds the two buttons (HudActions.lua) to both views.
@@ -125,12 +106,11 @@ function HudCard.Create(env, parent, actions)
             label = text(f, Style.FONTS.smallLabel, "CENTER"),
         }
     end
+    card.sessionTime = text(f, Style.FONTS.small)
+    card.sessionValue = text(f, Style.FONTS.small, "RIGHT")
     card.lastIcon, card.lastText = icon(f), text(f, Style.FONTS.small)
     card.lastBite = text(f, Style.FONTS.secondary, "RIGHT")
-    card.fishSlots = {}
-    for i = 1, HudCard.FISH_ICONS do
-        card.fishSlots[i] = fishIcon(card, f)
-    end
+    ns.HudCardFish.Create(card, f)
     card.missing = text(f, Style.FONTS.secondary, "RIGHT")
     local line = frame(env, parent, HudCard.COMPACT_HEIGHT)
     card.compact = line
@@ -242,28 +222,6 @@ local function drawLast(card, last, y)
     return y - 22
 end
 
-local function drawFish(card, fish, missing, y)
-    local pad = HudCard.PAD
-    for i, slot in ipairs(card.fishSlots) do
-        local data = fish and fish[i]
-        slot:SetShown(data ~= nil)
-        slot.data = data
-        if data then
-            place(slot, card, "TOPLEFT", pad + (i - 1) * (HudCard.ICON + 4), y - 2)
-            slot.texture:SetTexture(data.icon)
-            local light = data.caught and 1 or HudCard.DARK
-            slot.texture:SetVertexColor(light, light, light)
-        end
-    end
-    card.missing:SetShown(fish ~= nil)
-    if not fish then
-        return y
-    end
-    place(card.missing, card, "TOPRIGHT", -pad, y - 4)
-    card.missing:SetText(missing or "")
-    return y - 22
-end
-
 -- Shows the card or the compact line (layout) drawn from model.
 function HudCard.Draw(card, model, layout)
     local compact = layout == "compact"
@@ -277,14 +235,17 @@ function HudCard.Draw(card, model, layout)
     local y = drawTop(card, model)
     y = drawLure(card, model.lure or { text = "" }, y)
     y = drawNumbers(card, model.numbers, y)
-    local below = model.last ~= nil or model.fish ~= nil
-    card.dividers[2]:SetShown(below)
-    if below then
-        place(card.dividers[2], card, "TOPLEFT", HudCard.PAD, y + 2)
-        y = y - 4
-    end
+    -- The session row: the time since the first cast and the catch's vendor value (Story 10.6).
+    local row = model.session or { time = "", value = "" }
+    place(card.dividers[2], card, "TOPLEFT", HudCard.PAD, y + 2)
+    place(card.sessionTime, card, "TOPLEFT", HudCard.PAD, y - 4)
+    place(card.sessionValue, card, "TOPRIGHT", -HudCard.PAD, y - 4)
+    card.sessionTime:SetText(row.time)
+    card.sessionValue:SetText(row.value)
+    color(card.sessionValue, row.grey and Style.GREY or Style.WHITE)
+    y = y - HudCard.SESSION_ROW
     y = drawLast(card, model.last, y)
-    y = drawFish(card, model.fish, model.missing, y)
+    y = ns.HudCardFish.Draw(card, model.fish, model.missing, y)
     card.card:SetHeight(-y + HudCard.PAD - 4)
 end
 

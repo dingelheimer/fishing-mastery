@@ -21,6 +21,7 @@ Hud.FALLBACK = { point = "TOP", x = 0, y = -140 }
 Hud.QUALITY_HEX = 4 -- C_Item.GetItemQualityColor: hex color
 Hud.ZONE_EVENTS = { "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "ZONE_CHANGED_NEW_AREA" }
 Hud.TICK = 1 -- seconds between updates while a lure is shown
+Hud.CLOCK = 30 -- seconds between updates otherwise, so the session time moves (Story 10.6)
 
 -- settings.hud with every missing or invalid value set to its default; a style saved before Epic 9
 -- becomes its layout (full: card, text: compact) once.
@@ -124,7 +125,8 @@ local function itemInfo(self, id)
             Hud.QUALITY_HEX,
             Context.Call(self.env, "C_Item.GetItemQualityColor", info.quality)
         )
-    return { name = info.name, icon = info.icon, hex = type(hex) == "string" and hex or nil }
+    local h = type(hex) == "string" and hex or nil
+    return { name = info.name, icon = info.icon, hex = h, sellPrice = info.sellPrice }
 end
 
 function Hud:Model(session)
@@ -211,13 +213,14 @@ local function draw(self, model)
     frame:SetAlpha(self.settings.opacity)
 end
 
-local function scheduleTick(self)
-    if not self.after or self.ticking then
+-- One pending redraw per key (the lure tick, the session clock); none after the session ends.
+local function schedule(self, key, seconds)
+    if not self.after or self[key] then
         return
     end
-    self.ticking = true
-    self.after(Hud.TICK, function()
-        self.ticking = false
+    self[key] = true
+    self.after(seconds, function()
+        self[key] = false
         self:Refresh(true)
     end)
 end
@@ -236,6 +239,7 @@ function Hud:Refresh(keepZone)
         end
         return
     end
+    local open = session ~= nil
     session = session or emptySession(self.serverTime())
     if self.settings.zoneLine and not (keepZone and self.zone) then
         local char = self.castLog and self.castLog.char
@@ -252,7 +256,9 @@ function Hud:Refresh(keepZone)
         self:ShowTooltip(self.frame)
     end
     if model.lureSeconds then
-        scheduleTick(self)
+        schedule(self, "ticking", Hud.TICK)
+    elseif open then
+        schedule(self, "clocking", Hud.CLOCK)
     end
 end
 
