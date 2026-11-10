@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.1.1
+
+Polish of the 1.1.0 interface, closer to the drafts it was built from. Your saved data and
+settings carry over.
 
 - Changed: bars in the Statistics pages use the softer colors of the drafts with a slight
   gradient; getaway charts are orange.
