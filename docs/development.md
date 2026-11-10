@@ -56,7 +56,8 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `History.lua`   | Packing the open day, load check with quarantine, on-demand history iterator (pure) |
 | `Season.lua`    | Classic season windows (in season now, realm time), the realm hour offset, catches per realm hour; date helpers (pure) |
 | `Totals.lua`    | Aggregates per outcome, day, map, map × lure, map × subzone, UTC hour, skill band, item (with hours, months, and the dry-streak counter), bite time, and active time; rebuild from the history (pure) |
-| `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison (pure) |
+| `SummaryModel.lua` | Session summary: times, rates with ranges, failures, skill, best and new fish, vendor value, zone comparison; the text lines of the chat style (pure) |
+| `SummaryCardModel.lua` | The summary card (Story 10.5): water and active time, skill line, three numbers between dividers, pairs (casts, outcomes, vendor value), the Caught table (at most 5 rows), the clear zone comparison, drawn into a `DetailPane` (pure) |
 | `Getaway.lua`   | Getaway risk: Classic model at an effective skill and base, own rate per resolved area and skill band with its range, and the comparison (pure) |
 | `HudModel.lua`  | HUD numbers from the session, rank, lure, and item; short formats; count/grey rules (pure) |
 | `HudCardModel.lua` | The HUD card of Draft 5 (water and risk tag, skill bar with skill-ups and the effective-skill mark, risk line, lure row with timer or suggestion, three numbers with "%" as a unit, last catch, the water's fish, the green getaway-free tick), the compact line, the HUD tooltip of Draft 6, and the Settings preview sample (pure) |
@@ -110,7 +111,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `Hud.lua`       | HUD: the card or the compact line in a movable frame, shown from the first cast to the session end; gathers the cap, the running and suggested lure, and the items; lure tick; Draft 6 tooltip (dev flag: resolved area line); scale and opacity; the layout and stop buttons |
 | `HudCommands.lua` | `/fm hud`: show, hide, lock, unlock, reset, scale, layout |
 | `HudActions.lua` | The two HUD buttons at the top right (the line: right end): card or compact, and stop the session; tooltips |
-| `Summary.lua`   | Session summary window or chat block at the idle end, `/fm summary` |
+| `Summary.lua`   | Session summary at the idle end and on `/fm summary`: the card in the HUD card's look (`TooltipBackdropTemplate`, the HUD background setting applies, movable, grows with its rows) or the chat block |
 | `Tip.lua` | Tooltip builder: title, label and value pairs (gold label unless a color is given), gaps, headers, short lines, green hints, explanations only while Shift is held (redraws on `MODIFIER_STATE_CHANGED`; the only wrapped lines); `Tip.Into` writes below a shown tooltip (item post-call). The only file that writes tooltip lines (a spec checks it) |
 | `StatsListHeader.lua` | Table header: gold bar with sort buttons and arrow, or labels |
 | `StatsList.lua` | Table widget: header (`StatsListHeader`) over a ScrollBox list; striped rows, hover highlight, number cells with separators, item icons, cell colors, season and night tags, grey cells, legend line, `Tip` tooltips |
@@ -270,7 +271,7 @@ copied and adapted, and the probe folder is never loaded or referenced.
 | `/fm hud scale <0.5-2>`    | HUD size                                                     |
 | `/fm hud layout card\|compact` | The card, or one compact line                          |
 | `/fm summary`              | Summary of the open session, or of the last one (also shown when a session ends after 15 minutes without a cast) |
-| `/fm summary window\|chat` | Where summaries appear: a small window (default) or your chat frame |
+| `/fm summary window\|chat` | Where summaries appear: the summary card (default) or your chat frame |
 | `/fm stats`                | Statistics page of the main window, see below (the minimap button's left click and the addon compartment entry open the window on its last page) |
 | `/fm journal`              | Journal page of the main window, see below (also Shift + left click on the minimap button or the compartment entry) |
 | `/fm settings`             | Settings page of the main window (also the minimap button's right click and the game's Options entry) |

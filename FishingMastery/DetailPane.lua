@@ -1,8 +1,10 @@
--- A detail pane in the tooltip and table style (the journal's Fish tab): draws a builder function
--- top-down into pooled font strings: a title, short grey or colored lines, gold label and value
--- pairs (the value right-aligned), gaps, and small three-column tables (a gold header row, then
--- rows: the first cell left, the others right). Nothing wraps; long texts are cut by the font
--- string. Rows that do not fit the height are hidden. Unnamed, insecure frames only.
+-- A detail pane in the tooltip and table style (the journal's Fish tab, the session summary card):
+-- draws a builder function top-down into pooled font strings: a title, short grey or colored
+-- lines, a heading (gold left, grey right), gold label and value pairs (the value right-aligned),
+-- gaps, thin dividers, three big numbers with units and labels (the HUD card's), and small
+-- three-column tables (a gold header row, then rows: the first cell left, the others right).
+-- Nothing wraps; long texts are cut by the font string. Rows that do not fit the height are
+-- hidden; Height() is the height drawn. Unnamed, insecure frames only.
 local _, ns = ...
 
 local setmetatable, ipairs, pairs = setmetatable, ipairs, pairs
@@ -16,6 +18,8 @@ DetailPane.TITLE, DetailPane.LINE, DetailPane.GAP = 20, 15, 8 -- row heights
 DetailPane.LABEL = 100 -- width of a pair's label
 DetailPane.NUMBER = 46 -- width of the second and third table columns
 DetailPane.SPACE = 6
+DetailPane.NUMBERS = 44 -- the big numbers row
+DetailPane.UNIT_GAP = 3
 
 -- parent: the frame the pane sits in; x, y: its top left in parent; width, height in pixels.
 function DetailPane.Create(env, parent, x, y, width, height)
@@ -23,6 +27,7 @@ function DetailPane.Create(env, parent, x, y, width, height)
     local frame = env.CreateFrame("Frame", nil, parent)
     frame:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
     frame:SetSize(width, height)
+    frame:EnableMouse(false) -- text only: clicks go to the controls under and around it
     self.frame = frame
     self.pools = {}
     return self
@@ -110,6 +115,61 @@ function DetailPane:Row(values, colors)
     return columns(self, Style.FONTS.small, values, colors or {}, Style.WHITE)
 end
 
+-- The water (gold) on the left, a grey value (the time) on the right.
+function DetailPane:Heading(left, right)
+    cell(self, Style.FONTS.label, left, 0, self.width - 70, "LEFT", Style.GOLD)
+    cell(self, Style.FONTS.small, right or "", self.width - 70, 70, "RIGHT", Style.GREY)
+    self.y = self.y + DetailPane.TITLE
+    return self
+end
+
+-- A thin line across the pane.
+function DetailPane:Divider()
+    self.dividers = self.dividers or {}
+    self.divider = (self.divider or 0) + 1
+    local line = self.dividers[self.divider]
+    if not line then
+        line = self.frame:CreateTexture(nil, "ARTWORK")
+        line:SetColorTexture(1, 1, 1, 0.12)
+        self.dividers[self.divider] = line
+    end
+    line:ClearAllPoints()
+    line:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -self.y - 2)
+    line:SetSize(self.width, 1)
+    line:Show()
+    self.y = self.y + 6
+    return self
+end
+
+-- Three big numbers ({ value, unit, label, grey }), each centered with its unit (HudCard style).
+function DetailPane:Numbers(numbers)
+    local column = self.width / #numbers
+    for i, number in ipairs(numbers) do
+        local center = (i - 0.5) * column
+        local grey = number.grey and Style.GREY or nil
+        local value = cell(self, Style.FONTS.number, number.value, 0, column, "CENTER", grey)
+        local unit = cell(self, Style.FONTS.secondary, number.unit or "", 0, 30, "LEFT", Style.GREY)
+        local width = value:GetStringWidth()
+        local shift = number.unit and (unit:GetStringWidth() + DetailPane.UNIT_GAP) / 2 or 0
+        value:SetWidth(width + 2)
+        value:ClearAllPoints()
+        value:SetPoint("TOP", self.frame, "TOPLEFT", center - shift, -self.y)
+        unit:ClearAllPoints()
+        unit:SetPoint("BOTTOMLEFT", value, "BOTTOMRIGHT", DetailPane.UNIT_GAP, 2)
+        local label =
+            cell(self, Style.FONTS.smallLabel, number.label, 0, column, "CENTER", Style.GOLD)
+        label:ClearAllPoints()
+        label:SetPoint("TOP", self.frame, "TOPLEFT", center, -self.y - 24)
+    end
+    self.y = self.y + DetailPane.NUMBERS
+    return self
+end
+
+-- The height the last Draw used (for a window that grows with its rows).
+function DetailPane:Height()
+    return self.y or 0
+end
+
 -- Clears the pane and draws draw(builder) into it.
 function DetailPane:Draw(draw)
     for _, pool in pairs(self.pools) do
@@ -118,7 +178,10 @@ function DetailPane:Draw(draw)
         end
         pool.used = 0
     end
-    self.y, self.cells = 0, {}
+    for _, line in ipairs(self.dividers or {}) do
+        line:Hide()
+    end
+    self.y, self.cells, self.divider = 0, {}, 0
     draw(self)
 end
 

@@ -120,6 +120,10 @@ local function numbers(m)
     }
 end
 
+-- The three numbers (catches, success with "%", per hour) of a model with catches, success, and
+-- perHour; the session summary card shows them too (Story 10.5).
+HudCardModel.Numbers = numbers
+
 local function last(input)
     local m = input.model
     if not m.lastItem then

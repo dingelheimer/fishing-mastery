@@ -35,6 +35,12 @@ describe("FishingMastery session summary boot", function()
         return w.ns.summary
     end
 
+    -- The shown texts of the summary card (Story 10.5), color codes removed, joined by " / ".
+    local function card()
+        local text = table.concat(summary().pane:Texts(), " / ")
+        return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+    end
+
     local function session()
         w.catch(5000, 9)
         w.catch(5020, 12)
@@ -53,20 +59,44 @@ describe("FishingMastery session summary boot", function()
         local frame = summary().frame
         assert.is_true(frame:IsShown())
         assert.is_false(w.ns.hud.frame:IsShown()) -- the same end hides the HUD
-        assert.are.equal("Fishing session summary", summary().title:GetText())
-        local body = summary().body:GetText()
-        assert.truthy(body:find("1 min active of 0 min", 1, true))
-        assert.truthy(body:find("3 casts, 2 catches", 1, true))
-        assert.truthy(body:find("Success: 2 of 3 fair casts", 1, true))
-        assert.truthy(body:find("Failures: fish got away 1", 1, true))
-        assert.truthy(body:find("Fishing skill 11 -> 11 (+0)", 1, true))
-        assert.truthy(body:find("Best fish: |T133910:14:14|t Raw Slitherskin Mackerel x2", 1, true))
+        local text = card()
+        -- The card: title, the water and active time, skill, the three numbers, pairs, caught.
         assert.truthy(
-            body:find("New for this character: |T133910:14:14|t Raw Slitherskin", 1, true)
+            text:find("^Fishing session summary / zone 1411 / 1 min / Fishing 11 %-> 11 / ")
         )
-        assert.truthy(body:find("Vendor value 2c (", 1, true))
+        assert.truthy(text:find("/ 2 /  / catches / 2/3 /  / success / - /  / per hour /", 1, true))
+        assert.truthy(text:find("/ Casts / 3 (0 min) / Got away / 1 /", 1, true))
+        assert.truthy(text:find("/ Vendor value / 2c (", 1, true))
+        assert.truthy(
+            text:find(
+                "/ Caught / Count /  / |T133910:14:14|t Raw Slitherskin Mackerel / 2 / new",
+                1,
+                true
+            )
+        )
+        assert.is_nil(text:find("Above your average", 1, true)) -- no clear difference
+        for _, fs in ipairs(summary().pane.cells) do
+            if fs:GetText() == "2/3" then
+                assert.are.same(w.ns.Style.GREY, fs.color) -- few casts: grey
+            end
+        end
+        assert.is_true(summary().frame.lookBacking ~= nil) -- the HUD background setting applies
         assert.are.equal(0, #w.printed)
 
+        -- The card's text frame ends above the Close button, takes no mouse, and lies below it
+        -- (owner check: /fstack showed the 2000 px text frame on top of the button).
+        local pane, close = summary().pane, summary().closeButton
+        assert.are.equal(pane:Height(), pane.frame.height)
+        assert.is_false(pane.frame.mouse)
+        assert.is_true(close:GetFrameLevel() > frame:GetFrameLevel())
+        local _, _, _, _, bottom = close:GetPoint()
+        assert.is_true(frame.height - pane:Height() - 12 > bottom + 22) -- no overlap
+        -- Not top-level (it would raise itself over its button), and the button follows the
+        -- window's level on every show.
+        assert.is_falsy(frame.toplevel)
+        frame:SetFrameLevel(20)
+        _G.SlashCmdList.FM("summary")
+        assert.is_true(close:GetFrameLevel() > 20)
         summary().closeButton:Click()
         assert.is_false(frame:IsShown())
         -- The window position is saved per character.
@@ -102,13 +132,13 @@ describe("FishingMastery session summary boot", function()
         assert.truthy(w.output():find("No fishing session yet.", 1, true))
         session()
         _G.SlashCmdList.FM("summary")
-        assert.are.equal("Fishing session so far", summary().title:GetText())
-        assert.truthy(summary().body:GetText():find("3 casts, 2 catches", 1, true))
+        assert.truthy(card():find("^Fishing session so far / "))
+        assert.truthy(card():find("/ Casts / 3 (", 1, true))
         w.runTimers(5040 + w.ns.Session.IDLE + 5)
         summary().frame:Hide()
         _G.SlashCmdList.FM("summary")
         assert.is_true(summary().frame:IsShown())
-        assert.are.equal("Fishing session summary", summary().title:GetText())
+        assert.truthy(card():find("^Fishing session summary / "))
         w.printed = {}
         _G.SlashCmdList.FM("summary popup")
         assert.truthy(w.output():find("Usage: /fm summary", 1, true))
@@ -135,14 +165,14 @@ describe("FishingMastery session summary boot", function()
         _G.C_Item.RequestLoadItemDataByID = function() end
         session()
         _G.SlashCmdList.FM("summary")
-        local body = summary().body:GetText()
-        assert.truthy(body:find("Item 6303 x2", 1, true))
-        assert.truthy(body:find("some prices are still loading", 1, true))
+        local text = card()
+        assert.truthy(text:find("t Item 6303 / 2 /", 1, true)) -- the icon is known from the loot
+        assert.truthy(text:find("(prices loading)", 1, true))
         loaded = true
         w.fire("ITEM_DATA_LOAD_RESULT", 6303, true)
-        body = summary().body:GetText()
-        assert.truthy(body:find("Raw Slitherskin Mackerel x2", 1, true))
-        assert.is_nil(body:find("still loading", 1, true))
+        text = card()
+        assert.truthy(text:find("Raw Slitherskin Mackerel / 2 /", 1, true))
+        assert.is_nil(text:find("prices loading", 1, true))
         assert.are.equal(0, w.ns.Guard.errors)
     end)
 end)

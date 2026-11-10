@@ -23,6 +23,7 @@ SessionTable.COLUMNS = {
 -- Columns sorted A-Z on their first click; the others start with the largest value.
 SessionTable.TEXT_KEYS = { name = true, zone = true }
 
+-- "The Barrens +1": the first water of a session and how many more (the summary card too).
 local function zoneText(session, mapName)
     local zones = type(session.zones) == "table" and session.zones or {}
     if #zones == 0 then
@@ -34,6 +35,8 @@ local function zoneText(session, mapName)
     end
     return name
 end
+
+SessionTable.ZoneText = zoneText
 
 local function skillText(session)
     if type(session.skillStart) ~= "number" or type(session.skill) ~= "number" then

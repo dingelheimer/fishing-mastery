@@ -100,7 +100,6 @@ DataCommands.lua
 HudZone.lua
 Hud.lua
 HudCommands.lua
-Summary.lua
 StatsListHeader.lua
 StatsList.lua
 BarChart.lua
@@ -111,6 +110,8 @@ Controls.lua
 OverviewPage.lua
 HudActions.lua
 HudCard.lua
+SummaryCardModel.lua
+Summary.lua
 MainWindow.lua
 StatsWindow.lua
 StatsScope.lua

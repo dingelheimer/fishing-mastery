@@ -22,6 +22,21 @@ function M.lines(draw, shift)
         out[#out + 1] = type(cells) == "table" and plain(table.concat(cells, " | ")) or plain(cells)
     end
     builder.Row = builder.Header
+    -- Detail pane parts: a heading as "left | right", a divider as "---", the big numbers as
+    -- "value unit label" joined by " | ".
+    function builder.Heading(_, left, right)
+        out[#out + 1] = plain(left) .. " | " .. plain(right or "")
+    end
+    function builder.Divider()
+        out[#out + 1] = "---"
+    end
+    function builder.Numbers(_, numbers)
+        local parts = {}
+        for i, n in ipairs(numbers) do
+            parts[i] = plain(n.value) .. (n.unit and " " .. n.unit or "") .. " " .. n.label
+        end
+        out[#out + 1] = table.concat(parts, " | ")
+    end
     function builder.Gap()
         out[#out + 1] = " "
     end

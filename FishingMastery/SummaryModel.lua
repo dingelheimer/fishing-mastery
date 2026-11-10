@@ -26,6 +26,7 @@ local function itemEntries(session, totals, items)
             qty = qty,
             name = info.name,
             icon = info.icon,
+            hex = info.hex,
             quality = info.quality,
             sellPrice = info.sellPrice,
             total = lifetime and lifetime.n or nil,

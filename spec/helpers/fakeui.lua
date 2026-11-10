@@ -161,6 +161,9 @@ end
 function Frame:SetFrameLevel(level)
     self.level = level
 end
+function Frame:GetFrameLevel()
+    return self.level or 1
+end
 function Frame:SetHighlightTexture(texture)
     self.highlight = texture
 end
